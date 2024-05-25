@@ -1,0 +1,100 @@
+// Sass variables:
+$theme: 'dark';
+// Colors ---------------------------------------
+$primaryColor: #3B82F6!default;
+$secondaryColor: #FFD166!default;
+$jokerColor: #29335C!default;
+// Notification colors
+$successColor: #009E49!default;
+$infoColor: #05B2DC!default;
+$warningColor: #DF6B00!default;
+$dangerColor: #D60019!default;
+// Overlay
+$overlayLightColor: rgba(255, 255, 255, 0.7);
+$overlayDarkColor: rgba(0, 0, 0, 0.7);
+
+// Theme color
+$darkColor: #333333;
+$lightColor: #FFFFFF;
+$themeColor: if($theme == 'dark', $lightColor, $darkColor);
+$reverseThemeColor: if($theme == 'dark', $darkColor, $lightColor);
+$leadTextColor: if($theme == 'dark', darken(white, 60%), lighten(black, 60%));
+
+$linkColor: ('normal': $themeColor,
+	'visited': if($theme == 'dark', #eee, #333),
+	'hover': if($theme == 'dark', $lightColor, $darkColor),
+	'active': lighten(black, 10%)
+);
+
+$neutralColor: #6B7280!default;
+$checkedColor: #EF4444!default;
+
+$variousColors: (#E49D26, #245496, #622399, #E4DC26, #A4DAE4, #011523, #9A031E, #F9CFF2, #64D500, #22CBE3);
+
+$marginSuccess: 15px;
+$marginError: 25px;
+// Notification colors
+$primaryColorAccent: lighten($primaryColor, 60%);
+
+
+// TYPOGRAPHY
+$textMaxSize: 4rem;
+$textIncrementRatio: 0.2;
+$shadowPrimary: rgba(17, 17, 26, 0.1) 0px 1px 0px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 48px!default;
+$shadowSecondary: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px!default;
+$shadowJoker: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset!default;
+// Text light and dark --------------------------
+$lighterText: rbg(111,111,111)!default;
+$lightText: #FFFFFF!default;
+$darkText: rgb(30,30,30)!default;
+$darkTextAccent: rgb(71,78,93)!default;
+
+$colors: ('primary': $primaryColor,
+	'secondary': $secondaryColor,
+	'joker': $jokerColor,
+	// usual colors
+	'white': #FFFFFF,
+	'black': #000000,
+	// Notification colors
+	'success': $successColor,
+	'info': $infoColor,
+	'warning': $warningColor,
+	'danger': $dangerColor,
+	// Theme colors
+	'theme': $themeColor,
+	'theme-contrast': $reverseThemeColor,
+	'dark': $darkColor,
+	'light': $lightColor,
+	'transparent': transparent
+);
+
+$baseBtnSize: 1rem;
+$baseFontSizeRatio: calc(8 / 10);
+
+// Fonts:
+$primaryFont: 'Nunito Sans', sans-serif;
+$secondaryFont: 'Nunito Sans', sans-serif;
+
+$deviceBreakpoints: (
+	'xs':  361px,
+	'sm':  576px,
+	'md':   768px,
+	'lg':  992px,
+	'xl':   1200px,
+	'xxl':   1400px ) !default;
+$breakpointsMax: (
+	'xs':  'max-width: 361px',
+	'sm':  'max-width: 576px',
+	'md':   'max-width:  768px',
+	'lg':  'max-width:  992px',
+	'xl':   'max-width: 1200px',
+	'xxl':   'max-width: 1400px' ) !default;
+$breakpointsMin: (
+	'xs':  'min-width: 361px',
+	'sm':  'min-width: 576px',
+	'md':   'min-width:  768px',
+	'lg':  'min-width:  992px',
+	'xl':   'min-width: 1200px',
+	'xxl':   'min-width: 1400px' ) !default;
+
+$bodyMinWidth: 360px;

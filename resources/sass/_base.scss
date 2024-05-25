@@ -1,0 +1,114 @@
+%abstract-heading {
+	font-weight: bold;
+	margin: 1.3rem 0;
+	line-height: 1.2;
+}
+
+[v-cloak] {display: none}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+	font-family: $primaryFont;
+	box-sizing: border-box;
+	background: #eee;
+	font-size: 1rem;
+}
+
+p {
+	margin: 1rem 0;
+	line-height: 1.5;
+}
+
+.nav-link {text-decoration: none;}
+
+// General rules for H1 to H6 heading tags
+$textIncrementSize: $textMaxSize;
+@for $i from 1 through 6 {
+	@if $i < 3 {
+		h#{$i} {
+			@extend %abstract-heading;
+			font-family: $primaryFont;
+			font-size: #{$textIncrementSize * 0.5};
+		}
+		@include mq('md') {
+			h#{$i} {
+				font-size: #{$textIncrementSize * 0.7};
+			}
+		}
+	} @else {
+		h#{$i} {
+			@extend %abstract-heading;
+			font-family: $secondaryFont;
+			font-size: #{$textIncrementSize * 0.5};
+		}
+		@include mq('md') {
+			h#{$i} {
+				font-size: #{$textIncrementSize * 0.7};
+			}
+		}
+	}
+	$textIncrementSize: $textIncrementSize * (1 - $textIncrementRatio);
+}
+
+.font-primary {
+	font-family: $primaryFont;
+}
+
+.font-secondary {
+	font-family: $primaryFont !important;
+}
+
+// Set colors
+@each $colorLabel,$colorValue in $colors {
+	.bg-#{$colorLabel} {
+		background-color: $colorValue!important;
+	}
+	.text-#{$colorLabel} {
+		color: $colorValue!important;
+	}
+	.btn-#{$colorLabel} {
+		background: $colorValue;
+		&:hover {
+			background: darken($colorValue, 15%);
+		}
+	}
+	.text-underline-#{$colorLabel} {
+		text-decoration: underline $colorValue;
+	}
+}
+
+// Shadow
+.shadow-1 { box-shadow: $shadowPrimary; }
+.shadow-2 { box-shadow: $shadowPrimary; }
+.shadow-3 { box-shadow: $shadowJoker; }
+
+.overlay {
+	background: rgba(0,0,0,.7);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 100%;
+}
+
+/* Custom scrollbar */
+/* WebKit and Chromiums */
+html {
+	scrollbar-color: #777777 #ffffff;
+  	scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+	background-color: white;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #777777;
+	border-radius: 5px;
+}
