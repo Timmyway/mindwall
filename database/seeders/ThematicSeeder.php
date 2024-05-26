@@ -11,8 +11,11 @@ class ThematicSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run($userId): void
     {
-        Thematic::factory()->count(5)->create();
+        // Create 10 thematics assigned to the specific user
+        Thematic::factory()->count(2)->create([
+            'user_id' => $userId,
+        ]);
     }
 }
