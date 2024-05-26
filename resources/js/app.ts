@@ -1,8 +1,8 @@
 import './bootstrap';
-import '../css/app.css';
+import '../sass/app.scss';
 
 import { createApp, h, DefineComponent } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, Link } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import PrimeVue from 'primevue/config';
@@ -15,9 +15,15 @@ createInertiaApp({
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob<DefineComponent>('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
+
+        app.config.globalProperties.$route = route;
+
         app.use(plugin);
         app.use(ZiggyVue);
         app.use(PrimeVue);
+
+        app.component('Link', Link);
+
         app.mount(el);
     },
     progress: {

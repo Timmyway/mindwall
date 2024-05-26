@@ -21,6 +21,7 @@ Route::get('/dashboard', function () {
 
 Route::prefix('thematics')->name('thematic.')->group(function () {
     Route::get('/', [ThematicController::class, 'index'])->name('list');
+    Route::get('/detail/{thematic}', [ThematicController::class, 'detail'])->name('detail');
 });
 
 Route::middleware('auth')->group(function () {
