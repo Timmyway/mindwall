@@ -6,6 +6,7 @@ import { createInertiaApp, Link } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import PrimeVue from 'primevue/config';
+import VueKonva from 'vue-konva';
 import 'primevue/resources/themes/aura-light-green/theme.css'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -20,6 +21,7 @@ createInertiaApp({
 
         app.use(plugin);
         app.use(ZiggyVue);
+        app.use(VueKonva);
         app.use(PrimeVue);
 
         app.component('Link', Link);
