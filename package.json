@@ -25,6 +25,7 @@
         "@vueuse/components": "^10.9.0",
         "@vueuse/core": "^10.9.0",
         "konva": "^9.3.11",
+        "lodash": "^4.17.21",
         "pinia": "^2.1.7",
         "primevue": "^3.52.0",
         "vue-konva": "^3.0.2"

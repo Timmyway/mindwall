@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { safeJsonParse } from '../../helpers/utils';
-import { router } from '@inertiajs/vue3'
+import { randInt, randPos } from '../../helpers/canva';
+import { router } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { debounce } from "lodash";
+import { Stage } from 'vue-konva';
 
 interface User {
     id: number;
@@ -32,18 +36,6 @@ const props = defineProps<{
     thematic: Thematic
 }>();
 
-onMounted(() => {
-
-});
-
-const randPos = (axis: string): number => {
-    if (axis === 'x') {
-        return Math.floor(Math.random() * window.innerWidth);
-    } else {
-        return Math.floor(Math.random() * window.innerHeight);
-    }
-}
-
 const savePositionsToServer = (positions: { x: number; y: number }[]) => {
     try {
         router.post('/api/quotes/update-positions', {
@@ -56,76 +48,252 @@ const savePositionsToServer = (positions: { x: number; y: number }[]) => {
 };
 
 // Konva configs
-const configKonva = ref({
-    width: window.innerWidth,
-    height: window.innerHeight - 32
-});
+const stageWidth = ref(window.innerWidth);
+const stageHeight = ref(window.innerHeight - 32);
+const stageRef = ref<Stage | null>(null);
 
-const configCircle = ref({
-    x: 100,
-    y: 100,
-    radius: 70,
-    fill: "red",
-    stroke: "black",
+const center = {
+    x: stageWidth.value / 2,
+    y: stageHeight.value / 2,
+};
+
+const selectedQuote = ref();
+const quotesConfig = ref(props.thematic.quotes.map((quote) => {
+    return {
+        id: `quote-${quote.id}`,
+        rotation: randInt(0, 360),
+        x: randPos('x'),
+        y: randPos('y'),
+        scaleX: 1,
+        scaleY: 1,
+        fontFamily: 'Calibri',
+        fontSize: 12,
+        name: `quote-${quote.id}`,
+        text: quote.name,
+        fill: 'black',
+        draggable: true
+    }
+}));
+const transformer = ref();
+
+const stageConfig = {
+  width: stageWidth.value,
+  height: stageHeight.value,
+};
+
+const groupConfig = {
+
+}
+
+const rectConfig = {
+    x: center.x,
+    y: center.y,
+    width: 200, // Add some padding
+    height: 15, // Add some padding
+    fill: '#000',
+    stroke: 'white',
     strokeWidth: 4,
-    draggable: true,
-});
-const configRect = ref({
-    x: 50,
-    y: 50,
-    width: 100,
-    height: 50,
-    fill: 'red',
-    stroke: 'black',
-    strokeWidth: 2,
-    draggable: true
+    shadowBlur: 10
+};
+
+const textConfig = ref({
+    x: center.x,
+    y: center.y,
+    text: props.thematic.name,
+    ellipsis: true,
+    align: 'center',
+    verticalAlign: 'middle',
+    fontSize: 13,
+    fontFamily: 'Calibri',
+    fill: '#fff',
 });
 
-const onDragCircleEnd = () => {
-    const randomColors = ['indigo', 'green', 'blue', 'yellow', 'red'];
-    const randomIndex = Math.floor(Math.random() * randomColors.length);
-    configCircle.value.fill = randomColors[randomIndex];
+const handleTransformEnd = (e) => {
+    // shape is transformed, let us save new attrs back to the node
+    // find element in our state
+    const quoteConfig = quotesConfig.value.find(
+        (r) => r.name === selectedQuote.value
+    );
+
+    if (quoteConfig) {
+        // update the state
+        quoteConfig.x = e.target.x();
+        quoteConfig.y = e.target.y();
+        quoteConfig.rotation = e.target.rotation();
+        quoteConfig.scaleX = e.target.scaleX();
+        quoteConfig.scaleY = e.target.scaleY();
+    }
+}
+
+const handleStageMouseDown = (e) => {
+    console.log('==> Stage mouse down event...');
+    // clicked on stage - clear selection
+    if (e.target === e.target.getStage()) {
+        selectedQuote.value = '';
+        updateTransformer();
+        return;
+    }
+
+    // clicked on transformer - do nothing
+    const clickedOnTransformer = e.target.getParent().className === 'Transformer';
+    if (clickedOnTransformer) {
+        return;
+    }
+
+    // find clicked rect by its name
+    const name = e.target.name();
+    const rect = quotesConfig.value.find((r) => r.name === name);
+    if (rect) {
+        selectedQuote.value = name;
+    } else {
+        selectedQuote.value = '';
+    }
+    updateTransformer();
+}
+
+const updateTransformer = () => {
+    // here we need to manually attach or detach Transformer node
+    const transformerNode = transformer.value.getNode();
+    const stage = transformerNode.getStage();
+
+    const selectedNode = stage.findOne('.' + selectedQuote.value);
+    // do nothing if selected node is already attached
+    if (selectedNode === transformerNode.node()) {
+        return;
+    }
+
+    if (selectedNode) {
+        // attach to another node
+        transformerNode.nodes([selectedNode]);
+    } else {
+        // remove transformer
+        transformerNode.nodes([]);
+    }
+}
+
+const scaleBy = 1.05;
+const minScaleChange = 0.05; // Minimum scale change threshold
+const minScale = 0.1;
+const maxScale = 2;
+let lastScale = 1;
+
+const zoomLevel = ref(1);
+
+const handleWheel = debounce((e) => {
+    // Prevent the default scroll behavior
+    e.evt.preventDefault();
+
+    // Get the current stage, scale and pointer position
+    const stage = e.target.getStage();
+    const oldScale = stage.scaleX();
+    const pointer = stage.getPointerPosition();
+
+    // Calculate the mouse position relative to the stage
+    const mousePointTo = {
+        x: (pointer.x - stage.x()) / oldScale,
+        y: (pointer.y - stage.y()) / oldScale,
+    };
+
+    // Determine the zoom direction based on the wheel delta
+    const direction = e.evt.deltaY > 0 ? 1 : -1;
+
+    // Calculate the new scale based on the zoom direction and limits
+    const newScale = direction > 0
+        ? Math.min(oldScale / scaleBy, maxScale)
+        : Math.max(oldScale * scaleBy, minScale);
+
+    // Check if the scale change is significant enough
+    if (Math.abs(newScale - oldScale) > minScaleChange) {
+        // Set the new scale on the stage
+        stage.scale({ x: newScale, y: newScale });
+    }
+
+    if (Math.abs(newScale - lastScale) > minScaleChange) {
+        lastScale = newScale;
+        zoomLevel.value = newScale;
+        requestAnimationFrame(() => {
+            stage.scale({ x: newScale, y: newScale });
+            // Calculate the new position based on the mouse pointer
+            const newPos = {
+                x: pointer.x - mousePointTo.x * newScale,
+                y: pointer.y - mousePointTo.y * newScale,
+            };
+            // Set the new position on the stage
+            stage.position(newPos);
+            // Redraw the stage
+            stage.batchDraw();
+        });
+    }
+}, 50);
+
+const resetZoom = () => {
+    // Check if the Stage ref is available
+    if (stageRef.value) {
+        // Reset scale, position and zoom level
+        stageRef.value.getStage().scale({ x: 1, y: 1 });
+        stageRef.value.getStage().position({ x: 0, y: 0 });
+        zoomLevel.value = 1;
+
+        // Redraw the Stage
+        stageRef.value.getStage().batchDraw();
+    }
+};
+
+const findQuote = (name: string) => {
+    return quotesConfig.value.find(
+        (q) => q.name === name
+    );
+}
+
+const handleQuoteDblClicked = (e) => {
+    console.log('Double clicked');
+    // Find the quote config that was double-clicked
+    const quote = findQuote(e.target.name());
+
+    if (quote) {
+        // Reset the rotation to 0
+        quote.rotation = 0;
+    }
 }
 </script>
 <template>
-    <div class="bg-gray-200 h-8">
+    <div class="bg-gray-200 h-8 flex items-center">
         <button class="btn btn-link py-1">Cancel</button>
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+            <i class="fas fa-minus"></i>
+            <span class="text-xs">{{ zoomLevel.toFixed(2) }}</span>
+            <i class="fas fa-plus"></i>
+            <button
+                class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
+                @click="resetZoom"
+            >Reset</button>
+        </div>
     </div>
     <div class="flex items-center bg-gray-100">
-        <v-stage :config="configKonva">
+        <v-stage
+            ref="stageRef"
+            :config="stageConfig"
+            @mousedown="handleStageMouseDown"
+            @touchstart="handleStageMouseDown"
+            @wheel="handleWheel"
+            :draggable="true"
+        >
             <v-layer>
                 <div>
                     <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
-                        <v-rect :config="{
-                            x: 1000,
-                            y: 400,
-                            width: 200,
-                            height: 70,
-                            fill: 'green',
-                            stroke: 'black',
-                            strokeWidth: 4
-                        }"></v-rect>
-                        <v-text :config="{
-                            x: 1000 - 100,
-                            y: 400 - 35,
-                            fontFamily: 'Calibri',
-                            fontSize: 12,
-                            text: thematic.name
-                        }"></v-text>
+                        <v-group :config="groupConfig">
+                            <v-rect :config="rectConfig"></v-rect>
+                            <v-text :config="textConfig"></v-text>
+                        </v-group>
+                        <v-transformer ref="transformer"></v-transformer>
                     </div>
-                    <template v-for="(quote, index) in thematic.quotes" :key="quote.id">
-                        <v-text
-                            :config="{
-                                x: randPos('x'),
-                                y: randPos('y'),
-                                fontFamily: 'Calibri',
-                                fontSize: 12,
-                                text: quote.name,
-                                fill: 'black',
-                                draggable: true
-                            }"
-                        ></v-text>
-                    </template>
+                    <v-text
+                        v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id"
+                        :config="quoteConfig"
+                        @transformend="handleTransformEnd"
+                        @dblclick="handleQuoteDblClicked"
+                    ></v-text>
+                    <v-transformer ref="transformer" />
                 </div>
             </v-layer>
         </v-stage>
