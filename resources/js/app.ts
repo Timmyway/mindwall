@@ -8,8 +8,11 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import PrimeVue from 'primevue/config';
 import VueKonva from 'vue-konva';
 import 'primevue/resources/themes/aura-light-green/theme.css'
+import { createPinia } from 'pinia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+const pinia = createPinia();
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -19,6 +22,7 @@ createInertiaApp({
 
         app.config.globalProperties.$route = route;
 
+        app.use(pinia);
         app.use(plugin);
         app.use(ZiggyVue);
         app.use(VueKonva);

@@ -4,8 +4,8 @@ import { safeJsonParse } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
 import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { debounce } from "lodash";
-import { Stage } from 'vue-konva';
+import { useCanvaStore } from '../../store/canvaStore';
+import { storeToRefs } from 'pinia';
 
 interface User {
     id: number;
@@ -36,6 +36,9 @@ const props = defineProps<{
     thematic: Thematic
 }>();
 
+const canvaStore = useCanvaStore();
+const { stageRef } = storeToRefs(canvaStore);
+
 const savePositionsToServer = (positions: { x: number; y: number }[]) => {
     try {
         router.post('/api/quotes/update-positions', {
@@ -50,7 +53,6 @@ const savePositionsToServer = (positions: { x: number; y: number }[]) => {
 // Konva configs
 const stageWidth = ref(window.innerWidth);
 const stageHeight = ref(window.innerHeight - 32);
-const stageRef = ref<Stage | null>(null);
 
 const center = {
     x: stageWidth.value / 2,
@@ -171,74 +173,6 @@ const updateTransformer = () => {
     }
 }
 
-const scaleBy = 1.05;
-const minScaleChange = 0.05; // Minimum scale change threshold
-const minScale = 0.1;
-const maxScale = 2;
-let lastScale = 1;
-
-const zoomLevel = ref(1);
-
-const handleWheel = debounce((e) => {
-    // Prevent the default scroll behavior
-    e.evt.preventDefault();
-
-    // Get the current stage, scale and pointer position
-    const stage = e.target.getStage();
-    const oldScale = stage.scaleX();
-    const pointer = stage.getPointerPosition();
-
-    // Calculate the mouse position relative to the stage
-    const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-    };
-
-    // Determine the zoom direction based on the wheel delta
-    const direction = e.evt.deltaY > 0 ? 1 : -1;
-
-    // Calculate the new scale based on the zoom direction and limits
-    const newScale = direction > 0
-        ? Math.min(oldScale / scaleBy, maxScale)
-        : Math.max(oldScale * scaleBy, minScale);
-
-    // Check if the scale change is significant enough
-    if (Math.abs(newScale - oldScale) > minScaleChange) {
-        // Set the new scale on the stage
-        stage.scale({ x: newScale, y: newScale });
-    }
-
-    if (Math.abs(newScale - lastScale) > minScaleChange) {
-        lastScale = newScale;
-        zoomLevel.value = newScale;
-        requestAnimationFrame(() => {
-            stage.scale({ x: newScale, y: newScale });
-            // Calculate the new position based on the mouse pointer
-            const newPos = {
-                x: pointer.x - mousePointTo.x * newScale,
-                y: pointer.y - mousePointTo.y * newScale,
-            };
-            // Set the new position on the stage
-            stage.position(newPos);
-            // Redraw the stage
-            stage.batchDraw();
-        });
-    }
-}, 50);
-
-const resetZoom = () => {
-    // Check if the Stage ref is available
-    if (stageRef.value) {
-        // Reset scale, position and zoom level
-        stageRef.value.getStage().scale({ x: 1, y: 1 });
-        stageRef.value.getStage().position({ x: 0, y: 0 });
-        zoomLevel.value = 1;
-
-        // Redraw the Stage
-        stageRef.value.getStage().batchDraw();
-    }
-};
-
 const findQuote = (name: string) => {
     return quotesConfig.value.find(
         (q) => q.name === name
@@ -260,12 +194,16 @@ const handleQuoteDblClicked = (e) => {
     <div class="bg-gray-200 h-8 flex items-center">
         <button class="btn btn-link py-1">Cancel</button>
         <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-            <i class="fas fa-minus"></i>
-            <span class="text-xs">{{ zoomLevel.toFixed(2) }}</span>
-            <i class="fas fa-plus"></i>
+            <button>
+                <i class="fas fa-minus"></i>
+            </button>
+            <span class="text-xs">{{ canvaStore.zoomLevel.toFixed(2) }}</span>
+            <button @click.prevent="canvaStore.setZoomLevel('+')">
+                <i class="fas fa-plus"></i>
+            </button>
             <button
                 class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
-                @click="resetZoom"
+                @click="canvaStore.resetZoomLevel()"
             >Reset</button>
         </div>
     </div>
@@ -275,7 +213,7 @@ const handleQuoteDblClicked = (e) => {
             :config="stageConfig"
             @mousedown="handleStageMouseDown"
             @touchstart="handleStageMouseDown"
-            @wheel="handleWheel"
+            @wheel="canvaStore.handleWheel"
             :draggable="true"
         >
             <v-layer>
