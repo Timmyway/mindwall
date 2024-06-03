@@ -7,8 +7,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    use RandomPosition;
-
     /**
      * Run the migrations.
      */
@@ -17,7 +15,7 @@ return new class extends Migration
         Schema::create('quotes', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->json('position')->default(json_encode($this->getRandomPosition()));
+            $table->json('position')->nullable();
             $table->foreignId('thematic_id')->constrained('thematics');
             $table->timestamps();
         });

@@ -4,8 +4,9 @@ import { safeJsonParse } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
 import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { useCanvaStore } from '../../store/canvaStore';
+import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
+import { CanvasState } from '../../types/canvas.types'
 
 interface User {
     id: number;
@@ -36,7 +37,7 @@ const props = defineProps<{
     thematic: Thematic
 }>();
 
-const canvaStore = useCanvaStore();
+const canvaStore = useCanvasStore();
 const { stageRef } = storeToRefs(canvaStore);
 
 const savePositionsToServer = (positions: { x: number; y: number }[]) => {
@@ -194,14 +195,15 @@ const handleQuoteDblClicked = (e) => {
     <div class="bg-gray-200 h-8 flex items-center">
         <button class="btn btn-link py-1">Cancel</button>
         <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-            <button>
+            <button @click.prevent="canvaStore.setZoomLevel('-')">
                 <i class="fas fa-minus"></i>
             </button>
-            <span class="text-xs">{{ canvaStore.zoomLevel.toFixed(2) }}</span>
+            <span class="text-xs">{{ canvaStore.zoomLevel }}%</span>
             <button @click.prevent="canvaStore.setZoomLevel('+')">
                 <i class="fas fa-plus"></i>
             </button>
             <button
+                v-show="canvaStore.zoomLevel !== 100"
                 class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
                 @click="canvaStore.resetZoomLevel()"
             >Reset</button>
@@ -236,24 +238,4 @@ const handleQuoteDblClicked = (e) => {
             </v-layer>
         </v-stage>
     </div>
-<!-- <div class="p-4 bg-gray-100 flex justify-center items-center h-dvh">
-    <div>
-        <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
-            {{ thematic.name }}
-        </div>
-        <template v-for="(quote, index) in thematic.quotes" :key="quote.id">
-            <UseDraggable
-                class="fixed"
-                :storage-key="`draggable-${thematic.id}-quote-${quote.id}`"
-                storage-type="session"
-                :initial-value="{ x: randPos(1920), y: randPos(1080) }"
-                v-slot="{ x, y }"
-            >
-                <div class="px-4 py-2 shadow-lg bg-blue-600 text-white font-bold rounded-sm text-xs">
-                    {{ quote.name }} {{ x }}, {{ y }}
-                </div>
-            </UseDraggable>
-        </template>
-    </div>
-</div> -->
-</template>
+</template>../../store/canvasStore
