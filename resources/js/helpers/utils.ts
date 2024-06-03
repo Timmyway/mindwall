@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 function safeJsonParse(jsonString: string): any {
     try {
         return JSON.parse(jsonString);
@@ -7,4 +9,8 @@ function safeJsonParse(jsonString: string): any {
     }
 }
 
-export { safeJsonParse }
+function uuid() {
+    return uuidv4();
+}
+
+export { safeJsonParse, uuid }

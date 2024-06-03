@@ -1,37 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { safeJsonParse } from '../../helpers/utils';
+import { safeJsonParse, uuid } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
 import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
-import { CanvasState } from '../../types/canvas.types'
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-}
-
-interface QuotePositionObject {
-  x: number;
-  y: number;
-}
-
-interface Quote {
-    id: number;
-    name: string;
-    position: string | QuotePositionObject;
-}
-
-// Define interface for thematic object
-interface Thematic {
-    id: number;
-    name: string;
-    user: User;
-    quotes: Quote[]
-}
+import { QuoteConfig } from '../../types/konva.config';
+import { Ref } from 'vue';
+import { Thematic } from '../../types/thematic.types';
 
 const props = defineProps<{
     thematic: Thematic
@@ -52,15 +29,14 @@ const savePositionsToServer = (positions: { x: number; y: number }[]) => {
 };
 
 // Konva configs
-const stageWidth = ref(window.innerWidth);
-const stageHeight = ref(window.innerHeight - 32);
+const stageWidth = ref<number>(window.innerWidth);
+const stageHeight = ref<number>(window.innerHeight - 32);
 
-const center = {
+const center: { x: number, y: number } = {
     x: stageWidth.value / 2,
     y: stageHeight.value / 2,
 };
 
-const selectedQuote = ref();
 const quotesConfig = ref(props.thematic.quotes.map((quote) => {
     return {
         id: `quote-${quote.id}`,
@@ -73,15 +49,66 @@ const quotesConfig = ref(props.thematic.quotes.map((quote) => {
         fontSize: 12,
         name: `quote-${quote.id}`,
         text: quote.name,
-        fill: 'black',
-        draggable: true
+        fill: 'black'
     }
 }));
+
+const addQuote = (text: string = 'New quote...') => {
+    const quoteId = uuid();
+    const newQuote = {
+        id: quoteId,
+        rotation: 0,
+        x: center.x - 10,
+        y: center.y -50,
+        scaleX: 1,
+        scaleY: 1,
+        fontFamily: 'Calibri',
+        fontSize: 16,
+        name: quoteId,
+        text: text,
+        fill: 'black'
+    };
+
+    quotesConfig.value.push(newQuote);
+}
+
+const removeQuote = (quoteName: string) => {
+    const foundIndex = quotesConfig.value.findIndex((quote) => quote.name === quoteName);
+
+    if (foundIndex !== -1) {
+        quotesConfig.value.splice(foundIndex, 1);
+    } else {
+        console.log(`Quote with name ${quoteName} not found.`);
+    }
+}
+
+// const editQuote = (quoteName: string, updatedProps: Partial<QuoteConfig>) => {
+//     const foundQuote = quotesConfig.value.find((quote) => quote.name === quoteName);
+
+//     if (foundQuote) {
+//         // Update the properties of the found quote
+//         if (updatedProps.fontSize !== undefined) {
+//             foundQuote.fontSize = updatedProps.fontSize;
+//         }
+//         if (updatedProps.text !== undefined) {
+//             foundQuote.text = updatedProps.text;
+//         }
+//         if (updatedProps.fontFamily !== undefined) {
+//             foundQuote.fontFamily = updatedProps.fontFamily;
+//         }
+//     } else {
+//         console.log(`Quote with name ${quoteName} not found.`);
+//     }
+// }
+
 const transformer = ref();
 
-const stageConfig = {
-  width: stageWidth.value,
-  height: stageHeight.value,
+const stageConfig: {
+  width: number;
+  height: number;
+} = {
+    width: stageWidth.value,
+    height: stageHeight.value,
 };
 
 const groupConfig = {
@@ -111,7 +138,9 @@ const textConfig = ref({
     fill: '#fff',
 });
 
-const handleTransformEnd = (e) => {
+const selectedQuote = ref();
+
+const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
     // find element in our state
     const quoteConfig = quotesConfig.value.find(
@@ -128,7 +157,7 @@ const handleTransformEnd = (e) => {
     }
 }
 
-const handleStageMouseDown = (e) => {
+const handleStageMouseDown = (e: any) => {
     console.log('==> Stage mouse down event...');
     // clicked on stage - clear selection
     if (e.target === e.target.getStage()) {
@@ -145,7 +174,7 @@ const handleStageMouseDown = (e) => {
 
     // find clicked rect by its name
     const name = e.target.name();
-    const rect = quotesConfig.value.find((r) => r.name === name);
+    const rect = findQuote(name);
     if (rect) {
         selectedQuote.value = name;
     } else {
@@ -190,6 +219,50 @@ const handleQuoteDblClicked = (e) => {
         quote.rotation = 0;
     }
 }
+
+const handleQuoteEditText = (name: string, text: string) => {
+    console.log('Edit quote: ', name);
+    // Find the quote config that was double-clicked
+    const quote = findQuote(name);
+    if (quote) {
+        quote.text = text;
+    }
+}
+
+const handleQuoteRemoval = (name: string) => {
+    console.log('Handle quote removal');
+    removeQuote(name);
+}
+
+const editing = ref(false);
+const editedQuoteText = ref<string>('');
+const quoteAreaRef = ref();
+
+const enterEditMode = (name: string) => {
+    console.log('Edit mode activate...');
+    selectedQuote.value = name;
+    editing.value = true;
+}
+
+const editQuote = () => {
+    const quote = findQuote(selectedQuote.value);
+    if (quote) {
+        quote.text = editedQuoteText.value.trim();
+    }
+    editing.value = false; // Exit edit mode
+    console.log('Finished editing...');
+};
+
+const areaPosition = computed(() => {
+    const quote = findQuote(selectedQuote.value);
+    if (quote) {
+        return {
+            x: stageRef.value.getStage().container().offsetLeft + quote.x,
+            y: stageRef.value.getStage().container().offsetTop + quote.y
+        }
+    }
+    return { x: 0, y: 0 }
+})
 </script>
 <template>
     <div>
@@ -217,10 +290,27 @@ const handleQuoteDblClicked = (e) => {
                 </div>
             </div>
             <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
-                <button class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs" @click.prevent="canvaStore.setZoomLevel('-')">
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+                    @click.prevent="addQuote()"
+                >
                     <i class="fas fa-plus-circle"></i>
                 </button>
             </div>
+            <textarea
+                ref="quoteAreaRef"
+                v-show="editing"
+                type="text"
+                v-model="editedQuoteText"
+                @blur="editQuote()"
+                @keyup.enter="editQuote()"
+                :style="{
+                    position: 'absolute',
+                    top: `${areaPosition.y}px`,
+                    left: `${areaPosition.x}px`
+                }"
+            ></textarea>
+            Editing: {{ editing }}
         </div>
         <div class="bg-white canva">
             <v-stage
@@ -240,12 +330,23 @@ const handleQuoteDblClicked = (e) => {
                             </v-group>
                             <v-transformer ref="transformer"></v-transformer>
                         </div>
-                        <v-text
-                            v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id"
-                            :config="quoteConfig"
-                            @transformend="handleTransformEnd"
-                            @dblclick="handleQuoteDblClicked"
-                        ></v-text>
+                        <div v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id">
+                            <v-group :config="{ draggable: true}" @transformend="handleTransformEnd">
+                                <v-text
+                                    :config="quoteConfig"
+                                    @dblclick="enterEditMode(quoteConfig.name)"
+                                ></v-text>
+                                <v-circle
+                                    :config="{
+                                        fill: 'red', text: 'Del',
+                                        x: quoteConfig.x,
+                                        y: quoteConfig.y - 10,
+                                        width: 10, height: 10
+                                    }"
+                                    @click="handleQuoteRemoval(quoteConfig.name)"
+                                ></v-circle>
+                            </v-group>
+                        </div>
                         <v-transformer ref="transformer" />
                     </div>
                 </v-layer>
