@@ -192,50 +192,71 @@ const handleQuoteDblClicked = (e) => {
 }
 </script>
 <template>
-    <div class="bg-gray-200 h-8 flex items-center">
-        <button class="btn btn-link py-1">Cancel</button>
-        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-            <button @click.prevent="canvaStore.setZoomLevel('-')">
-                <i class="fas fa-minus"></i>
-            </button>
-            <span class="text-xs">{{ canvaStore.zoomLevel }}%</span>
-            <button @click.prevent="canvaStore.setZoomLevel('+')">
-                <i class="fas fa-plus"></i>
-            </button>
-            <button
-                v-show="canvaStore.zoomLevel !== 100"
-                class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
-                @click="canvaStore.resetZoomLevel()"
-            >Reset</button>
+    <div>
+        <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
+            <Link
+                :href="route('thematic.list')"
+                class="btn btn-icon--xs btn-icon--flat btn-icon py-1"
+            >
+                <i class="fas fa-chevron-left text-red-600"></i>
+            </Link>
+            <div class="h-8 flex items-center">
+                <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+                    <button @click.prevent="canvaStore.setZoomLevel('-')">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="text-xs">{{ canvaStore.zoomLevel }}%</span>
+                    <button @click.prevent="canvaStore.setZoomLevel('+')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button
+                        v-show="canvaStore.zoomLevel !== 100"
+                        class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
+                        @click="canvaStore.resetZoomLevel()"
+                    >Reset</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+                <button class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs" @click.prevent="canvaStore.setZoomLevel('-')">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+            </div>
+        </div>
+        <div class="bg-white canva">
+            <v-stage
+                ref="stageRef"
+                :config="stageConfig"
+                @mousedown="handleStageMouseDown"
+                @touchstart="handleStageMouseDown"
+                @wheel="canvaStore.handleWheel"
+                :draggable="true"
+            >
+                <v-layer>
+                    <div>
+                        <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
+                            <v-group :config="groupConfig">
+                                <v-rect :config="rectConfig"></v-rect>
+                                <v-text :config="textConfig"></v-text>
+                            </v-group>
+                            <v-transformer ref="transformer"></v-transformer>
+                        </div>
+                        <v-text
+                            v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id"
+                            :config="quoteConfig"
+                            @transformend="handleTransformEnd"
+                            @dblclick="handleQuoteDblClicked"
+                        ></v-text>
+                        <v-transformer ref="transformer" />
+                    </div>
+                </v-layer>
+            </v-stage>
         </div>
     </div>
-    <div class="flex items-center bg-gray-100">
-        <v-stage
-            ref="stageRef"
-            :config="stageConfig"
-            @mousedown="handleStageMouseDown"
-            @touchstart="handleStageMouseDown"
-            @wheel="canvaStore.handleWheel"
-            :draggable="true"
-        >
-            <v-layer>
-                <div>
-                    <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
-                        <v-group :config="groupConfig">
-                            <v-rect :config="rectConfig"></v-rect>
-                            <v-text :config="textConfig"></v-text>
-                        </v-group>
-                        <v-transformer ref="transformer"></v-transformer>
-                    </div>
-                    <v-text
-                        v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id"
-                        :config="quoteConfig"
-                        @transformend="handleTransformEnd"
-                        @dblclick="handleQuoteDblClicked"
-                    ></v-text>
-                    <v-transformer ref="transformer" />
-                </div>
-            </v-layer>
-        </v-stage>
-    </div>
-</template>../../store/canvasStore
+</template>
+
+<style>
+.canva {
+    height: calc(100vh - 48px);
+    overflow: hidden;
+}
+</style>
