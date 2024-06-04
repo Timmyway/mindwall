@@ -10,4 +10,6 @@ export interface QuoteConfig {
     name: string;
     text: string;
     fill: string;
+    width: number,
+    visible: boolean
 }

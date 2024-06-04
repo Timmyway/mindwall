@@ -9,6 +9,7 @@ import { storeToRefs } from 'pinia';
 import { QuoteConfig } from '../../types/konva.config';
 import { Ref } from 'vue';
 import { Thematic } from '../../types/thematic.types';
+import { Transformer } from 'konva/lib/shapes/Transformer';
 
 const props = defineProps<{
     thematic: Thematic
@@ -49,7 +50,8 @@ const quotesConfig = ref(props.thematic.quotes.map((quote) => {
         fontSize: 12,
         name: `quote-${quote.id}`,
         text: quote.name,
-        fill: 'black'
+        fill: 'black',
+        visible: true
     }
 }));
 
@@ -66,7 +68,8 @@ const addQuote = (text: string = 'New quote...') => {
         fontSize: 16,
         name: quoteId,
         text: text,
-        fill: 'black'
+        fill: 'black',
+        visible: true
     };
 
     quotesConfig.value.push(newQuote);
@@ -115,45 +118,45 @@ const groupConfig = {
 
 }
 
-const rectConfig = {
+const thematicRectConfig = {
     x: center.x,
     y: center.y,
     width: 200, // Add some padding
-    height: 15, // Add some padding
+    height: 40, // Add some padding
     fill: '#000',
     stroke: 'white',
     strokeWidth: 4,
-    shadowBlur: 10
+    shadowBlur: 10,
 };
 
-const textConfig = ref({
+const thematicTextConfig = ref({
     x: center.x,
     y: center.y,
     text: props.thematic.name,
     ellipsis: true,
     align: 'center',
     verticalAlign: 'middle',
-    fontSize: 13,
+    fontSize: 20,
     fontFamily: 'Calibri',
     fill: '#fff',
 });
 
-const selectedQuote = ref();
+const selectedQuoteName = ref();
+const selectedQuoteConfig = computed(() => {
+    return quotesConfig.value.find(q => q.name === selectedQuoteName.value);
+});
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
-    // find element in our state
-    const quoteConfig = quotesConfig.value.find(
-        (r) => r.name === selectedQuote.value
-    );
 
-    if (quoteConfig) {
+    if (selectedQuoteConfig.value) {
         // update the state
-        quoteConfig.x = e.target.x();
-        quoteConfig.y = e.target.y();
-        quoteConfig.rotation = e.target.rotation();
-        quoteConfig.scaleX = e.target.scaleX();
-        quoteConfig.scaleY = e.target.scaleY();
+        selectedQuoteConfig.value.x = e.target.x();
+        selectedQuoteConfig.value.y = e.target.y();
+        selectedQuoteConfig.value.rotation = e.target.rotation();
+        selectedQuoteConfig.value.scaleX = e.target.scaleX();
+        selectedQuoteConfig.value.scaleY = e.target.scaleY();
+
     }
 }
 
@@ -161,7 +164,10 @@ const handleStageMouseDown = (e: any) => {
     console.log('==> Stage mouse down event...');
     // clicked on stage - clear selection
     if (e.target === e.target.getStage()) {
-        selectedQuote.value = '';
+        if (editing.value) {
+            exitEditMode();
+        }
+        selectedQuoteName.value = '';
         updateTransformer();
         return;
     }
@@ -176,30 +182,34 @@ const handleStageMouseDown = (e: any) => {
     const name = e.target.name();
     const rect = findQuote(name);
     if (rect) {
-        selectedQuote.value = name;
+        selectedQuoteName.value = name;
     } else {
-        selectedQuote.value = '';
+        selectedQuoteName.value = '';
     }
     updateTransformer();
 }
 
 const updateTransformer = () => {
     // here we need to manually attach or detach Transformer node
-    const transformerNode = transformer.value.getNode();
-    const stage = transformerNode.getStage();
+    const transformerNode = transformer.value?.getNode();
+    const stage = stageRef.value.getStage();
+    // console.log('1. ====>', transformer.value)
+    // console.log('2. ====>', transformerNode)
 
-    const selectedNode = stage.findOne('.' + selectedQuote.value);
+    const selectedNode = stage.findOne('.' + selectedQuoteName.value);
     // do nothing if selected node is already attached
-    if (selectedNode === transformerNode.node()) {
-        return;
-    }
+    if (transformerNode) {
+        if (selectedNode === transformerNode.node()) {
+            return;
+        }
 
-    if (selectedNode) {
-        // attach to another node
-        transformerNode.nodes([selectedNode]);
-    } else {
-        // remove transformer
-        transformerNode.nodes([]);
+        if (selectedNode) {
+            // attach to another node
+            transformerNode.nodes([selectedNode]);
+        } else {
+            // remove transformer
+            transformerNode.nodes([]);
+        }
     }
 }
 
@@ -238,35 +248,113 @@ const editing = ref(false);
 const editedQuoteText = ref<string>('');
 const quoteAreaRef = ref();
 
-const enterEditMode = (name: string) => {
-    console.log('Edit mode activate...');
-    selectedQuote.value = name;
+const enterEditMode = (e) => {
+    selectedQuoteName.value = e.target.name();
+    const textNode = e.target;
+    if (selectedQuoteConfig.value) {
+        selectedQuoteConfig.value.visible = false;
+    }
+    // hide text node and transformer:
+
+    transformer.value.getNode().hide();
+
+    // so position of textarea will be the sum of positions above:
+    const textPosition = textNode.absolutePosition();
+    const areaPosition = {
+        x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
+        y: stageRef.value.getStage().container().offsetTop + textPosition.y,
+    };
+
+    textareaStyle.value.top = areaPosition.x;
+    textareaStyle.value.left = areaPosition.y;
+
+    console.log('Edit mode activate...', textNode);
+    textareaStyle.value.width = textNode.width() - textNode.padding() * 2 + 'px';
+    textareaStyle.value.height =
+          textNode.height() - textNode.padding() * 2 + 5 + 'px';
+    textareaStyle.value.fontSize = textNode.fontSize() + 'px';
+    textareaStyle.value.lineHeight = textNode.lineHeight();
+    textareaStyle.value.fontFamily = textNode.fontFamily();
+    textareaStyle.value.transformOrigin = 'left top';
+    textareaStyle.value.textAlign = textNode.align();
+    textareaStyle.value.color = textNode.fill();
+    const rotation = textNode.rotation();
+    let transform = '';
+    if (rotation) {
+        transform += 'rotateZ(' + rotation + 'deg)';
+    }
+
+    // let px = 0;
+    // // also we need to slightly move textarea on firefox
+    // // because it jumps a bit
+    // const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    // if (isFirefox) {
+    //     px += 2 + Math.round(textNode.fontSize() / 20);
+    // }
+    // transform += 'translateY(-' + px + 'px)';
+
+    // textareaStyle.value.transform = transform;
+
+    // // reset height
+    // textareaStyle.value.height = 'auto';
+    // // after browsers resized it we can set actual value
+    // textareaStyle.value.height = quoteAreaRef.value.style.scrollHeight + 3 + 'px';
+
+    quoteAreaRef.value.focus();
+
+    console.log('--> TEXTAREA STYLE: ', textareaStyle.value)
     editing.value = true;
 }
 
-const editQuote = () => {
-    const quote = findQuote(selectedQuote.value);
-    if (quote) {
-        quote.text = editedQuoteText.value.trim();
+const exitEditMode = () => {
+    if (editedQuoteText.value.trim() === '') {
+        // Restore text node and transformer
+        console.log('==========> Restore outside !!!!', selectedQuoteConfig.value)
+        if (selectedQuoteConfig.value) {
+            selectedQuoteConfig.value.visible = true;
+            console.log('==========> Restore inside !!!!')
+            transformer.value.getNode().show();
+        }
+        editing.value = false; // Exit edit mode
+        return;
     }
-    editing.value = false; // Exit edit mode
+    if (selectedQuoteConfig.value) {
+        selectedQuoteConfig.value.text = editedQuoteText.value.trim();
+        // Restore text node and transformer
+        selectedQuoteConfig.value.visible = true;
+        transformer.value.getNode().show();
+        editedQuoteText.value = '';
+        editing.value = false; // Exit edit mode
+    }
+}
+
+const editQuote = () => {
+    exitEditMode();
     console.log('Finished editing...');
 };
 
-const areaPosition = computed(() => {
-    const quote = findQuote(selectedQuote.value);
-    if (quote) {
-        return {
-            x: stageRef.value.getStage().container().offsetLeft + quote.x,
-            y: stageRef.value.getStage().container().offsetTop + quote.y
-        }
-    }
-    return { x: 0, y: 0 }
-})
+const textareaStyle = ref({
+    position: 'absolute',
+    top: '',
+    left: '',
+    width: '',
+    height: '',
+    fontSize: '',
+    overflow: '',
+    lineHeight: '',
+    fontFamily: '',
+    transformOrigin: '',
+    textAlign: '',
+    color: '',
+    transform: ''
+});
 </script>
 <template>
     <div>
         <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
+            <div class="fixed top-0 right-0 max-w-xs h-10 p-1 overflow-auto bg-black text-white text-xs">
+                {{ selectedQuoteConfig }}
+            </div>
             <Link
                 :href="route('thematic.list')"
                 class="btn btn-icon--xs btn-icon--flat btn-icon py-1"
@@ -299,17 +387,14 @@ const areaPosition = computed(() => {
             </div>
             <textarea
                 ref="quoteAreaRef"
-                v-show="editing"
+                class="quote-textarea"
                 type="text"
                 v-model="editedQuoteText"
-                @blur="editQuote()"
-                @keyup.enter="editQuote()"
-                :style="{
-                    position: 'absolute',
-                    top: `${areaPosition.y}px`,
-                    left: `${areaPosition.x}px`
-                }"
+                @blur="editQuote"
+                @keyup.enter="editQuote"
+                :style="textareaStyle"
             ></textarea>
+            {{ textareaStyle }}
             Editing: {{ editing }}
         </div>
         <div class="bg-white canva">
@@ -325,16 +410,15 @@ const areaPosition = computed(() => {
                     <div>
                         <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
                             <v-group :config="groupConfig">
-                                <v-rect :config="rectConfig"></v-rect>
-                                <v-text :config="textConfig"></v-text>
+                                <v-rect :config="thematicRectConfig"></v-rect>
+                                <v-text :config="thematicTextConfig"></v-text>
                             </v-group>
-                            <v-transformer ref="transformer"></v-transformer>
                         </div>
                         <div v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id">
                             <v-group :config="{ draggable: true}" @transformend="handleTransformEnd">
                                 <v-text
                                     :config="quoteConfig"
-                                    @dblclick="enterEditMode(quoteConfig.name)"
+                                    @dblclick="enterEditMode"
                                 ></v-text>
                                 <v-circle
                                     :config="{
@@ -359,5 +443,14 @@ const areaPosition = computed(() => {
 .canva {
     height: calc(100vh - 48px);
     overflow: hidden;
+}
+.quote-textarea {
+    border: 2px solid yellow;
+    padding: 0px;
+    margin: 0px;
+    overflow: hidden;
+    background: none;
+    outline: none;
+    resize: none;
 }
 </style>
