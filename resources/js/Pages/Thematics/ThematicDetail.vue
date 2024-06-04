@@ -260,18 +260,26 @@ const enterEditMode = (e) => {
 
     // so position of textarea will be the sum of positions above:
     const textPosition = textNode.absolutePosition();
+    // const areaPosition = {
+    //     x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
+    //     y: stageRef.value.getStage().container().offsetTop + textPosition.y,
+    // };
     const areaPosition = {
-        x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
-        y: stageRef.value.getStage().container().offsetTop + textPosition.y,
+        x: stageRef.value.getStage().container().offsetLeft + (textPosition.x),
+        y: stageRef.value.getStage().container().offsetTop + (textPosition.y),
     };
-
-    textareaStyle.value.top = areaPosition.x;
-    textareaStyle.value.left = areaPosition.y;
-
-    console.log('Edit mode activate...', textNode);
+    console.log('x', stageRef.value.getStage().container().offsetLeft)
+    console.log('y', stageRef.value.getStage().container().offsetTop)
+    console.log('Pos', textPosition)
+    console.log('Edit mode activate...', areaPosition);
+    // Set textarea position
+    // textareaStyle.value.top = `${areaPosition.x}px`;
+    // textareaStyle.value.left = `${areaPosition.y}px`;
+    // Set its dimension
     textareaStyle.value.width = textNode.width() - textNode.padding() * 2 + 'px';
     textareaStyle.value.height =
           textNode.height() - textNode.padding() * 2 + 5 + 'px';
+    // Set typography related styles
     textareaStyle.value.fontSize = textNode.fontSize() + 'px';
     textareaStyle.value.lineHeight = textNode.lineHeight();
     textareaStyle.value.fontFamily = textNode.fontFamily();
@@ -300,7 +308,9 @@ const enterEditMode = (e) => {
     // // after browsers resized it we can set actual value
     // textareaStyle.value.height = quoteAreaRef.value.style.scrollHeight + 3 + 'px';
 
-    quoteAreaRef.value.focus();
+    setTimeout(() => {
+        quoteAreaRef.value.focus();
+    }, 0);
 
     console.log('--> TEXTAREA STYLE: ', textareaStyle.value)
     editing.value = true;
@@ -385,7 +395,11 @@ const textareaStyle = ref({
                     <i class="fas fa-plus-circle"></i>
                 </button>
             </div>
+            E: {{ editing }}
+        </div>
+        <div class="bg-white canva relative">
             <textarea
+                v-show="editing"
                 ref="quoteAreaRef"
                 class="quote-textarea"
                 type="text"
@@ -394,10 +408,6 @@ const textareaStyle = ref({
                 @keyup.enter="editQuote"
                 :style="textareaStyle"
             ></textarea>
-            {{ textareaStyle }}
-            Editing: {{ editing }}
-        </div>
-        <div class="bg-white canva">
             <v-stage
                 ref="stageRef"
                 :config="stageConfig"
@@ -452,5 +462,7 @@ const textareaStyle = ref({
     background: none;
     outline: none;
     resize: none;
+    top: 0; left: 50%;
+    transform: translate(-50%, 0);
 }
 </style>
