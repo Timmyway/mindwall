@@ -9,10 +9,9 @@ import { Stage } from "konva/lib/Stage";
 export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('app', () => {
     // Todo: not working when using typescript
     const stageRef = ref<Stage | null>(null);
-
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
 
-    const resetZoomLevel = () => {
+    const resetZoomLevel: () => void = () => {
         console.log('==> Reset');
         // Check if the Stage ref is available
         if (stageRef.value) {
@@ -26,7 +25,7 @@ export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('
         }
     };
 
-    const setZoomLevel = (mode: '+' | '-' = '+') => {
+    const setZoomLevel: (mode?: '+' | '-') => void = (mode = '+') => {
         // Check if the Stage ref is available
         if (stageRef.value) {
             console.log('=====> StageRef value: ', stageRef.value)
@@ -55,7 +54,7 @@ export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('
         }
     };
 
-    const handleWheel = debounce((e: KonvaEventObject<WheelEvent>) => {
+    const handleWheel: (e: KonvaEventObject<WheelEvent>) => void = debounce((e) => {
         // Prevent the default scroll behavior
         e.evt.preventDefault();
 

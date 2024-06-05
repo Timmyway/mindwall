@@ -10,6 +10,9 @@ import { QuoteConfig } from '../../types/konva.config';
 import { Ref } from 'vue';
 import { Thematic } from '../../types/thematic.types';
 import { Transformer } from 'konva/lib/shapes/Transformer';
+import { Text } from 'konva/lib/shapes/Text';
+import { reactive } from 'vue';
+import { TextareaStyle } from '../../types/canvas.types'
 
 const props = defineProps<{
     thematic: Thematic
@@ -38,22 +41,24 @@ const center: { x: number, y: number } = {
     y: stageHeight.value / 2,
 };
 
-const quotesConfig = ref(props.thematic.quotes.map((quote) => {
-    return {
+const quotesConfig = ref<QuoteConfig[]>([]);
+props.thematic.quotes.forEach((quote) => {
+    const config = {
         id: `quote-${quote.id}`,
         rotation: randInt(0, 360),
         x: randPos('x'),
         y: randPos('y'),
         scaleX: 1,
         scaleY: 1,
-        fontFamily: 'Calibri',
+        fontFamily: 'Verdana',
         fontSize: 12,
         name: `quote-${quote.id}`,
         text: quote.name,
         fill: 'black',
         visible: true
     }
-}));
+    quotesConfig.value.push(config);
+});
 
 const addQuote = (text: string = 'New quote...') => {
     const quoteId = uuid();
@@ -142,8 +147,19 @@ const thematicTextConfig = ref({
 });
 
 const selectedQuoteName = ref();
-const selectedQuoteConfig = computed(() => {
-    return quotesConfig.value.find(q => q.name === selectedQuoteName.value);
+const selectedQuoteConfig = computed({
+    get: () => {
+        return quotesConfig.value.find(q => q.name === selectedQuoteName.value) as QuoteConfig;
+    },
+    set: (newConfig: QuoteConfig) => {
+        selectedQuoteName.value = newConfig.name;
+        quotesConfig.value = quotesConfig.value.map((q) => {
+            if (q.name === newConfig.name) {
+                return newConfig;
+            }
+            return q;
+        });
+    }
 });
 
 const handleTransformEnd = (e: any) => {
@@ -219,10 +235,11 @@ const findQuote = (name: string) => {
     );
 }
 
-const handleQuoteDblClicked = (e) => {
+const handleQuoteDblClicked = (e: Event) => {
     console.log('Double clicked');
+    const textNode = e.target as Text | null;
     // Find the quote config that was double-clicked
-    const quote = findQuote(e.target.name());
+    const quote = findQuote(textNode?.name() ?? '');
 
     if (quote) {
         // Reset the rotation to 0
@@ -248,9 +265,11 @@ const editing = ref(false);
 const editedQuoteText = ref<string>('');
 const quoteAreaRef = ref();
 
-const enterEditMode = (e) => {
-    selectedQuoteName.value = e.target.name();
-    const textNode = e.target;
+const enterEditMode = (e: Event) => {
+    console.log('===> T', typeof e)
+    const textNode = e.target as Text | null;
+    selectedQuoteName.value = textNode?.name();
+    console.log('====> Text node: ', textNode);
     if (selectedQuoteConfig.value) {
         selectedQuoteConfig.value.visible = false;
     }
@@ -259,38 +278,39 @@ const enterEditMode = (e) => {
     transformer.value.getNode().hide();
 
     // so position of textarea will be the sum of positions above:
-    const textPosition = textNode.absolutePosition();
+    const textPosition = textNode?.absolutePosition();
     // const areaPosition = {
     //     x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
     //     y: stageRef.value.getStage().container().offsetTop + textPosition.y,
     // };
     const areaPosition = {
-        x: stageRef.value.getStage().container().offsetLeft + (textPosition.x),
-        y: stageRef.value.getStage().container().offsetTop + (textPosition.y),
+        x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x),
+        y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
     };
     console.log('x', stageRef.value.getStage().container().offsetLeft)
     console.log('y', stageRef.value.getStage().container().offsetTop)
     console.log('Pos', textPosition)
     console.log('Edit mode activate...', areaPosition);
+    console.log('Text node: ', textNode?.align());
     // Set textarea position
     // textareaStyle.value.top = `${areaPosition.x}px`;
     // textareaStyle.value.left = `${areaPosition.y}px`;
     // Set its dimension
-    textareaStyle.value.width = textNode.width() - textNode.padding() * 2 + 'px';
-    textareaStyle.value.height =
-          textNode.height() - textNode.padding() * 2 + 5 + 'px';
+    textareaStyle.width = (textNode?.width() ?? 0) - (textNode?.padding() ?? 0) * 2 + 'px';
+    textareaStyle.height =
+          (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
     // Set typography related styles
-    textareaStyle.value.fontSize = textNode.fontSize() + 'px';
-    textareaStyle.value.lineHeight = textNode.lineHeight();
-    textareaStyle.value.fontFamily = textNode.fontFamily();
-    textareaStyle.value.transformOrigin = 'left top';
-    textareaStyle.value.textAlign = textNode.align();
-    textareaStyle.value.color = textNode.fill();
-    const rotation = textNode.rotation();
-    let transform = '';
-    if (rotation) {
-        transform += 'rotateZ(' + rotation + 'deg)';
-    }
+    textareaStyle.fontSize = textNode?.fontSize() + 'px';
+    textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
+    textareaStyle.fontFamily = textNode?.fontFamily() ?? 'Verdana';
+    textareaStyle.transformOrigin = 'left top';
+    textareaStyle.textAlign = textNode?.align() ?? 'left';
+    textareaStyle.color = textNode?.fill() ?? 'black';
+    // const rotation = textNode?.rotation();
+    // let transform = '';
+    // if (rotation) {
+    //     transform += 'rotateZ(' + rotation + 'deg)';
+    // }
 
     // let px = 0;
     // // also we need to slightly move textarea on firefox
@@ -307,12 +327,15 @@ const enterEditMode = (e) => {
     // textareaStyle.value.height = 'auto';
     // // after browsers resized it we can set actual value
     // textareaStyle.value.height = quoteAreaRef.value.style.scrollHeight + 3 + 'px';
+    selectedQuoteConfig.value.fontSize = 20;
+    selectedQuoteConfig.value.fontFamily = 'Monospace';
+    selectedQuoteConfig.value.rotation = 0;
 
     setTimeout(() => {
         quoteAreaRef.value.focus();
     }, 0);
 
-    console.log('--> TEXTAREA STYLE: ', textareaStyle.value)
+    console.log('--> TEXTAREA STYLE: ', textareaStyle)
     editing.value = true;
 }
 
@@ -343,7 +366,7 @@ const editQuote = () => {
     console.log('Finished editing...');
 };
 
-const textareaStyle = ref({
+const textareaStyle = reactive<TextareaStyle>({
     position: 'absolute',
     top: '',
     left: '',
@@ -351,13 +374,18 @@ const textareaStyle = ref({
     height: '',
     fontSize: '',
     overflow: '',
-    lineHeight: '',
-    fontFamily: '',
+    lineHeight: 1,
+    fontFamily: 'Verdana',
     transformOrigin: '',
     textAlign: '',
     color: '',
     transform: ''
 });
+
+const onQuoteDragend = (e: Event) => {
+    const textNode = e.target as Text | null;
+    console.log('====> Drag end=====>', textNode);
+}
 </script>
 <template>
     <div>
@@ -429,6 +457,7 @@ const textareaStyle = ref({
                                 <v-text
                                     :config="quoteConfig"
                                     @dblclick="enterEditMode"
+                                    @dragend="onQuoteDragend"
                                 ></v-text>
                                 <v-circle
                                     :config="{
