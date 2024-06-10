@@ -36,51 +36,31 @@ class ThematicFactory extends Factory
      */
     private function generateWallConfiguration(): array
     {
-        $groupName1 = 'group-'.Str::uuid();
-        $groupName2 = 'group-'.Str::uuid();
-        $groupName3 = 'group-'.Str::uuid();
-        return [
-            $groupName1 => [
-                'id' => $groupName1,
-                'name' => $groupName1,
+        $groupConfigurations = [];
+        $numGroups = 5; // Number of groups you want to create
+        $itemsPerGroup = [1, 1, 1, 1, 3]; // Number of items per group for each group
+
+        for ($i = 0; $i < $numGroups; $i++) {
+            $groupName = 'group-'.Str::uuid();
+            $groupItems = [];
+
+            for ($j = 1; $j <= $itemsPerGroup[$i]; $j++) {
+                $groupItems[$groupName.'-text'.$j] = $this->generateTextNodeConfig($groupName, (string)$j);
+            }
+
+            $groupConfigurations[$groupName] = [
+                'id' => $groupName,
+                'name' => $groupName,
                 'is' => 'group',
                 'scaleX' => 1,
                 'scaleY' => 1,
                 'visible' => true,
                 'draggable' => true,
-                'items' => [
-                    $groupName1.'-text1' => $this->generateTextNodeConfig($groupName1, '1'),
-                    $groupName1.'-text2' => $this->generateTextNodeConfig($groupName1, '2'),
-                    $groupName1.'-text3' => $this->generateTextNodeConfig($groupName1, '3'),
-                ]
-            ],
-            $groupName2 => [
-                'id' => $groupName2,
-                'name' => $groupName2,
-                'is' => 'group',
-                'scaleX' => 1,
-                'scaleY' => 1,
-                'visible' => true,
-                'draggable' => true,
-                'items' => [
-                    $groupName2.'-text1' => $this->generateTextNodeConfig($groupName2, '1'),
-                ]
-            ],
-            $groupName3 => [
-                'id' => $groupName3,
-                'name' => $groupName3,
-                'is' => 'group',
-                'scaleX' => 1,
-                'scaleY' => 1,
-                'visible' => true,
-                'draggable' => true,
-                'items' => [
-                    $groupName3.'-text1' => $this->generateTextNodeConfig($groupName3, '1'),
-                    $groupName3.'-text2' => $this->generateTextNodeConfig($groupName3, '2'),
-                ]
-            ],
-            // Add more groups as needed
-        ];
+                'items' => $groupItems
+            ];
+        }
+
+        return $groupConfigurations;
     }
 
     /**

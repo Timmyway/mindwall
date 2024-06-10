@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quote;
+use App\Models\Thematic;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -18,30 +19,43 @@ class QuoteController extends Controller
         ]);
     }
 
-    public function updatePositions(Request $request)
+    public function updateWall(Request $request)
     {
         $thematicId = $request->input('thematicId');
-        $positions = $request->input('positions');
 
         // Validate positions data
         $validated = $request->validate([
             'thematicId' => 'required|integer|exists:thematics,id',
-            'positions' => 'required|array',
-            'positions.*.x' => 'required|integer',
-            'positions.*.y' => 'required|integer',
+            'wall' => 'required|json',
         ]);
 
-        // Fetch the quotes for the given thematic ID
-        $quotes = Quote::where('thematic_id', $thematicId)->get();
+        // Fetch the thematic by ID
+        $thematicId = $validated['thematicId'];
+        $thematic = Thematic::findOrFail($thematicId);
 
-        // Update each quote's position
-        foreach ($quotes as $index => $quote) {
-            if (isset($positions[$index])) {
-                $quote->position = json_encode($positions[$index]);
-                $quote->save();
+        // Decode the JSON wall data
+        $wallData = json_decode($validated['wall'], true);
+
+        // Process the wall data to ensure only serializable properties are included
+        foreach ($wallData as &$group) {
+            if (isset($group['items'])) {
+                foreach ($group['items'] as &$item) {
+                    if (isset($item['is']) && $item['is'] === 'image') {
+                        // Ensure only serializable properties are included
+                        if (isset($item['image']) && is_object($item['image'])) {
+                            $item['image'] = $item['image']->src ?? null;
+                        }
+                    }
+                }
             }
         }
 
-        return response()->json(['message' => 'Positions updated successfully']);
+        // Update the wall field of the thematic
+        $thematic->wall = $wallData;
+
+        // Save the changes to the database
+        $thematic->save();
+
+        return response()->json(['message' => "Thematic's wall updated successfully"]);
     }
 }

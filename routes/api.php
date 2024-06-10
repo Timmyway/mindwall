@@ -8,4 +8,4 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/quotes/update-positions', [QuoteController::class, 'updatePositions']);
+Route::post('/wall/update', [QuoteController::class, 'updateWall']);

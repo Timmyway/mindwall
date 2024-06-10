@@ -6,7 +6,7 @@ import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
-import { WallConfig, TextConfig, ImageConfig, ShapeConfig } from '../../types/konva.config';
+import { WallConfig, TextConfig, ImageConfig } from '../../types/konva.config';
 import { Ref } from 'vue';
 import { Thematic } from '../../types/thematic.types';
 import { Transformer } from 'konva/lib/shapes/Transformer';
@@ -17,6 +17,7 @@ import TwContextMenu from '../../Components/menu/TwContextMenu.vue';
 import { useFileDialog } from '@vueuse/core'
 import { Rect } from 'konva/lib/shapes/Rect';
 import { Image } from 'konva/lib/shapes/Image';
+import usePaletteColor from '../../composable/usePaletteColor';
 
 const props = defineProps<{
     thematic: Thematic
@@ -30,12 +31,13 @@ const { files, open, reset, onChange } = useFileDialog({
     directory: false, // Select directories instead of files if set true
 })
 
-const savePositionsToServer = (positions: { x: number; y: number }[]) => {
+const saveWallToServer = () => {
     try {
-        router.post('/api/quotes/update-positions', {
+        const payload = {
             thematicId: props.thematic.id,
-            positions
-        });
+            wall: JSON.stringify(wall)
+        };
+        router.post('/api/wall/update', payload);
     } catch (error) {
         console.error('Failed to update positions on the server:', error);
     }
@@ -82,28 +84,23 @@ onChange((files) => {
     }
 })
 
-const deleteImage = (e) => {
+const deleteImage = (e: Event) => {
     console.log('===> Event', e);
 
     // Check if the selected config is available and is an ImageConfig
-    if (selectedConfig.value && 'image' in selectedConfig.value) {
-        // Update the selected config to set the image to null
-        const updatedConfig = {
-            ...selectedConfig.value,
-            image: null
-        };
+    if (selectedConfig.value && selectedConfig.value.is === 'image') {
+        // Get the selected group and config name
+        const groupName = selectedGroupName.value;
+        const configName = selectedConfigName.value;
 
-        // Find the group and item key corresponding to the selected config
-        for (const groupKey in wall) {
-            if (wall[groupKey].items[selectedConfig.value.id]) {
-                wall[groupKey].items[selectedConfig.value.id] = updatedConfig;
-                break;
+        if (groupName && configName) {
+            // Check if the group exists
+            if (wall[groupName] && wall[groupName].items[configName]) {
+                // Delete the image config from the items object
+                delete wall[groupName].items[configName];
+                console.log(`===> ImageConfig '${configName}' removed from group '${groupName}'`);
             }
         }
-
-        console.log('===> Image removed from selectedConfig', updatedConfig);
-    } else {
-        console.log('No image to delete or selectedConfig is not an ImageConfig.');
     }
 };
 
@@ -249,7 +246,6 @@ const selectedGroupName = ref<string | null>(null);
 const selectedConfigName = ref<string | null>(null);
 
 const selectConfig = (groupName: string, configName: string) => {
-    console.log('Select config: ====> G name: ', groupName, configName);
     selectedGroupName.value = groupName;
     selectedConfigName.value = configName;
 };
@@ -296,16 +292,29 @@ const thematicTextConfig = ref({
     fill: '#fff',
 });
 
-const selectedConfig = computed(() => {
-    if (selectedGroupName.value && selectedConfigName.value) {
-        return wall[selectedGroupName.value].items[selectedConfigName.value];
+const selectedConfig = computed<TextConfig | ImageConfig | null>({
+    get: (): TextConfig | ImageConfig | null => {
+        if (selectedGroupName.value && selectedConfigName.value) {
+            return wall[selectedGroupName.value].items[selectedConfigName.value];
+        }
+        return null;
+    },
+    set: (newConfig: Partial<TextConfig> | Partial<ImageConfig>) => {
+        if (selectedGroupName.value && selectedConfigName.value) {
+            const currentConfig = wall[selectedGroupName.value].items[selectedConfigName.value];
+            if (currentConfig) {
+                wall[selectedGroupName.value].items[selectedConfigName.value] = {
+                    ...currentConfig,
+                    ...newConfig
+                };
+            }
+        }
     }
-    return null;
 });
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
-
+    console.log('============> Tranform has ended');
     if (selectedConfig.value) {
         // update the state
         selectedConfig.value.x = e.target.x();
@@ -337,7 +346,7 @@ const handleStageMouseDown = (e: any) => {
     updateTransformer();
 }
 
-const handleGroupContextMenu = (e) => {
+const handleGroupContextMenu = (e: any) => {
     e.evt.preventDefault();
     if (e.target === stageRef.value.getStage()) {
         console.log('===> We are on an empty place of the stage');
@@ -353,8 +362,6 @@ const updateTransformer = () => {
     // here we need to manually attach or detach Transformer node
     const transformerNode = transformer.value?.getNode();
     const stage = stageRef.value.getStage();
-    // console.log('1. ====>', transformer.value)
-    // console.log('2. ====>', transformerNode)
 
     const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
     // do nothing if selected node is already attached
@@ -414,35 +421,30 @@ const enterEditMode = (e: Event) => {
     //     x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
     //     y: stageRef.value.getStage().container().offsetTop + textPosition.y,
     // };
+    // Set its dimension
+    const calculatedWidth = (textNode?.width() ?? 0) - (textNode?.padding() ?? 0) * 2;
+    textareaStyle.width = calculatedWidth + 'px';
+    textareaStyle.height =
+        (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
     const areaPosition = {
-        x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x),
+        x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth / 2),
         y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
     };
-    console.log('x', stageRef.value.getStage().container().offsetLeft)
-    console.log('y', stageRef.value.getStage().container().offsetTop)
-    console.log('Pos', textPosition)
+    console.log('Offset x: ', stageRef.value.getStage().container().offsetLeft)
+    console.log('Offset y: ', stageRef.value.getStage().container().offsetTop)
+    console.log('Text position: ', textPosition)
     console.log('Area position: ', areaPosition);
     console.log('Text node: ', textNode?.align());
     // Set textarea position
-    textareaStyle.x = areaPosition.x;
-    textareaStyle.y = areaPosition.y;
-    // Set its dimension
-    textareaStyle.width = (textNode?.width() ?? 0) - (textNode?.padding() ?? 0) * 2 + 'px';
-    textareaStyle.height =
-        (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
+    textareaStyle.left = areaPosition.x + 'px';
+    textareaStyle.top = areaPosition.y + 'px';
     // Set typography related styles
     textareaStyle.fontSize = textNode?.fontSize() + 'px';
     textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
     textareaStyle.fontFamily = textNode?.fontFamily() ?? 'Verdana';
     textareaStyle.transformOrigin = 'left top';
-    textareaStyle.textAlign = textNode?.align() ?? 'left';
-    textareaStyle.color = textNode?.fill() ?? 'black';
-
-    if (selectedConfig.value) {
-        selectedConfig.value.fontSize = 20;
-        selectedConfig.value.fontFamily = 'Monospace';
-        selectedConfig.value.rotation = 0;
-    }
+    textareaStyle.textAlign = 'left';
+    textareaStyle.color = 'black';
 
     setTimeout(() => {
         quoteAreaRef.value.focus();
@@ -455,16 +457,15 @@ const enterEditMode = (e: Event) => {
 const exitEditMode = () => {
     if (editedQuoteText.value.trim() === '') {
         // Restore text node and transformer
-        console.log('==========> Restore outside !!!!', selectedConfig.value)
+        console.log('-- 01 -> Restore text and transformer')
         if (selectedConfig.value) {
             selectedConfig.value.visible = true;
-            console.log('==========> Restore inside !!!!')
             transformer.value.getNode().show();
         }
         editing.value = false; // Exit edit mode
         return;
     }
-    if (selectedConfig.value) {
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
         selectedConfig.value.text = editedQuoteText.value.trim();
         // Restore text node and transformer
         selectedConfig.value.visible = true;
@@ -475,6 +476,11 @@ const exitEditMode = () => {
 }
 
 const editQuote = () => {
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        selectedConfig.value.fontSize = 20;
+        selectedConfig.value.fontFamily = 'Monospace';
+        selectedConfig.value.rotation = 0;
+    }
     exitEditMode();
     console.log('Finished editing...');
 };
@@ -495,21 +501,40 @@ const textareaStyle = reactive<TextareaStyle>({
     transform: ''
 });
 
-const onGroupDragend = (e: Event) => {
+const onDragend = (e: any) => {
     if (e.target) {
-        if (e.target.constructor.name === 'Group') {
-            // if (selectedGroupName.value) {
-            //     wall[selectedGroupName.value].x = e.target.x();
-            //     wall[selectedGroupName.value].y = e.target.y();
-            // }
+        if (e.target.getType() === 'Group') {
+            console.log('===> Group selected: ', e.target.name());
+            wall[e.target.name()].x = e.target.x();
+            wall[e.target.name()].y = e.target.y();
+        } else if (e.target.constructor.name === '_Image') {
+            const groupName = e.target.getParent().name();
+            const imageName = e.target.name();
+            selectConfig(groupName, imageName);
+            syncPosition(e.target.x(), e.target.y());
         }
+    }
+}
+
+const syncPosition = (x: number, y: number) => {
+    if (selectedConfig.value) {
+        selectedConfig.value.x = x;
+        selectedConfig.value.y = y;
+    }
+}
+
+const { paletteColor } = usePaletteColor();
+
+const changeColor = (color: string) => {
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        selectedConfig.value.fill = color;
     }
 }
 </script>
 <template>
     <div>
         <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
-            <div class="fixed top-0 right-0 max-w-xs h-10 p-1 overflow-auto bg-black text-white text-xs">
+            <div class="fixed top-0 right-0 max-w-4xl h-15 p-1 overflow-auto bg-black text-white text-xs">
                 {{ selectedConfig }}
             </div>
             <Link
@@ -547,6 +572,20 @@ const onGroupDragend = (e: Event) => {
                 >
                     <i class="fas fa-image"></i>
                 </button>
+                <div class="flex items-center">
+                    <template v-for="color in paletteColor">
+                        <button
+                            class="w-4 h-4"
+                            :style="{ backgroundColor: color }"
+                            @click="changeColor(color)"></button>
+                    </template>
+                </div>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
+                    @click.prevent="saveWallToServer()"
+                >
+                    <i class="fas fa-save"></i>
+                </button>
             </div>
             <tw-context-menu
                 :on-image-add="pickImage"
@@ -563,6 +602,7 @@ const onGroupDragend = (e: Event) => {
                 v-model="editedQuoteText"
                 @blur="editQuote"
                 @keyup.enter="editQuote"
+                @keyup.escape="exitEditMode"
                 :style="textareaStyle"
             ></textarea>
             <v-stage
@@ -586,7 +626,7 @@ const onGroupDragend = (e: Event) => {
                                 :config="group"
                                 @transformend="handleTransformEnd"
                                 @contextmenu="handleGroupContextMenu"
-                                @dragend="onGroupDragend"
+                                @dragend="onDragend"
                             >
                                 <template v-for="config, configName in group.items" :key="configName">
                                     <v-text
@@ -594,11 +634,14 @@ const onGroupDragend = (e: Event) => {
                                         :config="config"
                                         @dblclick="enterEditMode"
                                         @mousedown="selectConfig(groupName, configName)"
+                                        @transformend="handleTransformEnd"
                                     ></v-text>
                                     <v-image
                                         v-if="isImageConfig(config)"
                                         :config="config"
                                         @mousedown="selectConfig(groupName, configName)"
+                                        @dragend="onDragend"
+                                        @transformend="handleTransformEnd"
                                     />
                                 </template>
                             </v-group>
@@ -626,5 +669,6 @@ const onGroupDragend = (e: Event) => {
     resize: none;
     top: 0; left: 50%;
     transform: translate(-50%, 0);
+    outline: none;
 }
 </style>
