@@ -23,8 +23,5 @@ class DatabaseSeeder extends Seeder
 
         // Call other seeders and pass the user ID to them
         $this->callWith(ThematicSeeder::class, ['userId' => $user->id]);
-        $this->call([
-            QuoteSeeder::class
-        ]);
     }
 }

@@ -1,3 +1,5 @@
+import { WallConfig } from "./konva.config";
+
 interface User {
     id: number;
     name: string;
@@ -8,16 +10,10 @@ export interface Thematic {
     id: number;
     name: string;
     user: User;
-    quotes: Quote[]
+    wall: WallConfig;
 }
 
 export interface QuotePositionObject {
   x: number,
   y: number
-}
-
-export interface Quote {
-    id: number;
-    name: string;
-    position: string | QuotePositionObject;
 }

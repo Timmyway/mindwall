@@ -6,7 +6,7 @@ import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
-import { QuoteConfig } from '../../types/konva.config';
+import { WallConfig, TextConfig, ImageConfig, ShapeConfig } from '../../types/konva.config';
 import { Ref } from 'vue';
 import { Thematic } from '../../types/thematic.types';
 import { Transformer } from 'konva/lib/shapes/Transformer';
@@ -50,81 +50,91 @@ const center: { x: number, y: number } = {
     y: stageHeight.value / 2,
 };
 
-const quotesConfig = ref<QuoteConfig[]>([]);
-props.thematic.quotes.forEach((quote) => {
-    const config = {
-        id: `quote-${quote.id}`,
-        rotation: randInt(0, 360),
-        x: randPos('x'),
-        y: randPos('y'),
-        scaleX: 1,
-        scaleY: 1,
-        fontFamily: 'Verdana',
-        fontSize: 12,
-        name: `quote-${quote.id}`,
-        text: quote.name,
-        fill: 'black',
-        visible: true,
-        image: null
-    }
-    quotesConfig.value.push(config);
-});
+const thematicWall = safeJsonParse(props.thematic.wall);
+const wall = reactive<WallConfig>(thematicWall);
+// props.thematic.quotes.forEach((quote) => {
+//     const config = {
+//         id: `quote-${quote.id}`,
+//         rotation: randInt(0, 360),
+//         x: randPos('x'),
+//         y: randPos('y'),
+//         scaleX: 1,
+//         scaleY: 1,
+//         fontFamily: 'Verdana',
+//         fontSize: 12,
+//         name: `quote-${quote.id}`,
+//         text: quote.name,
+//         fill: 'black',
+//         visible: true,
+//         image: null
+//     }
+//     quotesConfig.value.push(config);
+// });
 
 const pickImage = async () => {
     open();
 }
 
 onChange((files) => {
-    if (files) {
-        addImage(files[0]);
+    if (files && files.length > 0) {
+        const selectedImage = files[0];
+        addImageToWall(selectedImage);
     }
 })
 
-const addImage = (input: string | File) => {
-    const image = new window.Image();
+const deleteImage = (e) => {
+    console.log('===> Event', e);
 
-    // Check if input is a string (URL) or a File object
-    if (typeof input === 'string') {
-        image.src = input;
-    } else if (input instanceof File) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target && e.target.result) {
-                image.src = e.target.result as string;
-                image.width = 320;
-                image.height = 240;
+    // Check if the selected config is available and is an ImageConfig
+    if (selectedConfig.value && 'image' in selectedConfig.value) {
+        // Update the selected config to set the image to null
+        const updatedConfig = {
+            ...selectedConfig.value,
+            image: null
+        };
+
+        // Find the group and item key corresponding to the selected config
+        for (const groupKey in wall) {
+            if (wall[groupKey].items[selectedConfig.value.id]) {
+                wall[groupKey].items[selectedConfig.value.id] = updatedConfig;
+                break;
             }
-        };
-        reader.readAsDataURL(input);
-    }
+        }
 
-    image.onload = () => {
-        // Once the image is loaded, update the selected quote config
-        selectedQuoteConfig.value = {
-            ...selectedQuoteConfig.value,
-            image: image
-        };
-        console.log('===> Image added to selectedQuoteConfig', selectedQuoteConfig.value);
+        console.log('===> Image removed from selectedConfig', updatedConfig);
+    } else {
+        console.log('No image to delete or selectedConfig is not an ImageConfig.');
+    }
+};
+
+const addGroup = () => {
+    const groupName = `group-${uuid()}`;
+    wall[groupName] = {
+        id: groupName,
+        name: groupName,
+        is: 'group',
+        scaleX: 1,
+        scaleY: 1,
+        visible: true,
+        draggable: true,
+        items: {}
     };
 };
 
-const deleteImage = (e) => {
-    console.log('===> E', e.event);
-    // Check if the selected quote config is available
-    if (selectedQuoteConfig.value) {
-        // Update the selected quote config to set the image to null
-        selectedQuoteConfig.value = {
-            ...selectedQuoteConfig.value,
-            image: null
-        };
-        console.log('===> Image removed from selectedQuoteConfig', selectedQuoteConfig.value);
-    }
+const isTextConfig = (config: any): config is TextConfig => {
+    return (config as TextConfig).is === 'text';
 };
 
-const addQuote = (text: string = 'New quote...') => {
-    const quoteId = uuid();
-    const newQuote = {
-        id: quoteId,
+const isImageConfig = (config: any): config is ImageConfig => {
+    return (config as ImageConfig).is === 'image';
+};
+
+const addTextToWall = (groupName: string, text: string = 'New text...') => {
+      const textId = `${groupName}-text-${uuid()}`;
+      const newTextConfig: TextConfig = {
+        id: textId,
+        name: textId,
+        is: 'text',
         rotation: 0,
         x: center.x - 10,
         y: center.y -50,
@@ -132,44 +142,122 @@ const addQuote = (text: string = 'New quote...') => {
         scaleY: 1,
         fontFamily: 'Calibri',
         fontSize: 16,
-        name: quoteId,
         text: text,
         fill: 'black',
         visible: true,
-        image: null
     };
 
-    quotesConfig.value.push(newQuote);
-}
-
-const removeQuote = (quoteName: string) => {
-    const foundIndex = quotesConfig.value.findIndex((quote) => quote.name === quoteName);
-
-    if (foundIndex !== -1) {
-        quotesConfig.value.splice(foundIndex, 1);
-    } else {
-        console.log(`Quote with name ${quoteName} not found.`);
+    if (!wall[groupName]) {
+        wall[groupName] = {
+            id: groupName,
+            name: groupName,
+            is: 'text',
+            scaleX: 1,
+            scaleY: 1,
+            visible: true,
+            draggable: true,
+            items: {}
+        };
     }
+
+    wall[groupName].items[textId] = newTextConfig;
+};
+
+const calcOptimizedImageDimension = (im: HTMLImageElement, maxWidth = 300, maxHeight = 300): { w:number, h:number } => {
+    // Get the real size of the image
+    const realWidth = im.width;
+    const realHeight = im.height;
+
+    // Calculate the aspect ratio
+    let width = realWidth;
+    let height = realHeight;
+    if (realWidth > maxWidth || realHeight > maxHeight) {
+        const widthRatio = maxWidth / realWidth;
+        const heightRatio = maxHeight / realHeight;
+        const minRatio = Math.min(widthRatio, heightRatio);
+        width = realWidth * minRatio;
+        height = realHeight * minRatio;
+    }
+    console.log('===> Width|Height: ', width, height);
+    return { w: width, h: height };
 }
 
-// const editQuote = (quoteName: string, updatedProps: Partial<QuoteConfig>) => {
-//     const foundQuote = quotesConfig.value.find((quote) => quote.name === quoteName);
+const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png') => {
+    const imageIdentifier = `${selectedGroupName.value}-image-${uuid()}`;
+    const newImageConfig: ImageConfig = {
+        id: imageIdentifier,
+        name: imageIdentifier,
+        is: 'image',
+        width: 100,
+        height: 100,
+        x: selectedConfig.value?.x ?? 0,
+        y: selectedConfig.value?.y ?? 0,
+        draggable: true
+    };
 
-//     if (foundQuote) {
-//         // Update the properties of the found quote
-//         if (updatedProps.fontSize !== undefined) {
-//             foundQuote.fontSize = updatedProps.fontSize;
-//         }
-//         if (updatedProps.text !== undefined) {
-//             foundQuote.text = updatedProps.text;
-//         }
-//         if (updatedProps.fontFamily !== undefined) {
-//             foundQuote.fontFamily = updatedProps.fontFamily;
-//         }
-//     } else {
-//         console.log(`Quote with name ${quoteName} not found.`);
-//     }
-// }
+    if (typeof src === 'string') {
+        // Handle loading an image from a URL
+        const im = new window.Image();
+        im.src = src;
+        im.onload = () => {
+            newImageConfig.image = im;
+            const { w, h } = calcOptimizedImageDimension(im);
+            newImageConfig.width = w;
+            newImageConfig.height = h;
+            if (selectedGroupName.value) {
+                wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
+            }
+        }
+    } else {
+        // Handle loading an image from a File object
+        // Handle loading an image from a File object
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const im = new window.Image();
+            im.src = event.target?.result as string;
+            im.onload = () => {
+                const { w, h } = calcOptimizedImageDimension(im);
+                newImageConfig.width = w;
+                newImageConfig.height = h;
+                newImageConfig.image = im;
+                if (selectedGroupName.value) {
+                    wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
+                }
+            }
+        };
+        reader.readAsDataURL(src);
+    }
+};
+
+const removeConfig = (groupName: string, configName: string) => {
+    if (wall[groupName] && wall[groupName].items[configName]) {
+    delete wall[groupName].items[configName];
+    } else {
+    console.log(`Config with name ${configName} not found in group ${groupName}.`);
+    }
+};
+
+const removeText = (groupName: string, textId: string) => {
+    if (wall[groupName] && wall[groupName].items[textId]) {
+        delete wall[groupName].items[textId];
+    } else {
+    console.log(`Text with id ${textId} not found in group ${groupName}.`);
+    }
+};
+
+const selectedGroupName = ref<string | null>(null);
+const selectedConfigName = ref<string | null>(null);
+
+const selectConfig = (groupName: string, configName: string) => {
+    console.log('Select config: ====> G name: ', groupName, configName);
+    selectedGroupName.value = groupName;
+    selectedConfigName.value = configName;
+};
+
+const resetConfig = () => {
+    selectedGroupName.value = '';
+    selectedConfigName.value = '';
+}
 
 const transformer = ref();
 
@@ -208,52 +296,34 @@ const thematicTextConfig = ref({
     fill: '#fff',
 });
 
-const selectedQuoteName = ref();
-const selectedQuoteConfig = computed({
-    get: () => {
-        return quotesConfig.value.find(q => q.name === selectedQuoteName.value) as QuoteConfig;
-    },
-    set: (newConfig: Partial<QuoteConfig>) => {
-        const selectedQuote = quotesConfig.value.find(q => q.name === selectedQuoteName.value);
-        if (selectedQuote) {
-            // Merge existing properties with new ones
-            const updatedQuote = { ...selectedQuote, ...newConfig };
-
-            // Update the quotesConfig array with the updated quote
-            quotesConfig.value = quotesConfig.value.map(q =>
-                q.name === updatedQuote.name ? updatedQuote : q
-            );
-
-            // Update the selectedQuoteName if necessary
-            if (newConfig.name && newConfig.name !== selectedQuoteName.value) {
-                selectedQuoteName.value = newConfig.name;
-            }
-        }
+const selectedConfig = computed(() => {
+    if (selectedGroupName.value && selectedConfigName.value) {
+        return wall[selectedGroupName.value].items[selectedConfigName.value];
     }
+    return null;
 });
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
 
-    if (selectedQuoteConfig.value) {
+    if (selectedConfig.value) {
         // update the state
-        selectedQuoteConfig.value.x = e.target.x();
-        selectedQuoteConfig.value.y = e.target.y();
-        selectedQuoteConfig.value.rotation = e.target.rotation();
-        selectedQuoteConfig.value.scaleX = e.target.scaleX();
-        selectedQuoteConfig.value.scaleY = e.target.scaleY();
-
+        selectedConfig.value.x = e.target.x();
+        selectedConfig.value.y = e.target.y();
+        selectedConfig.value.rotation = e.target.rotation();
+        selectedConfig.value.scaleX = e.target.scaleX();
+        selectedConfig.value.scaleY = e.target.scaleY();
     }
 }
 
 const handleStageMouseDown = (e: any) => {
     // clicked on stage - clear selection
     if (e.target === e.target.getStage()) {
-        console.log('==> Clicekd on stage...');
+        console.log('==> Clicked on stage...');
         if (editing.value) {
             exitEditMode();
         }
-        selectedQuoteName.value = '';
+        resetConfig();
         updateTransformer();
         return;
     }
@@ -264,28 +334,16 @@ const handleStageMouseDown = (e: any) => {
         return;
     }
 
-    // find clicked rect by its name
-    const name = e.target.name();
-    const rect = findQuote(name);
-
-    // if (e.target instanceof Image) {
-    //     console.log('====> Etarget: ', e.target);
-    // }
-    if (rect) {
-        selectedQuoteName.value = name;
-    } else {
-        selectedQuoteName.value = '';
-    }
     updateTransformer();
 }
 
-const handleContextMenu = (e) => {
+const handleGroupContextMenu = (e) => {
     e.evt.preventDefault();
     if (e.target === stageRef.value.getStage()) {
         console.log('===> We are on an empty place of the stage');
         return;
     }
-    console.log('==>', canvaStore.menu.show(e.evt))
+    canvaStore.menu.show(e.evt);
     const currentShape = e.target;
     console.log('===> Current shape: ', currentShape);
 
@@ -298,7 +356,7 @@ const updateTransformer = () => {
     // console.log('1. ====>', transformer.value)
     // console.log('2. ====>', transformerNode)
 
-    const selectedNode = stage.findOne('.' + selectedQuoteName.value);
+    const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
     // do nothing if selected node is already attached
     if (transformerNode) {
         if (selectedNode === transformerNode.node()) {
@@ -313,12 +371,6 @@ const updateTransformer = () => {
             transformerNode.nodes([]);
         }
     }
-}
-
-const findQuote = (name: string) => {
-    return quotesConfig.value.find(
-        (q) => q.name === name
-    );
 }
 
 const handleQuoteDblClicked = (e: Event) => {
@@ -342,11 +394,6 @@ const handleQuoteEditText = (name: string, text: string) => {
     }
 }
 
-const handleQuoteRemoval = (name: string) => {
-    console.log('Handle quote removal');
-    removeQuote(name);
-}
-
 const editing = ref(false);
 const editedQuoteText = ref<string>('');
 const quoteAreaRef = ref();
@@ -354,13 +401,11 @@ const quoteAreaRef = ref();
 const enterEditMode = (e: Event) => {
     console.log('===> T', typeof e)
     const textNode = e.target as Text | null;
-    selectedQuoteName.value = textNode?.name();
     console.log('====> Text node: ', textNode);
-    if (selectedQuoteConfig.value) {
-        selectedQuoteConfig.value.visible = false;
+    if (selectedConfig.value) {
+        selectedConfig.value.visible = false;
     }
     // hide text node and transformer:
-
     transformer.value.getNode().hide();
 
     // so position of textarea will be the sum of positions above:
@@ -376,15 +421,15 @@ const enterEditMode = (e: Event) => {
     console.log('x', stageRef.value.getStage().container().offsetLeft)
     console.log('y', stageRef.value.getStage().container().offsetTop)
     console.log('Pos', textPosition)
-    console.log('Edit mode activate...', areaPosition);
+    console.log('Area position: ', areaPosition);
     console.log('Text node: ', textNode?.align());
     // Set textarea position
-    // textareaStyle.value.top = `${areaPosition.x}px`;
-    // textareaStyle.value.left = `${areaPosition.y}px`;
+    textareaStyle.x = areaPosition.x;
+    textareaStyle.y = areaPosition.y;
     // Set its dimension
     textareaStyle.width = (textNode?.width() ?? 0) - (textNode?.padding() ?? 0) * 2 + 'px';
     textareaStyle.height =
-          (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
+        (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
     // Set typography related styles
     textareaStyle.fontSize = textNode?.fontSize() + 'px';
     textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
@@ -392,30 +437,12 @@ const enterEditMode = (e: Event) => {
     textareaStyle.transformOrigin = 'left top';
     textareaStyle.textAlign = textNode?.align() ?? 'left';
     textareaStyle.color = textNode?.fill() ?? 'black';
-    // const rotation = textNode?.rotation();
-    // let transform = '';
-    // if (rotation) {
-    //     transform += 'rotateZ(' + rotation + 'deg)';
-    // }
 
-    // let px = 0;
-    // // also we need to slightly move textarea on firefox
-    // // because it jumps a bit
-    // const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-    // if (isFirefox) {
-    //     px += 2 + Math.round(textNode.fontSize() / 20);
-    // }
-    // transform += 'translateY(-' + px + 'px)';
-
-    // textareaStyle.value.transform = transform;
-
-    // // reset height
-    // textareaStyle.value.height = 'auto';
-    // // after browsers resized it we can set actual value
-    // textareaStyle.value.height = quoteAreaRef.value.style.scrollHeight + 3 + 'px';
-    selectedQuoteConfig.value.fontSize = 20;
-    selectedQuoteConfig.value.fontFamily = 'Monospace';
-    selectedQuoteConfig.value.rotation = 0;
+    if (selectedConfig.value) {
+        selectedConfig.value.fontSize = 20;
+        selectedConfig.value.fontFamily = 'Monospace';
+        selectedConfig.value.rotation = 0;
+    }
 
     setTimeout(() => {
         quoteAreaRef.value.focus();
@@ -428,19 +455,19 @@ const enterEditMode = (e: Event) => {
 const exitEditMode = () => {
     if (editedQuoteText.value.trim() === '') {
         // Restore text node and transformer
-        console.log('==========> Restore outside !!!!', selectedQuoteConfig.value)
-        if (selectedQuoteConfig.value) {
-            selectedQuoteConfig.value.visible = true;
+        console.log('==========> Restore outside !!!!', selectedConfig.value)
+        if (selectedConfig.value) {
+            selectedConfig.value.visible = true;
             console.log('==========> Restore inside !!!!')
             transformer.value.getNode().show();
         }
         editing.value = false; // Exit edit mode
         return;
     }
-    if (selectedQuoteConfig.value) {
-        selectedQuoteConfig.value.text = editedQuoteText.value.trim();
+    if (selectedConfig.value) {
+        selectedConfig.value.text = editedQuoteText.value.trim();
         // Restore text node and transformer
-        selectedQuoteConfig.value.visible = true;
+        selectedConfig.value.visible = true;
         transformer.value.getNode().show();
         editedQuoteText.value = '';
         editing.value = false; // Exit edit mode
@@ -468,17 +495,22 @@ const textareaStyle = reactive<TextareaStyle>({
     transform: ''
 });
 
-const onQuoteDragend = (e: Event) => {
-    const textNode = e.target as Text | null;
-    console.log('====> Drag end=====>', textNode);
+const onGroupDragend = (e: Event) => {
+    if (e.target) {
+        if (e.target.constructor.name === 'Group') {
+            // if (selectedGroupName.value) {
+            //     wall[selectedGroupName.value].x = e.target.x();
+            //     wall[selectedGroupName.value].y = e.target.y();
+            // }
+        }
+    }
 }
 </script>
 <template>
     <div>
         <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
-            Files: {{ files }}
             <div class="fixed top-0 right-0 max-w-xs h-10 p-1 overflow-auto bg-black text-white text-xs">
-                {{ selectedQuoteConfig }}
+                {{ selectedConfig }}
             </div>
             <Link
                 :href="route('thematic.list')"
@@ -505,13 +537,13 @@ const onQuoteDragend = (e: Event) => {
             <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addQuote()"
+                    @click.prevent="addGroup()"
                 >
                     <i class="fas fa-plus-circle"></i>
                 </button>
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addImage('https://konvajs.org/assets/yoda.jpg')"
+                    @click.prevent="addImageToWall()"
                 >
                     <i class="fas fa-image"></i>
                 </button>
@@ -539,7 +571,6 @@ const onQuoteDragend = (e: Event) => {
                 @mousedown="handleStageMouseDown"
                 @touchstart="handleStageMouseDown"
                 @wheel="canvaStore.handleWheel"
-                @contextmenu="handleContextMenu"
                 :draggable="true"
             >
                 <v-layer>
@@ -550,28 +581,26 @@ const onQuoteDragend = (e: Event) => {
                                 <v-text :config="thematicTextConfig"></v-text>
                             </v-group>
                         </div>
-                        <div v-for="(quoteConfig, index) in quotesConfig" :key="quoteConfig.id">
-                            <v-group :config="{ draggable: true}" @transformend="handleTransformEnd">
-                                <v-text
-                                    :config="quoteConfig"
-                                    @dblclick="enterEditMode"
-                                    @dragend="onQuoteDragend"
-                                ></v-text>
-                                <v-circle
-                                    :config="{
-                                        fill: 'red', text: 'Del',
-                                        x: quoteConfig.x,
-                                        y: quoteConfig.y - 10,
-                                        width: 10, height: 10
-                                    }"
-                                    @click="handleQuoteRemoval(quoteConfig.name)"
-                                ></v-circle>
-                                <v-image :config="{
-                                    x: quoteConfig.x,
-                                    y: quoteConfig.y,
-                                    image: quoteConfig.image,
-                                    draggable: true
-                                }"/>
+                        <div v-for="(group, groupName) in wall" :key="groupName">
+                            <v-group
+                                :config="group"
+                                @transformend="handleTransformEnd"
+                                @contextmenu="handleGroupContextMenu"
+                                @dragend="onGroupDragend"
+                            >
+                                <template v-for="config, configName in group.items" :key="configName">
+                                    <v-text
+                                        v-if="isTextConfig(config)"
+                                        :config="config"
+                                        @dblclick="enterEditMode"
+                                        @mousedown="selectConfig(groupName, configName)"
+                                    ></v-text>
+                                    <v-image
+                                        v-if="isImageConfig(config)"
+                                        :config="config"
+                                        @mousedown="selectConfig(groupName, configName)"
+                                    />
+                                </template>
                             </v-group>
                         </div>
                         <v-transformer ref="transformer" />

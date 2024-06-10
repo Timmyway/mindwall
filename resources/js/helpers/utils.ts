@@ -1,12 +1,16 @@
+import { WallConfig } from '@/types/konva.config';
 import { v4 as uuidv4 } from 'uuid';
 
-function safeJsonParse(jsonString: string): any {
-    try {
-        return JSON.parse(jsonString);
-    } catch (error) {
-        console.error('Error parsing JSON:', error);
-        return null; // or any other default value you prefer
+function safeJsonParse(jsonString: string | WallConfig): any {
+    if (typeof jsonString === 'string') {
+        try {
+            return JSON.parse(jsonString);
+        } catch (e) {
+            console.error('Error parsing JSON:', e);
+            return {};
+        }
     }
+    return null;
 }
 
 function uuid() {

@@ -1,15 +1,50 @@
-export interface QuoteConfig {
+export interface WallConfig {
+    [group: string]: GroupConfig;
+}
+
+export interface GroupConfig {
     id: string;
-    rotation: number;
-    x: number;
-    y: number;
-    scaleX: number;
-    scaleY: number;
-    fontFamily: string;
-    fontSize: number;
     name: string;
+    is: string;
+    scaleX?: number;
+    scaleY?: number;
+    x?: number;
+    y?: number;
+    visible?: boolean;
+    draggable?: boolean;
+    items: {
+        [item: string]: TextConfig | ImageConfig;
+    }
+}
+
+export interface TextConfig  {
+    id: string;
+    name: string;
+    is: string;
     text: string;
+    rotation?: number;
+    scaleX?: number;
+    scaleY?: number;
+    fontSize: number;
+    fontFamily: string;
     fill: string;
-    visible: boolean,
-    image: null | object
+    x?: number;
+    y?: number;
+    visible?: boolean;
+}
+
+export interface ImageConfig {
+    id: string;
+    name: string;
+    is: string;
+    width: number;
+    height: number;
+    rotation?: number;
+    scaleX?: number;
+    scaleY?: number;
+    x?: number;
+    y?: number;
+    visible?: boolean,
+    image?: string | File | HTMLElement;
+    draggable?: boolean;
 }

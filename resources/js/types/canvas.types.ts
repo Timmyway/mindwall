@@ -26,6 +26,8 @@ export interface TextareaStyle {
     left: string;
     width: string;
     height: string;
+    x?: number;
+    y?: number;
     fontSize: string;
     overflow: string;
     lineHeight: number;

@@ -21,7 +21,7 @@ class ThematicController extends Controller
 
         public function detail(Thematic $thematic)
         {
-            $thematic = Thematic::with(['user', 'quotes'])
+            $thematic = Thematic::with(['user'])
                 ->findOrFail($thematic->id);
             return Inertia::render('Thematics/ThematicDetail', [
                 'thematic' => $thematic,
