@@ -13,6 +13,10 @@ import { Transformer } from 'konva/lib/shapes/Transformer';
 import { Text } from 'konva/lib/shapes/Text';
 import { reactive } from 'vue';
 import { TextareaStyle } from '../../types/canvas.types'
+import TwContextMenu from '../../Components/menu/TwContextMenu.vue';
+import { useFileDialog } from '@vueuse/core'
+import { Rect } from 'konva/lib/shapes/Rect';
+import { Image } from 'konva/lib/shapes/Image';
 
 const props = defineProps<{
     thematic: Thematic
@@ -20,6 +24,11 @@ const props = defineProps<{
 
 const canvaStore = useCanvasStore();
 const { stageRef } = storeToRefs(canvaStore);
+
+const { files, open, reset, onChange } = useFileDialog({
+    accept: 'image/*', // Set to accept only image files
+    directory: false, // Select directories instead of files if set true
+})
 
 const savePositionsToServer = (positions: { x: number; y: number }[]) => {
     try {
@@ -55,10 +64,62 @@ props.thematic.quotes.forEach((quote) => {
         name: `quote-${quote.id}`,
         text: quote.name,
         fill: 'black',
-        visible: true
+        visible: true,
+        image: null
     }
     quotesConfig.value.push(config);
 });
+
+const pickImage = async () => {
+    open();
+}
+
+onChange((files) => {
+    if (files) {
+        addImage(files[0]);
+    }
+})
+
+const addImage = (input: string | File) => {
+    const image = new window.Image();
+
+    // Check if input is a string (URL) or a File object
+    if (typeof input === 'string') {
+        image.src = input;
+    } else if (input instanceof File) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (e.target && e.target.result) {
+                image.src = e.target.result as string;
+                image.width = 320;
+                image.height = 240;
+            }
+        };
+        reader.readAsDataURL(input);
+    }
+
+    image.onload = () => {
+        // Once the image is loaded, update the selected quote config
+        selectedQuoteConfig.value = {
+            ...selectedQuoteConfig.value,
+            image: image
+        };
+        console.log('===> Image added to selectedQuoteConfig', selectedQuoteConfig.value);
+    };
+};
+
+const deleteImage = (e) => {
+    console.log('===> E', e.event);
+    // Check if the selected quote config is available
+    if (selectedQuoteConfig.value) {
+        // Update the selected quote config to set the image to null
+        selectedQuoteConfig.value = {
+            ...selectedQuoteConfig.value,
+            image: null
+        };
+        console.log('===> Image removed from selectedQuoteConfig', selectedQuoteConfig.value);
+    }
+};
 
 const addQuote = (text: string = 'New quote...') => {
     const quoteId = uuid();
@@ -74,7 +135,8 @@ const addQuote = (text: string = 'New quote...') => {
         name: quoteId,
         text: text,
         fill: 'black',
-        visible: true
+        visible: true,
+        image: null
     };
 
     quotesConfig.value.push(newQuote);
@@ -151,14 +213,22 @@ const selectedQuoteConfig = computed({
     get: () => {
         return quotesConfig.value.find(q => q.name === selectedQuoteName.value) as QuoteConfig;
     },
-    set: (newConfig: QuoteConfig) => {
-        selectedQuoteName.value = newConfig.name;
-        quotesConfig.value = quotesConfig.value.map((q) => {
-            if (q.name === newConfig.name) {
-                return newConfig;
+    set: (newConfig: Partial<QuoteConfig>) => {
+        const selectedQuote = quotesConfig.value.find(q => q.name === selectedQuoteName.value);
+        if (selectedQuote) {
+            // Merge existing properties with new ones
+            const updatedQuote = { ...selectedQuote, ...newConfig };
+
+            // Update the quotesConfig array with the updated quote
+            quotesConfig.value = quotesConfig.value.map(q =>
+                q.name === updatedQuote.name ? updatedQuote : q
+            );
+
+            // Update the selectedQuoteName if necessary
+            if (newConfig.name && newConfig.name !== selectedQuoteName.value) {
+                selectedQuoteName.value = newConfig.name;
             }
-            return q;
-        });
+        }
     }
 });
 
@@ -177,9 +247,9 @@ const handleTransformEnd = (e: any) => {
 }
 
 const handleStageMouseDown = (e: any) => {
-    console.log('==> Stage mouse down event...');
     // clicked on stage - clear selection
     if (e.target === e.target.getStage()) {
+        console.log('==> Clicekd on stage...');
         if (editing.value) {
             exitEditMode();
         }
@@ -197,12 +267,28 @@ const handleStageMouseDown = (e: any) => {
     // find clicked rect by its name
     const name = e.target.name();
     const rect = findQuote(name);
+
+    // if (e.target instanceof Image) {
+    //     console.log('====> Etarget: ', e.target);
+    // }
     if (rect) {
         selectedQuoteName.value = name;
     } else {
         selectedQuoteName.value = '';
     }
     updateTransformer();
+}
+
+const handleContextMenu = (e) => {
+    e.evt.preventDefault();
+    if (e.target === stageRef.value.getStage()) {
+        console.log('===> We are on an empty place of the stage');
+        return;
+    }
+    console.log('==>', canvaStore.menu.show(e.evt))
+    const currentShape = e.target;
+    console.log('===> Current shape: ', currentShape);
+
 }
 
 const updateTransformer = () => {
@@ -390,6 +476,7 @@ const onQuoteDragend = (e: Event) => {
 <template>
     <div>
         <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
+            Files: {{ files }}
             <div class="fixed top-0 right-0 max-w-xs h-10 p-1 overflow-auto bg-black text-white text-xs">
                 {{ selectedQuoteConfig }}
             </div>
@@ -422,7 +509,17 @@ const onQuoteDragend = (e: Event) => {
                 >
                     <i class="fas fa-plus-circle"></i>
                 </button>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+                    @click.prevent="addImage('https://konvajs.org/assets/yoda.jpg')"
+                >
+                    <i class="fas fa-image"></i>
+                </button>
             </div>
+            <tw-context-menu
+                :on-image-add="pickImage"
+                :on-image-remove="deleteImage"
+            ></tw-context-menu>
             E: {{ editing }}
         </div>
         <div class="bg-white canva relative">
@@ -442,6 +539,7 @@ const onQuoteDragend = (e: Event) => {
                 @mousedown="handleStageMouseDown"
                 @touchstart="handleStageMouseDown"
                 @wheel="canvaStore.handleWheel"
+                @contextmenu="handleContextMenu"
                 :draggable="true"
             >
                 <v-layer>
@@ -468,6 +566,12 @@ const onQuoteDragend = (e: Event) => {
                                     }"
                                     @click="handleQuoteRemoval(quoteConfig.name)"
                                 ></v-circle>
+                                <v-image :config="{
+                                    x: quoteConfig.x,
+                                    y: quoteConfig.y,
+                                    image: quoteConfig.image,
+                                    draggable: true
+                                }"/>
                             </v-group>
                         </div>
                         <v-transformer ref="transformer" />

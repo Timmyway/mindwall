@@ -5,11 +5,13 @@ import { debounce } from "lodash";
 import { KonvaEventObject } from "konva/lib/Node";
 import { CanvasStore, CanvasState } from "../types/canvas.types";
 import { Stage } from "konva/lib/Stage";
+import ContextMenu from "primevue/contextmenu";
 
 export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('app', () => {
     // Todo: not working when using typescript
     const stageRef = ref<Stage | null>(null);
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
+    const menu = ref<ContextMenu>();
 
     const resetZoomLevel: () => void = () => {
         console.log('==> Reset');
@@ -68,5 +70,6 @@ export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('
         }
     }, 50);
 
-    return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel }
+    return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel, menu,
+    }
 });

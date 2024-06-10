@@ -10,5 +10,6 @@ export interface QuoteConfig {
     name: string;
     text: string;
     fill: string;
-    visible: boolean
+    visible: boolean,
+    image: null | object
 }
