@@ -12,6 +12,9 @@ export interface GroupConfig {
     y?: number;
     visible?: boolean;
     draggable?: boolean;
+    width?: number;
+    height?: number;
+    drawBorder?: boolean;
     items: {
         [item: string]: TextConfig | ImageConfig;
     }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { safeJsonParse, uuid } from '../../helpers/utils';
+import { safeJsonParse, uuid, imageToBase64, base64ToImage } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
-import { router } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
@@ -18,6 +18,8 @@ import { useFileDialog } from '@vueuse/core'
 import { Rect } from 'konva/lib/shapes/Rect';
 import { Image } from 'konva/lib/shapes/Image';
 import usePaletteColor from '../../composable/usePaletteColor';
+import canvasApi from '../../api/canvasApi';
+import ThematicList from './ThematicList.vue';
 
 const props = defineProps<{
     thematic: Thematic
@@ -31,15 +33,93 @@ const { files, open, reset, onChange } = useFileDialog({
     directory: false, // Select directories instead of files if set true
 })
 
-const saveWallToServer = () => {
+const serializeWall = async (wall: any): Promise<any> => {
+    const serializedWall: any = {};
+
+    for (const groupKey of Object.keys(wall)) {
+        const group = wall[groupKey];
+        const serializedGroup = { ...group };
+
+        if (group.items) {
+            serializedGroup.items = {};
+
+            for (const itemKey of Object.keys(group.items)) {
+                const item = group.items[itemKey];
+                const serializedItem = { ...item };
+
+                if (item.is === 'image' && item.image instanceof HTMLImageElement) {
+                    serializedItem.image = await imageToBase64(item.image);
+                }
+
+                serializedGroup.items[itemKey] = serializedItem;
+            }
+        }
+
+        serializedWall[groupKey] = serializedGroup;
+    }
+
+    return serializedWall;
+};
+
+const deserializeWall = async (serializedWall: any): Promise<any> => {
+    const deserializedWall: any = {};
+
+    for (const groupKey of Object.keys(serializedWall)) {
+        const group = serializedWall[groupKey];
+        const deserializedGroup = { ...group };
+
+        if (group.items) {
+            deserializedGroup.items = {};
+
+            for (const itemKey of Object.keys(group.items)) {
+                const item = group.items[itemKey];
+                const deserializedItem = { ...item };
+
+                if (item.is === 'image' && typeof item.image === 'string') {
+                    deserializedItem.image = await base64ToImage(item.image);
+                }
+
+                deserializedGroup.items[itemKey] = deserializedItem;
+            }
+        }
+
+        deserializedWall[groupKey] = deserializedGroup;
+    }
+
+    return deserializedWall;
+};
+
+// const form = useForm({
+//     thematicId: props.thematic.id,
+//     wall: ''
+// });
+
+const isSaving = ref<boolean>(false);
+
+const saveWallToServer = async () => {
     try {
+        isSaving.value = true;
+        const serializedWall = await serializeWall(wall);
+        // form.wall = JSON.stringify(serializedWall);
+
+        // form.post('/api/wall/update', { preserveScroll: true });
         const payload = {
             thematicId: props.thematic.id,
-            wall: JSON.stringify(wall)
-        };
-        router.post('/api/wall/update', payload);
+            wall: JSON.stringify(serializedWall)
+        }
+        console.log('Save to the server...')
+        try {
+            const response = await canvasApi.saveCanvas(payload);
+            console.log('Wall updated successfully.', response.data);
+            isSaving.value = false;
+        } catch (axiosError) {
+            console.log('====> Error found');
+            console.log(axiosError);
+        }
     } catch (error) {
         console.error('Failed to update positions on the server:', error);
+    } finally {
+        isSaving.value = false;
     }
 };
 
@@ -52,8 +132,15 @@ const center: { x: number, y: number } = {
     y: stageHeight.value / 2,
 };
 
-const thematicWall = safeJsonParse(props.thematic.wall);
-const wall = reactive<WallConfig>(thematicWall);
+const isReady = ref<boolean>(false);
+const cookImages = async () => {
+    const thematicWall = safeJsonParse(props.thematic.wall);
+    wall.value = await deserializeWall(thematicWall);
+    isReady.value = true;
+}
+
+const wall = reactive<WallConfig>({});
+cookImages();
 // props.thematic.quotes.forEach((quote) => {
 //     const config = {
 //         id: `quote-${quote.id}`,
@@ -534,8 +621,21 @@ const changeColor = (color: string) => {
 <template>
     <div>
         <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
-            <div class="fixed top-0 right-0 max-w-4xl h-15 p-1 overflow-auto bg-black text-white text-xs">
-                {{ selectedConfig }}
+            <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
+                <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto">
+                    <div v-for="conf in selectedConfig">
+                        <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
+                            {{ confName }} => {{ confValue }}
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
+                    <div v-for="g in wall">
+                        <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
+                            {{ sName }} => {{ sValue }}
+                        </div>
+                    </div>
+                </div>
             </div>
             <Link
                 :href="route('thematic.list')"
@@ -581,6 +681,7 @@ const changeColor = (color: string) => {
                     </template>
                 </div>
                 <button
+                    v-show="!isSaving"
                     class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
                     @click.prevent="saveWallToServer()"
                 >
@@ -593,7 +694,7 @@ const changeColor = (color: string) => {
             ></tw-context-menu>
             E: {{ editing }}
         </div>
-        <div class="bg-white canva relative">
+        <div class="bg-white canva relative" v-if="isReady">
             <textarea
                 v-show="editing"
                 ref="quoteAreaRef"

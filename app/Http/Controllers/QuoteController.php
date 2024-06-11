@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quote;
 use App\Models\Thematic;
+use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -33,28 +34,15 @@ class QuoteController extends Controller
         $thematicId = $validated['thematicId'];
         $thematic = Thematic::findOrFail($thematicId);
 
-        // Decode the JSON wall data
-        $wallData = json_decode($validated['wall'], true);
-
-        // Process the wall data to ensure only serializable properties are included
-        foreach ($wallData as &$group) {
-            if (isset($group['items'])) {
-                foreach ($group['items'] as &$item) {
-                    if (isset($item['is']) && $item['is'] === 'image') {
-                        // Ensure only serializable properties are included
-                        if (isset($item['image']) && is_object($item['image'])) {
-                            $item['image'] = $item['image']->src ?? null;
-                        }
-                    }
-                }
-            }
-        }
-
         // Update the wall field of the thematic
-        $thematic->wall = $wallData;
+        $thematic->wall = $validated['wall'];
 
         // Save the changes to the database
-        $thematic->save();
+        try {
+            $thematic->save();
+        } catch(Exception $e) {
+            throw($e);
+        }
 
         return response()->json(['message' => "Thematic's wall updated successfully"]);
     }

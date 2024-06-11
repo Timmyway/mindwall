@@ -56,6 +56,8 @@ class ThematicFactory extends Factory
                 'scaleY' => 1,
                 'visible' => true,
                 'draggable' => true,
+                'width' => $this->faker->numberBetween(100, 300),
+                'height' => $this->faker->numberBetween(100, 200),
                 'items' => $groupItems
             ];
         }
@@ -83,6 +85,7 @@ class ThematicFactory extends Factory
             'x' => $this->faker->numberBetween(0, 1600),
             'y' => $this->faker->numberBetween(0, 900),
             'visible' => true,
+            'drawBorder' => true,
             'is' => 'text'
         ];
     }

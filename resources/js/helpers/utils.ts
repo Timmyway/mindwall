@@ -17,4 +17,50 @@ function uuid() {
     return uuidv4();
 }
 
-export { safeJsonParse, uuid }
+const imageToBase64 = (image: HTMLImageElement): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            resolve(reader.result as string);
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+
+        if (image.src.startsWith('blob:')) {
+            fetch(image.src)
+                .then(response => response.blob())
+                .then(blob => reader.readAsDataURL(blob))
+                .catch(reject);
+        } else {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.src = image.src;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL());
+                } else {
+                    reject(new Error('Could not get canvas context'));
+                }
+            };
+            img.onerror = reject;
+        }
+    });
+};
+
+const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = (error) => reject(error);
+        img.src = base64;
+    });
+};
+
+
+export { safeJsonParse, uuid, imageToBase64, base64ToImage }

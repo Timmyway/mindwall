@@ -7,13 +7,13 @@ interface User {
 }
 
 export interface Thematic {
-    id: number;
+    id: string;
     name: string;
     user: User;
     wall: WallConfig;
 }
 
 export interface QuotePositionObject {
-  x: number,
-  y: number
+    x: number,
+    y: number
 }
