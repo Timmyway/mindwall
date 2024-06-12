@@ -446,6 +446,15 @@ const handleTransformEnd = (e: any) => {
     }
 }
 
+const onTextClick = (e: any) => {
+    // Check if Ctrl key is pressed
+    const ctrl = e.evt.ctrlKey || e.evt.metaKey; // metaKey for Mac Command key
+    console.log('====> Has ctrl: ', ctrl);
+    if (selectedConfig.value) {
+        selectedConfig.value.draggable = ctrl ? true : false;
+    }
+}
+
 const handleStageMouseDown = (e: any) => {
     // clicked on stage - clear selection
     if (e.target === e.target.getStage()) {
@@ -456,14 +465,6 @@ const handleStageMouseDown = (e: any) => {
         resetConfig();
         updateTransformer();
         return;
-    }
-
-    if (selectedConfig.value) {
-        console.log(isTextConfig(selectedConfig.value));
-        if (isTextConfig(selectedConfig.value)) {
-            // Text element
-            selectedConfig.value.draggable = true;
-        }
     }
 
     // clicked on transformer - do nothing
@@ -633,10 +634,19 @@ const textareaStyle = reactive<TextareaStyle>({
     transform: ''
 });
 
+const onDragstart = (e: any) => {
+    if (e.target) {
+        if (e.target.getType() === 'Group') {
+            e.target.opacity(0.5)
+        }
+    }
+}
+
 const onDragend = (e: any) => {
     if (e.target) {
         if (e.target.getType() === 'Group') {
             console.log('===> Group selected: ', e.target.name());
+            e.target.opacity(1)
             wall[e.target.name()].x = e.target.x();
             wall[e.target.name()].y = e.target.y();
         } else if (e.target.constructor.name === '_Image') {
@@ -666,6 +676,29 @@ const changeColor = (color: string) => {
 
 /* RELATED TO ACTION PANEL */
 const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
+
+/* SET ZINDEX */
+const bringToTop = (e: any) => {
+    // TODO
+
+    // if (selectedConfig.value) {
+    //     // Get the selected group and config name
+    //     const groupName = selectedGroupName.value;
+    //     const configName = selectedConfigName.value;
+
+    //     if (groupName && configName) {
+    //         // Check if the group exists
+    //         if (wall[groupName] && wall[groupName].items[configName]) {
+    //             const maxIndex = Object.keys(wall[groupName].items[configName]).length;
+    //             wall[groupName].items[configName].zIndex = maxIndex;
+    //         }
+    //     }
+    // }
+}
+
+const bringToBack = (e: any) => {
+    // TODO
+}
 </script>
 <template>
     <div>
@@ -752,9 +785,12 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                 :handle-add-image="pickImage"
                 :handle-remove-shape="deleteShape"
                 :handle-add-text="addTextToWall"
+                :handle-bring-to-top="bringToTop"
+                :handle-bring-to-back="bringToBack"
             ></tw-context-menu>
             E: {{ editing }}
             Is ready: {{ isReady }}
+            <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"</i>
         </div>
         <div class="bg-white canva relative" v-if="isReady">
             <textarea
@@ -789,20 +825,22 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                                 :config="group"
                                 @transformend="handleTransformEnd"
                                 @contextmenu="handleGroupContextMenu"
+                                @dragstart="onDragstart"
                                 @dragend="onDragend"
                             >
                                 <template v-for="config, configName in group.items" :key="configName">
                                     <v-text
                                         v-if="isTextConfig(config)"
                                         :config="config"
+                                        @click="onTextClick"
                                         @dblclick="enterEditMode"
-                                        @mousedown="selectConfig(groupName, configName)"
+                                        @mousedown="selectConfig(String(groupName), String(configName))"
                                         @transformend="handleTransformEnd"
                                     ></v-text>
                                     <v-image
                                         v-if="isImageConfig(config)"
                                         :config="config"
-                                        @mousedown="selectConfig(groupName, configName)"
+                                        @mousedown="selectConfig(String(groupName), String(configName))"
                                         @dragend="onDragend"
                                         @transformend="handleTransformEnd"
                                     />

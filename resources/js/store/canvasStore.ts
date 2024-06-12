@@ -11,7 +11,7 @@ export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('
     // Todo: not working when using typescript
     const stageRef = ref<Stage | null>(null);
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
-    const menu = ref<ContextMenu>();
+    const menu: Ref<ContextMenu | null> = ref(null);
 
     const resetZoomLevel: () => void = () => {
         console.log('==> Reset');

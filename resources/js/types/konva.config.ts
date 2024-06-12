@@ -35,6 +35,7 @@ export interface TextConfig  {
     y?: number;
     visible?: boolean;
     draggable?: boolean;
+    zIndex?: number
 }
 
 export interface ImageConfig {
@@ -51,4 +52,5 @@ export interface ImageConfig {
     visible?: boolean,
     image?: string | File | HTMLElement;
     draggable?: boolean;
+    zIndex?: number
 }

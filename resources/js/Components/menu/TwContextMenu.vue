@@ -8,7 +8,9 @@ import { ref } from 'vue';
 const props = defineProps<{
     handleAddText: Function,
     handleAddImage: Function,
-    handleRemoveShape: Function
+    handleRemoveShape: Function,
+    handleBringToTop: Function,
+    handleBringToBack: Function
 }>();
 
 const canvaStore = useCanvasStore();
@@ -33,7 +35,16 @@ const items = ref<MenuItem[]>([
         label: 'Delete',
         icon: 'fas fa-trash text-red-300',
         command: props.handleRemoveShape
-    }
+    },
+    {
+        label: 'Position',
+        icon: 'fas fa-layer',
+        items: [
+            { label: 'Bring to top', icon: 'fas fa-plus', command: props.handleBringToTop },
+            { label: 'Bring to top', icon: 'fas fa-plus', command: props.handleBringToBack },
+        ]
+    },
+
 ]);
 
 </script>
