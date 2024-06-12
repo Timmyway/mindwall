@@ -101,7 +101,7 @@ const isSaving = ref<boolean>(false);
 const saveWallToServer = async () => {
     try {
         isSaving.value = true;
-        const serializedWall = await serializeWall(wall);
+        const serializedWall = await serializeWall();
         // form.wall = JSON.stringify(serializedWall);
 
         // form.post('/api/wall/update', { preserveScroll: true });
@@ -181,11 +181,9 @@ onChange((files) => {
     }
 })
 
-const deleteImage = (e: Event) => {
-    console.log('===> Event', e);
-
+const deleteShape = () => {
     // Check if the selected config is available and is an ImageConfig
-    if (selectedConfig.value && selectedConfig.value.is === 'image') {
+    if (selectedConfig.value) {
         // Get the selected group and config name
         const groupName = selectedGroupName.value;
         const configName = selectedConfigName.value;
@@ -193,9 +191,16 @@ const deleteImage = (e: Event) => {
         if (groupName && configName) {
             // Check if the group exists
             if (wall[groupName] && wall[groupName].items[configName]) {
-                // Delete the image config from the items object
+                // Delete the shape config from the items object
                 delete wall[groupName].items[configName];
-                console.log(`===> ImageConfig '${configName}' removed from group '${groupName}'`);
+                console.log(`---- 99 -> '${configName}' shape has been removed from group '${groupName}'`);
+
+                // Check if the group is empty after deleting the shape
+                if (Object.keys(wall[groupName].items).length === 0) {
+                    // If the group is empty, delete the group itself
+                    delete wall[groupName];
+                    console.log(`---- 99 -> Group '${groupName}' has been removed because it became empty.`);
+                }
             }
         }
     }
@@ -203,6 +208,7 @@ const deleteImage = (e: Event) => {
 
 const addGroup = () => {
     const groupName = `group-${uuid()}`;
+    console.log('==> Add new group: ', groupName);
     wall[groupName] = {
         id: groupName,
         name: groupName,
@@ -213,6 +219,7 @@ const addGroup = () => {
         draggable: true,
         items: {}
     };
+    return groupName;
 };
 
 const isTextConfig = (config: any): config is TextConfig => {
@@ -223,11 +230,18 @@ const isImageConfig = (config: any): config is ImageConfig => {
     return (config as ImageConfig).is === 'image';
 };
 
-const addTextToWall = (groupName: string, text: string = 'New text...') => {
-      const textId = `${groupName}-text-${uuid()}`;
-      const newTextConfig: TextConfig = {
-        id: textId,
-        name: textId,
+const addTextToWall = (e: PointerEvent, text: string = 'New text...') => {
+    let newGroupName = addGroup();
+    let textIdentifier: string;
+    if (selectedGroupName.value) {
+        textIdentifier = `${selectedGroupName.value}-text-${uuid()}`;
+    } else {
+        textIdentifier = `${newGroupName}-text-${uuid()}`;
+    }
+
+    const newTextConfig: TextConfig = {
+        id: textIdentifier,
+        name: textIdentifier,
         is: 'text',
         rotation: 0,
         x: center.x - 10,
@@ -238,23 +252,26 @@ const addTextToWall = (groupName: string, text: string = 'New text...') => {
         fontSize: 16,
         text: text,
         fill: 'black',
-        visible: true,
+        visible: true
     };
 
-    if (!wall[groupName]) {
-        wall[groupName] = {
-            id: groupName,
-            name: groupName,
-            is: 'text',
+    if (selectedGroupName.value) {
+        console.log('==========> Add into group: ', selectedGroupName.value);
+        console.log('==========> the following text: ', newTextConfig);
+        wall[selectedGroupName.value].items[textIdentifier] = newTextConfig;
+    } else {
+        wall[newGroupName] = {
+            id: newGroupName,
+            name: newGroupName,
+            is: 'group',
             scaleX: 1,
             scaleY: 1,
             visible: true,
             draggable: true,
             items: {}
         };
+        wall[newGroupName].items[textIdentifier] = newTextConfig;
     }
-
-    wall[groupName].items[textId] = newTextConfig;
 };
 
 const calcOptimizedImageDimension = (im: HTMLImageElement, maxWidth = 300, maxHeight = 300): { w:number, h:number } => {
@@ -398,7 +415,7 @@ const thematicTextConfig = ref({
 const selectedConfig = computed<TextConfig | ImageConfig | null>({
     get: (): TextConfig | ImageConfig | null => {
         if (selectedGroupName.value && selectedConfigName.value) {
-            return wall[selectedGroupName.value].items[selectedConfigName.value];
+            return wall[selectedGroupName.value]?.items[selectedConfigName.value];
         }
         return null;
     },
@@ -438,6 +455,14 @@ const handleStageMouseDown = (e: any) => {
         resetConfig();
         updateTransformer();
         return;
+    }
+
+    if (selectedConfig.value) {
+        console.log(isTextConfig(selectedConfig.value));
+        if (isTextConfig(selectedConfig.value)) {
+            // Text element
+            selectedConfig.value.draggable = true;
+        }
     }
 
     // clicked on transformer - do nothing
@@ -525,7 +550,10 @@ const enterEditMode = (e: Event) => {
     //     y: stageRef.value.getStage().container().offsetTop + textPosition.y,
     // };
     // Set its dimension
-    const calculatedWidth = (textNode?.width() ?? 0) - (textNode?.padding() ?? 0) * 2;
+    const calculatedWidth = (
+        (textNode?.width?.() ?? 0) * 1.05 -
+        ((textNode?.padding?.() ?? 0) * 2)
+    );
     textareaStyle.width = calculatedWidth + 'px';
     textareaStyle.height =
         (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
@@ -705,8 +733,9 @@ const changeColor = (color: string) => {
                 </button>
             </div>
             <tw-context-menu
-                :on-image-add="pickImage"
-                :on-image-remove="deleteImage"
+                :handle-add-image="pickImage"
+                :handle-remove-shape="deleteShape"
+                :handle-add-text="addTextToWall"
             ></tw-context-menu>
             E: {{ editing }}
             Is ready: {{ isReady }}

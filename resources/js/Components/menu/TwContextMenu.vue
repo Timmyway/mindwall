@@ -6,8 +6,9 @@ import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem';
 import { ref } from 'vue';
 
 const props = defineProps<{
-    onImageAdd: Function,
-    onImageRemove: Function
+    handleAddText: Function,
+    handleAddImage: Function,
+    handleRemoveShape: Function
 }>();
 
 const canvaStore = useCanvasStore();
@@ -18,9 +19,19 @@ const items = ref<MenuItem[]>([
         label: 'Image',
         icon: 'fas fa-image',
         items: [
-            { label: 'Add', icon: 'fas fa-plus', command: props.onImageAdd },
-            { label: 'Delete', icon: 'fas fa-trash', command: props.onImageRemove },
+            { label: 'Add', icon: 'fas fa-plus', command: props.handleAddImage },
         ]
+    },
+    {
+        label: 'Text',
+        icon: 'fas fa-text',
+        items: [
+            { label: 'Add', icon: 'fas fa-plus', command: props.handleAddText },
+        ]
+    },
+    {
+        label: 'Delete',
+        command: props.handleRemoveShape
     }
 ]);
 
