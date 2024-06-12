@@ -10,7 +10,14 @@ import VueKonva from 'vue-konva';
 import 'primevue/resources/themes/aura-light-green/theme.css'
 import { createPinia } from 'pinia';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Mindwall';
+
+// Define the global Vue instance with $route property
+declare module '@vue/runtime-core' {
+    interface ComponentCustomProperties {
+        $route: typeof route;
+    }
+}
 
 const pinia = createPinia();
 
@@ -33,6 +40,6 @@ createInertiaApp({
         app.mount(el);
     },
     progress: {
-        color: '#4B5563',
+        color: '#29178A',
     },
 });

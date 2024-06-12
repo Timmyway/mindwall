@@ -551,7 +551,7 @@ const enterEditMode = (e: Event) => {
     // };
     // Set its dimension
     const calculatedWidth = (
-        (textNode?.width?.() ?? 0) * 1.05 -
+        (textNode?.width?.() ?? 0) * 1.25 -
         ((textNode?.padding?.() ?? 0) * 2)
     );
     textareaStyle.width = calculatedWidth + 'px';

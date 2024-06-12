@@ -24,13 +24,14 @@ const items = ref<MenuItem[]>([
     },
     {
         label: 'Text',
-        icon: 'fas fa-text',
+        icon: 'fas fa-font',
         items: [
             { label: 'Add', icon: 'fas fa-plus', command: props.handleAddText },
         ]
     },
     {
         label: 'Delete',
+        icon: 'fas fa-trash text-red-300',
         command: props.handleRemoveShape
     }
 ]);
