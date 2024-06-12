@@ -20,6 +20,7 @@ import { Image } from 'konva/lib/shapes/Image';
 import usePaletteColor from '../../composable/usePaletteColor';
 import canvasApi from '../../api/canvasApi';
 import ThematicList from './ThematicList.vue';
+import useActionPanel from '../../composable/useActionPanel';
 
 const props = defineProps<{
     thematic: Thematic
@@ -660,7 +661,11 @@ const changeColor = (color: string) => {
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
         selectedConfig.value.fill = color;
     }
+    hidePanel('palette');
 }
+
+/* RELATED TO ACTION PANEL */
+const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
 </script>
 <template>
     <div>
@@ -703,7 +708,7 @@ const changeColor = (color: string) => {
                     >Reset</button>
                 </div>
             </div>
-            <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+            <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
                     @click.prevent="addGroup()"
@@ -717,12 +722,23 @@ const changeColor = (color: string) => {
                     <i class="fas fa-image"></i>
                 </button>
                 <div class="flex items-center">
-                    <template v-for="color in paletteColor">
-                        <button
-                            class="w-4 h-4"
-                            :style="{ backgroundColor: color }"
-                            @click="changeColor(color)"></button>
-                    </template>
+                    <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
+                        @mouseover="showPanel('palette')"
+                    >
+                        <i class="fas fa-font"></i>
+                    </button>
+                    <div
+                        v-show="viewPanel.palette"
+                        class="absolute top-full w-full max-w-xs bg-white z-10 p-2 flex flex-wrap gap-[3px]"
+                        style="box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;"
+                        @mouseleave="hidePanel('palette')">
+                        <template v-for="color in paletteColor">
+                            <button
+                                class="btn btn-icon p-0 w-4 h-4 rounded-full"
+                                :style="{ backgroundColor: color }"
+                                @click="changeColor(color)"></button>
+                        </template>
+                    </div>
                 </div>
                 <button
                     v-show="!isSaving"
