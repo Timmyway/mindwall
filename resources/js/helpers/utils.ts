@@ -62,5 +62,39 @@ const base64ToImage = (base64: string): Promise<HTMLImageElement> => {
     });
 };
 
+const resizeImage = (image: HTMLImageElement, maxWidth: number, maxHeight: number): HTMLImageElement => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Unable to get 2D rendering context");
 
-export { safeJsonParse, uuid, imageToBase64, base64ToImage }
+    const width = image.width;
+    const height = image.height;
+
+    let newWidth = width;
+    let newHeight = height;
+
+    // Calculate the new dimensions while preserving aspect ratio
+    if (width > maxWidth) {
+        newWidth = maxWidth;
+        newHeight = (height * maxWidth) / width;
+    }
+    if (newHeight > maxHeight) {
+        newWidth = (newWidth * maxHeight) / newHeight;
+        newHeight = maxHeight;
+    }
+
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+
+    // Draw the image onto the canvas with the new dimensions
+    ctx.drawImage(image, 0, 0, newWidth, newHeight);
+
+    // Create a new image element with the resized image
+    const resizedImage = new Image();
+    resizedImage.src = canvas.toDataURL('image/jpeg'); // Change the MIME type as needed
+
+    return resizedImage;
+};
+
+
+export { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage }

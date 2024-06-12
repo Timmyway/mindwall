@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { safeJsonParse, uuid, imageToBase64, base64ToImage } from '../../helpers/utils';
+import { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
 import { router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -33,7 +33,9 @@ const { files, open, reset, onChange } = useFileDialog({
     directory: false, // Select directories instead of files if set true
 })
 
-const serializeWall = async (wall: any): Promise<any> => {
+const wall = reactive<WallConfig>({});
+
+const serializeWall = async (): Promise<any> => {
     const serializedWall: any = {};
 
     for (const groupKey of Object.keys(wall)) {
@@ -45,9 +47,9 @@ const serializeWall = async (wall: any): Promise<any> => {
 
             for (const itemKey of Object.keys(group.items)) {
                 const item = group.items[itemKey];
-                const serializedItem = { ...item };
+                const serializedItem: any = { ...item };
 
-                if (item.is === 'image' && item.image instanceof HTMLImageElement) {
+                if (isImageConfig(item) && item.image instanceof HTMLImageElement) {
                     serializedItem.image = await imageToBase64(item.image);
                 }
 
@@ -132,15 +134,23 @@ const center: { x: number, y: number } = {
     y: stageHeight.value / 2,
 };
 
-const isReady = ref<boolean>(false);
-const cookImages = async () => {
+const isReady = ref<boolean>(true);
+
+const cook = async () => {
+    console.log('Start cooking...');
+    // Wall should be a JSON string. So we need to parse it first.
     const thematicWall = safeJsonParse(props.thematic.wall);
-    wall.value = await deserializeWall(thematicWall);
-    isReady.value = true;
+    // Then deserialize it (images).
+    if (thematicWall) {
+        const deserialized = await deserializeWall(thematicWall);
+
+        // Use Object.assign to merge properties into the reactive wall object
+        Object.assign(wall, deserialized);
+        isReady.value = true;
+    }
 }
 
-const wall = reactive<WallConfig>({});
-cookImages();
+cook();
 // props.thematic.quotes.forEach((quote) => {
 //     const config = {
 //         id: `quote-${quote.id}`,
@@ -288,6 +298,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
             const { w, h } = calcOptimizedImageDimension(im);
             newImageConfig.width = w;
             newImageConfig.height = h;
+
             if (selectedGroupName.value) {
                 wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
             }
@@ -304,6 +315,11 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
                 newImageConfig.width = w;
                 newImageConfig.height = h;
                 newImageConfig.image = im;
+
+                // Resize the image before adding it to the wall
+                const resizedImage = resizeImage(im, w, h); // Example max width and height
+                newImageConfig.image = resizedImage;
+
                 if (selectedGroupName.value) {
                     wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
                 }
@@ -693,6 +709,7 @@ const changeColor = (color: string) => {
                 :on-image-remove="deleteImage"
             ></tw-context-menu>
             E: {{ editing }}
+            Is ready: {{ isReady }}
         </div>
         <div class="bg-white canva relative" v-if="isReady">
             <textarea

@@ -38,12 +38,12 @@ export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('
             if (mode === '+') {
                 console.log('Zoom ++')
                 if (zoomLevel.value < maxScale) {
-                    zoomLevel.value = currentZoom + scaleBy;
+                    zoomLevel.value = currentZoom - scaleBy;
                 }
             } else {
                 console.log('Zoom --')
                 if (zoomLevel.value > minScale) {
-                    zoomLevel.value = currentZoom - scaleBy;
+                    zoomLevel.value = currentZoom + scaleBy;
                 }
             }
 
