@@ -25,6 +25,7 @@
         "@inertiajs/vue3": "^1.1.0",
         "@vueuse/components": "^10.9.0",
         "@vueuse/core": "^10.9.0",
+        "dropzone-vue": "^0.1.11",
         "konva": "^9.3.11",
         "lodash": "^4.17.21",
         "pinia": "^2.1.7",

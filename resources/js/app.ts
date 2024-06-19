@@ -11,6 +11,9 @@ import 'primevue/resources/themes/aura-light-green/theme.css'
 import { createPinia } from 'pinia';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Mindwall';
+const apiUrl = import.meta.env.VITE_APP_ENV === 'prod'
+    ? import.meta.env.VITE_API_BASE_URI_PROD
+    : import.meta.env.VITE_API_BASE_URI_DEV;
 
 // Define the global Vue instance with $route property
 declare module '@vue/runtime-core' {
@@ -28,6 +31,8 @@ createInertiaApp({
         const app = createApp({ render: () => h(App, props) });
 
         app.config.globalProperties.$route = route;
+
+        app.provide('$apiUrl', apiUrl);
 
         app.use(pinia);
         app.use(plugin);
