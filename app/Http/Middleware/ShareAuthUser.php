@@ -16,13 +16,10 @@ class ShareAuthUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        Inertia::share([
-            'auth.user' => function () use ($request) {
-                return $request->user()
-                    ? $request->user()->only('id', 'name', 'email') // Adjust fields as needed
-                    : null;
-            },
-        ]);
+        Inertia::share('user', fn (Request $request) => $request->user()
+            ? $request->user()->only('id', 'name', 'email')
+            : null
+        );
 
         return $next($request);
     }

@@ -24,7 +24,10 @@
             </div>
 
             <div v-show="upload">
-                <TwUploader></TwUploader>
+                <tw-uploader
+                    :accepted-files="undefined"
+                    :user="loggedInUser"
+                ></tw-uploader>
             </div>
 
             <!-- Pagination : use primevue paginator component -->
@@ -93,21 +96,18 @@ import { User } from '../../types/auth.types';
 const props = defineProps<{
     upload: boolean;
     scrollable: boolean;
-    auth: User;
+    user: User;
 }>();
 
 // Default props values
 const upload = props.upload ?? true;
 const scrollable = props.scrollable ?? false;
 
-// Inject the store
-const $store = inject<any>('$store');
-
 // Reactive state
 const paginationInfos = ref(null);
 const apiDatas = ref(null);
 const images = ref<any[]>([]);
-const page = ref(1);
+const page = ref<number>(1);
 const noResult = ref(false);
 const message = ref('');
 const options = reactive({
@@ -121,7 +121,7 @@ const selected = ref<any[]>([]);
 const deleteMultiple = ref(false);
 
 // Setup
-const loggedInUser = props.auth;
+const loggedInUser: User = props.user;
 const { superCopy, copied } = useSuperCopy();
 
 // Methods
@@ -188,13 +188,6 @@ const deleteImages = async () => {
     console.log('All images have been deleted');
     fetchImages();
   }
-};
-
-const cropImage = (url: string) => {
-  $store.setImageToCropAction(url);
-  // Emit an event using a custom event handler
-  // You can define a custom event handler to emit this event
-  // Example: emit('edit');
 };
 
 const onPage = (event: { page: number }) => {

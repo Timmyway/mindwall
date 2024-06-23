@@ -7,7 +7,7 @@
             :multipleUpload="true"
             :maxFiles="10"
             :headers="{'Content-Type': 'multipart/form-data'}"
-            paramName="image_to_upload"
+            paramName="image"
             :acceptedFiles="acceptedFiles"
             :maxFileSize="Number(50000000)"
             @sending="onSending"
@@ -19,15 +19,16 @@
 <script setup lang="ts">
 import 'dropzone-vue/dist/dropzone-vue.common.css';
 import ImageApi from '../../api/galleryApi'
-import { inject } from 'vue';
+import { inject, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 // Define props
 const props = defineProps<{
-  acceptedFiles: (string[] | string) | undefined
+  acceptedFiles: (string[] | string) | undefined,
 }>();
 
 // Inject the $apiBaseURI
-const $apiUrl = inject<string>('$apiBaseURI');
+const $apiUrl = inject<string>('$apiUrl');
 
 // Provide a default value for acceptedFiles if not passed
 const acceptedFiles = props.acceptedFiles ?? ['webp', 'image/jpeg', 'image/png', 'image/tiff', 'image/gif', 'image/bmp', 'image/x-icon'];
@@ -36,14 +37,14 @@ const onSending = async (files: File[], xhr: XMLHttpRequest) => {
     const imageUploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('name', file.name);
-        formData.append('image_to_upload', file);
+        formData.append('image', file);
 
         try {
-        await ImageApi.saveImage(formData);
-        console.log(`${file.name} has been uploaded`);
+            await ImageApi.saveImage(formData);
+            console.log(`${file.name} has been uploaded`);
         } catch (error: any) {
-        console.error(`${file.name} hasn't been uploaded due to the following error: ${error}`);
-        throw error;
+            console.error(`${file.name} hasn't been uploaded due to the following error: ${error}`);
+            throw error;
         }
     });
 

@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
@@ -21,13 +21,17 @@ import usePaletteColor from '../../composable/usePaletteColor';
 import canvasApi from '../../api/canvasApi';
 import ThematicList from './ThematicList.vue';
 import useActionPanel from '../../composable/useActionPanel';
+import TwImageGallery from '@/Components/media/TwImageGallery.vue';
 
 const props = defineProps<{
-    thematic: Thematic
+    thematic: Thematic,
 }>();
 
 const canvaStore = useCanvasStore();
 const { stageRef } = storeToRefs(canvaStore);
+const page = usePage();
+
+const user = computed(() => page.props.user);
 
 const { files, open, reset, onChange } = useFileDialog({
     accept: 'image/*', // Set to accept only image files
@@ -790,7 +794,8 @@ const bringToBack = (e: any) => {
             ></tw-context-menu>
             E: {{ editing }}
             Is ready: {{ isReady }}
-            <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"</i>
+            <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
+            <tw-image-gallery :upload="true" :scrollable="true" :user="user"></tw-image-gallery>
         </div>
         <div class="bg-white canva relative" v-if="isReady">
             <textarea

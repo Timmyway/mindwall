@@ -1,7 +1,7 @@
 import axios from "axios";
 
 var Api = axios.create({
-    baseURL: 'http://mindwall.local/api',
+    baseURL: 'http://mindwall.local',
     headers: { Accept: 'application/json' }
 });
 
