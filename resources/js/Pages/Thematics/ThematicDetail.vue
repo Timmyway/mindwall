@@ -22,6 +22,7 @@ import canvasApi from '../../api/canvasApi';
 import ThematicList from './ThematicList.vue';
 import useActionPanel from '../../composable/useActionPanel';
 import TwImageGallery from '@/Components/media/TwImageGallery.vue';
+import { User } from '@/types';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -31,7 +32,13 @@ const canvaStore = useCanvasStore();
 const { stageRef } = storeToRefs(canvaStore);
 const page = usePage();
 
-const user = computed(() => page.props.user);
+const user = computed<User | null>((): User | null => page.props.user as User | null);
+
+const isGalleryVisible = ref<boolean>(false);
+
+const toggleImageGallery = () => {
+    isGalleryVisible.value = !isGalleryVisible.value;
+}
 
 const { files, open, reset, onChange } = useFileDialog({
     accept: 'image/*', // Set to accept only image files
@@ -729,7 +736,24 @@ const bringToBack = (e: any) => {
             >
                 <i class="fas fa-chevron-left text-red-600"></i>
             </Link>
-            <div class="h-8 flex items-center">
+            <div class="h-8 flex items-center relative">
+                <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+                    <button @click.prevent="toggleImageGallery">
+                        <i class="fas fa-images"></i>
+                    </button>
+                    <div
+                        v-show="isGalleryVisible"
+                        class="fixed top-10 left-0 bg-white z-20 p-2 bg-red-300"
+                    >
+                        <tw-image-gallery
+                            :upload="true"
+                            :scrollable="true"
+                            :user="user"
+                            class="max-w-xs"
+                            :max-height="480"
+                        ></tw-image-gallery>
+                    </div>
+                </div>
                 <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
                     <button @click.prevent="canvaStore.setZoomLevel('-')">
                         <i class="fas fa-minus"></i>
@@ -795,7 +819,6 @@ const bringToBack = (e: any) => {
             E: {{ editing }}
             Is ready: {{ isReady }}
             <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
-            <tw-image-gallery :upload="true" :scrollable="true" :user="user"></tw-image-gallery>
         </div>
         <div class="bg-white canva relative" v-if="isReady">
             <textarea

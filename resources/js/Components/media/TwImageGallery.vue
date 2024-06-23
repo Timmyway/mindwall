@@ -1,25 +1,27 @@
 <template>
     <!-- // Image galery -->
-    <div>
+    <div v-bind="$attrs" class="image-gallery-container">
         <div class="image-gallery-command">
             <!-- Gallery command bar -->
-            <div class="flex-x--center mb-2">
-                <h2>Images gallery</h2>
-                <button class="btn btn-icon text-primary" @click="fetchImages()">
-                    <i class="fa fa-refresh mx-2"></i>
-                </button>
-                <div class="btn-group">
-                    <label for="form-options-displayallusersimages">All</label>
-                    <input type="checkbox" id="form-options-displayallusersimages" class="mx-2" v-model="options.displayAllUsersImages">
-                </div>
-                <div class="btn-group">
-                    <label for="form-delete-multiple">Delete multiple</label>
-                    <input type="checkbox" id="form-delete-multiple" class="mx-2" v-model="deleteMultiple">
-                    <button
-                        v-show="selected.length"
-                        class="btn btn-sm btn-danger"
-                        @click="deleteImages"
-                    >Delete</button>
+            <div class="mb-2 px-2">
+                <h2 class="py-2 font-bold">Gallery</h2>
+                <div class="flex items-center flex-wrap gap-2">
+                    <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs text-primary" @click="fetchImages()">
+                        <i class="fa fa-sync mx-2"></i>
+                    </button>
+                    <div class="flex items-center border border-gray-200 py-1">
+                        <label for="form-options-displayallusersimages">All</label>
+                        <input type="checkbox" id="form-options-displayallusersimages" class="mx-2" v-model="options.displayAllUsersImages">
+                    </div>
+                    <div class="flex items-center border border-gray-200 py-1">
+                        <label for="form-delete-multiple">Delete multiple</label>
+                        <input type="checkbox" id="form-delete-multiple" class="mx-2" v-model="deleteMultiple">
+                        <button
+                            v-show="selected.length"
+                            class="btn btn-sm btn-danger"
+                            @click="deleteImages"
+                        >Delete</button>
+                    </div>
                 </div>
             </div>
 
@@ -41,7 +43,7 @@
         </div>
 
         <!-- Image gallery area -->
-        <div class="image-gallery" :style="[scrollable ? 'max-height: 640px; overflow: auto;' : '']">
+        <div class="image-gallery" :style="[scrollable ? `max-height: ${maxHeight}px; overflow: auto;` : '']">
             <div v-for="image in images" :key="image.id" class="image-container">
                 <div class="command-panel text-theme">
                     <button
@@ -50,11 +52,6 @@
                         @click="superCopy(image.url, image.id)"
                     >{{ copied.includes(image.id) ? 'copied' : 'copy' }}</button>
                     <div>ID: {{ image.id }}</div>
-                    <i
-                        v-show="upload"
-                        class="fas fa-crop mx-2"
-                        @click="cropImage(image.url)"
-                    ></i>
                     <!-- Show delete icon only on user's images -->
                     <i
                         v-show="upload && (loggedInUser.id === image.user_id)"
@@ -97,6 +94,7 @@ const props = defineProps<{
     upload: boolean;
     scrollable: boolean;
     user: User;
+    maxHeight: number;
 }>();
 
 // Default props values
@@ -208,14 +206,76 @@ onMounted(() => {
 });
 </script>
 
-    <style scoped>
-    .btn-copy {
+<style scoped lang="scss">
+.btn-copy {
+    cursor: pointer;
+    padding: 3px;
+    border: none;
+    transition: all .2s;
+}
+.image--copied {
+    background: rgb(123, 226, 123);
+}
+
+.image-gallery-command {
+    background-color: white;
+    color: #333;
+}
+
+.image-gallery-container {
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    padding: 0 5px;
+}
+
+.image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    background-color: white;
+    &--mobile {
+        max-width: 640px;
+        max-height: 90%;
+        overflow-y: auto;
+        padding: 0;
+    }
+    .image-container {
+        position: relative;
+        margin: 0.3rem 0.5rem;
+        box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+        background-color: white;
+        &__image {
+            opacity: .9;
+            box-shadow: var(--shadow-primary);
+            width: 180px; height: 120px;
+            object-fit: contain;
+            transition: all .2s;
+            &:hover {
+                opacity: 1;
+                transform: scale(1.05);
+                cursor: pointer;
+            }
+        }
+    }
+    .command-panel {
+        position: absolute;
+        right: 5%; top: 3%;
+        z-index: 99;
+        display: flex;
+        justify-content: center; align-items: center;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 0.3rem 0.3rem;
+        border-radius: 4px;
+    }
+    i {
+        font-size: 1.5rem;
+        color: white;
         cursor: pointer;
-        padding: 3px;
-        border: none;
-        transition: all .2s;
     }
-    .image--copied {
-        background: rgb(123, 226, 123);
+    i.delete-button {
+        color: #C42847;
     }
-    </style>
+}
+</style>

@@ -19,8 +19,7 @@
 <script setup lang="ts">
 import 'dropzone-vue/dist/dropzone-vue.common.css';
 import ImageApi from '../../api/galleryApi'
-import { inject, computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { inject } from 'vue';
 
 // Define props
 const props = defineProps<{

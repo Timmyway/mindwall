@@ -30,13 +30,13 @@ class GalleryController extends Controller
     {
         // Restrict to user's images only
         if ($request->input('user') != 'all') {
-            $images = Image::where('user_id', Auth::user()->id)
+            $images = Illustration::where('user_id', Auth::user()->id)
             ->orderBy('id', 'desc')
             // ->take($this->_limit)
             // ->get();
             ->paginate(25);
         } else {
-            $images = Image::take($this->_limit)
+            $images = Illustration::take($this->_limit)
             ->orderBy('id', 'desc')
             ->paginate(25);
         }
@@ -119,20 +119,32 @@ class GalleryController extends Controller
 
     public function delete(Request $request, $id)
     {
-        $image_instance = Image::where('id', $id)->firstOrFail();
-        if ($request->user()->id != $image_instance->user_id) {
-            return response()->json(['error' => 'Can only delete your images'], 401);
-        }
-        // Delete image from database
-        Image::destroy($id);
-        // Then delete it from storage
-        if (! Storage::exists($image_instance->location)) {
-            // Delete image and its related thumbail
-            File::delete($image_instance->location);
-            File::delete($image_instance->thumbnail);
-        }
+        try {
+            // Find the image instance or fail with 404 if not found
+            $image_instance = Illustration::findOrFail($id);
 
-        return response()->json(['response' => 'Image with id '.$id.' should be deleted']);
+            // Check if the authenticated user owns the image
+            if ($request->user()->id !== $image_instance->user_id) {
+                return response()->json(['error' => 'Unauthorized: You can only delete your own images.'], 401);
+            }
+
+            // Delete image from database
+            Illustration::destroy($id);
+
+            // Delete image and its thumbnail from storage
+            if (Storage::exists($image_instance->location)) {
+                Storage::delete([$image_instance->location, $image_instance->thumbnail]);
+            } else {
+                // Handle case where image files are missing in storage (optional)
+                // This block can be omitted if you expect storage files to always exist
+                return response()->json(['error' => 'Image files not found in storage.'], 404);
+            }
+
+            return response()->json(['response' => 'Image with id '.$id.' deleted successfully.']);
+        } catch (\Throwable $th) {
+            // Handle any unexpected errors
+            return response()->json(['error' => 'Failed to delete image.'], 500);
+        }
     }
 
     public function uploadedImage($filename)
