@@ -9,27 +9,26 @@
                     <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs text-primary" @click="fetchImages()">
                         <i class="fa fa-sync mx-2"></i>
                     </button>
-                    <div class="flex items-center border border-gray-200 py-1">
+                    <div class="flex items-center border border-gray-200 py-1 px-2">
                         <label for="form-options-displayallusersimages">All</label>
                         <input type="checkbox" id="form-options-displayallusersimages" class="mx-2" v-model="options.displayAllUsersImages">
                     </div>
-                    <div class="flex items-center border border-gray-200 py-1">
+                    <div class="flex items-center border border-gray-200 py-1 px-2">
                         <label for="form-delete-multiple">Delete multiple</label>
                         <input type="checkbox" id="form-delete-multiple" class="mx-2" v-model="deleteMultiple">
                         <button
                             v-show="selected.length"
-                            class="btn btn-sm btn-danger"
+                            class="btn btn-icon btn-icon--flat btn-icon--xs bg-red-600 text-xs"
                             @click="deleteImages"
-                        >Delete</button>
+                        >
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div v-show="upload">
-                <tw-uploader
-                    :accepted-files="undefined"
-                    :user="loggedInUser"
-                ></tw-uploader>
+                <tw-uploader accept="image/*" auto></tw-uploader>
             </div>
 
             <!-- Pagination : use primevue paginator component -->
@@ -127,33 +126,35 @@ const copy = (url: string) => {
   // Implement your copy logic here
 };
 
-const fetchImages = async (mode: string | null = null) => {
-  if (mode === 'refresh') {
-    page.value = 1;
-  }
-  images.value = [];
-
-  let apiURL = `${page.value}`;
-  if (options.displayAllUsersImages) {
-    apiURL += '&user=all';
-  }
-
-  try {
-    const response = await ImageApi.fetchImages(apiURL);
-    if (response.data.response.data.length) {
-      apiDatas.value = response.data;
-      images.value = [...apiDatas.value.response.data];
-      pageInfo.perPage = apiDatas.value.response.per_page;
-      pageInfo.total = apiDatas.value.response.per_page * apiDatas.value.response.last_page;
-    } else {
-      noResult.value = true;
-      message.value = 'No image found.';
+const fetchImages = async (mode: string | number | null = null) => {
+    if (mode === 'refresh') {
+        page.value = 1;
     }
-  } catch (error) {
-    console.error(error);
-    noResult.value = true;
-    message.value = 'Error loading data';
-  }
+    images.value = [];
+
+    let apiURL = `${page.value}`;
+    if (options.displayAllUsersImages) {
+        apiURL += '&user=all';
+    }
+
+    try {
+        const response = await ImageApi.fetchImages(apiURL);
+        const responseData = response.data.response;
+
+        if (responseData && responseData.data.length) {
+            apiDatas.value = response.data;
+            images.value = [...responseData.data];
+            pageInfo.perPage = responseData.per_page;
+            pageInfo.total = responseData.per_page * responseData.last_page;
+        } else {
+            noResult.value = true;
+            message.value = 'No image found.';
+        }
+    } catch (error) {
+        console.error(error);
+        noResult.value = true;
+        message.value = 'Error loading data';
+    }
 };
 
 const deleteImage = async (imageID: number) => {
@@ -189,20 +190,22 @@ const deleteImages = async () => {
 };
 
 const onPage = (event: { page: number }) => {
-  page.value = event.page + 1;
-  fetchImages(page.value);
+    page.value = event.page + 1;
+    fetchImages(page.value);
 };
 
-const selectImageFromGallery = (imageURL: string) => {
+const emit = defineEmits(['select']);
+const selectImageFromGallery = (imageUrl: string) => {
   // Emit an event using a custom event handler
   // You can define a custom event handler to emit this event
   // Example: emit('update:selection', imageURL);
   // Example: emit('selected');
+  emit('select', imageUrl);
 };
 
 // Fetch images on mount
 onMounted(() => {
-  fetchImages();
+    fetchImages();
 });
 </script>
 

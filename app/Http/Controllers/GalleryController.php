@@ -18,10 +18,10 @@ class GalleryController extends Controller
     public function __construct()
     {
         $this->validations = [
-            'name' => 'required',
             'resize' => '',
             'config' => '',
-            'image' => 'required|image|mimes:webp,jpeg,png,jpg,gif,svg|max:2048',
+            'images' => 'required|array',
+            'images.*' => 'image|mimes:webp,jpeg,png,jpg,gif,svg|max:2048',
         ];
         $this->_limit = 250;
     }
@@ -48,73 +48,76 @@ class GalleryController extends Controller
         // Validate the incoming request data
         $postData = $request->validate($this->validations);
 
-        if ($request->hasFile('image')) {
-            // File exists
-            $file = $request->file('image');
+        if ($request->hasFile('images')) {
+            $uploadedImages = $request->file('images');
+            $responses = [];
 
-            // Generate unique file names for image and thumbnail
-            $imageName = uniqid() . '.' . $file->getClientOriginalExtension();
-            $thumbnailName = uniqid() . '.' . $file->getClientOriginalExtension();
+            foreach ($uploadedImages as $file) {
+                // Generate unique file names for image and thumbnail
+                $imageName = uniqid() . '.' . $file->getClientOriginalExtension();
+                $thumbnailName = uniqid() . '.' . $file->getClientOriginalExtension();
 
-            // Define the upload directory paths
-            $uploadPath = 'private/images/uploads/';
-            $thumbnailPath = 'private/images/uploads/thumbnails/';
+                // Define the upload directory paths
+                $uploadPath = 'private/images/uploads/';
+                $thumbnailPath = 'private/images/uploads/thumbnails/';
 
-            // Ensure directories exist, create if not
-            if (!Storage::exists($uploadPath)) {
-                Storage::makeDirectory($uploadPath, 0755, true); // Public visibility
-            }
-            if (!Storage::exists($thumbnailPath)) {
-                Storage::makeDirectory($thumbnailPath, 0755, true); // Public visibility
-            }
+                // Ensure directories exist, create if not
+                if (!Storage::exists($uploadPath)) {
+                    Storage::makeDirectory($uploadPath, 0755, true); // Public visibility
+                }
+                if (!Storage::exists($thumbnailPath)) {
+                    Storage::makeDirectory($thumbnailPath, 0755, true); // Public visibility
+                }
 
-            $image = Image::read($file);
-            // Resize if needed
-            $maxWidth = 1920; // Set your max width
-            $maxHeight = 1080; // Set your max height
+                $image = Image::read($file);
+                // Resize if needed
+                $maxWidth = 1920; // Set your max width
+                $maxHeight = 1080; // Set your max height
 
-            // Check if the image is larger than the max size and resize it
-            if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
-                $image->resize($maxWidth, $maxHeight, function ($constraint) {
+                // Check if the image is larger than the max size and resize it
+                if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
+                    $image->resize($maxWidth, $maxHeight, function ($constraint) {
+                        $constraint->aspectRatio();
+                        $constraint->upsize();
+                    });
+                }
+
+                // Apply custom resize if provided
+                if (isset($postData['resize'])) {
+                    $resizeData = json_decode($postData['resize']);
+                    $image->resize($resizeData->width, $resizeData->height);
+                }
+
+                // Store the resized image in private directory
+                $imagePath = $uploadPath . $imageName;
+                Storage::put($imagePath, (string) $image->encode());
+
+                // Create and save thumbnail
+                $thumbnail = $image->resize(150, 150, function ($constraint) {
                     $constraint->aspectRatio();
                     $constraint->upsize();
                 });
+
+                $thumbnailPath = $thumbnailPath . $thumbnailName;
+                Storage::put($thumbnailPath, (string) $thumbnail->encode());
+
+                // Save the new image record in the database
+                $newImage = new Illustration();
+                $newImage->name = $imageName;
+                $newImage->location = $imagePath;
+                $newImage->thumbnail = $thumbnailPath;
+                $newImage->url = Storage::url($imagePath);
+                $newImage->url_thumbnail = Storage::url($thumbnailPath);
+                $newImage->config = $postData['config'] ?? json_encode([]);
+                $newImage->user()->associate($request->user());
+                $newImage->save();
+
+                $responses[] = ['response' => 'created', 'url' => $newImage->url];
             }
-
-            // Apply custom resize if provided
-            if (isset($postData['resize'])) {
-                $resizeData = json_decode($postData['resize']);
-                $image->resize($resizeData->width, $resizeData->height);
-            }
-
-            // Store the resized image in private directory
-            $imagePath = $uploadPath . $imageName;
-            Storage::put($imagePath, (string) $image->encode());
-
-            // Create and save thumbnail
-            $thumbnail = $image->resize(150, 150, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-
-            $thumbnailPath = $thumbnailPath . $thumbnailName;
-            Storage::put($thumbnailPath, (string) $thumbnail->encode());
+            return response()->json($responses);
         } else {
             return response()->json(['error' => 'No image found to upload'], 404);
         }
-
-        // Save the new image record in the database
-        $newImage = new Illustration();
-        $newImage->name = $postData['name'];
-        $newImage->location = $imagePath;
-        $newImage->thumbnail = $thumbnailPath;
-        $newImage->url = Storage::url($imagePath);
-        $newImage->url_thumbnail = Storage::url($thumbnailPath);
-        $newImage->config = $postData['config'] ?? json_encode([]);
-        $newImage->user()->associate($request->user());
-        $newImage->save();
-
-        return response()->json(['response' => 'created', 'url' => $newImage->url]);
     }
 
     public function delete(Request $request, $id)

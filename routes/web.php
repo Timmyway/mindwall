@@ -20,18 +20,18 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::prefix('thematics')->name('thematic.')->group(function () {
-    Route::get('/', [ThematicController::class, 'index'])->name('list');
-    Route::get('/detail/{thematic}', [ThematicController::class, 'detail'])->name('detail');
-    Route::put('/{thematic}', [ThematicController::class, 'update'])->name('update');
-});
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('storage/private/images/uploads/{filename}', [GalleryController::class, 'uploadedImage'])->name('private.image');
     Route::get('storage/private/images/uploads/thumbnails/{filename}', [GalleryController::class, 'thumbnailImage'])->name('private.thumbnail');
+
+    Route::prefix('thematics')->name('thematic.')->group(function () {
+        Route::get('/', [ThematicController::class, 'index'])->name('list');
+        Route::get('/detail/{thematic}', [ThematicController::class, 'detail'])->name('detail');
+        Route::put('/{thematic}', [ThematicController::class, 'update'])->name('update');
+    });
 });
 
 require __DIR__.'/auth.php';

@@ -96,5 +96,15 @@ const resizeImage = (image: HTMLImageElement, maxWidth: number, maxHeight: numbe
     return resizedImage;
 };
 
+// Helper function to load an image from a URL and return an HTMLImageElement
+function loadImageFromURL(url: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err);
+    });
+}
 
-export { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage }
+
+export { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage, loadImageFromURL }

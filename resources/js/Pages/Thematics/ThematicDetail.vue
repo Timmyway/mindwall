@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage } from '../../helpers/utils';
+import { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage, loadImageFromURL } from '../../helpers/utils';
 import { randInt, randPos } from '../../helpers/canva';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -48,21 +48,31 @@ const { files, open, reset, onChange } = useFileDialog({
 const wall = reactive<WallConfig>({});
 
 const serializeWall = async (): Promise<any> => {
+    // Initialize an empty object to store the serialized wall
     const serializedWall: any = {};
 
+    // Loop through each group in the wall object
     for (const groupKey of Object.keys(wall)) {
+        // Get the group from the wall object
         const group = wall[groupKey];
+        // Create a shallow copy of the group
         const serializedGroup = { ...group };
 
+        // Check if the group has items
         if (group.items) {
             serializedGroup.items = {};
 
             for (const itemKey of Object.keys(group.items)) {
+                // Get the item from the group
                 const item = group.items[itemKey];
                 const serializedItem: any = { ...item };
 
+                // Check if the item is an image configuration and the image is an HTMLImageElement
                 if (isImageConfig(item) && item.image instanceof HTMLImageElement) {
-                    serializedItem.image = await imageToBase64(item.image);
+                    // Convert the image to a Base64 string and store it in the serialized item
+                    console.log('=======------------> 2024: ', item.image.src);
+                    // serializedItem.image = await imageToBase64(item.image);
+                    serializedItem.image = item.image.src;
                 }
 
                 serializedGroup.items[itemKey] = serializedItem;
@@ -90,7 +100,10 @@ const deserializeWall = async (serializedWall: any): Promise<any> => {
                 const deserializedItem = { ...item };
 
                 if (item.is === 'image' && typeof item.image === 'string') {
-                    deserializedItem.image = await base64ToImage(item.image);
+                    // deserializedItem.image = await base64ToImage(item.image);
+
+                    // Create an HTMLImageElement from the URL
+                    deserializedItem.image = await loadImageFromURL(item.image);
                 }
 
                 deserializedGroup.items[itemKey] = deserializedItem;
@@ -286,21 +299,28 @@ const addTextToWall = (e: PointerEvent, text: string = 'New text...') => {
     }
 };
 
-const calcOptimizedImageDimension = (im: HTMLImageElement, maxWidth = 300, maxHeight = 300): { w:number, h:number } => {
+const calcOptimizedImageDimension = (
+    im: HTMLImageElement,
+    maxWidth = 300,
+    maxHeight = 300
+): { w:number, h:number } => {
     // Get the real size of the image
-    const realWidth = im.width;
-    const realHeight = im.height;
+    const realWidth = im.naturalWidth;
+    const realHeight = im.naturalHeight;
 
     // Calculate the aspect ratio
     let width = realWidth;
     let height = realHeight;
+
+    // If the image exceeds the maximum dimensions, resize it while maintaining the aspect ratio
     if (realWidth > maxWidth || realHeight > maxHeight) {
         const widthRatio = maxWidth / realWidth;
         const heightRatio = maxHeight / realHeight;
         const minRatio = Math.min(widthRatio, heightRatio);
-        width = realWidth * minRatio;
-        height = realHeight * minRatio;
+        width = Math.round(realWidth * minRatio);
+        height = Math.round(realHeight * minRatio);
     }
+
     console.log('===> Width|Height: ', width, height);
     return { w: width, h: height };
 }
@@ -333,7 +353,6 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
             }
         }
     } else {
-        // Handle loading an image from a File object
         // Handle loading an image from a File object
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -746,11 +765,12 @@ const bringToBack = (e: any) => {
                         class="fixed top-10 left-0 bg-white z-20 p-2 bg-red-300"
                     >
                         <tw-image-gallery
-                            :upload="true"
+                            :upload="false"
                             :scrollable="true"
                             :user="user"
                             class="max-w-xs"
                             :max-height="480"
+                            @select="addImageToWall"
                         ></tw-image-gallery>
                     </div>
                 </div>
