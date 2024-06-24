@@ -64,14 +64,7 @@
                         v-model="selected"
                     >
                 </div>
-                <a
-                    v-if="upload"
-                    :href="image.url" target="_blank"
-                >
-                    <img class="image-container__image" :src="image.url_thumbnail" alt="" />
-                </a>
                 <img
-                    v-if="!upload"
                     class="image-container__image"
                     :src="image.url_thumbnail" alt=""
                     @click="selectImageFromGallery(image.url)"

@@ -41,7 +41,7 @@ const items = ref<MenuItem[]>([
         icon: 'fas fa-layer',
         items: [
             { label: 'Bring to top', icon: 'fas fa-plus', command: props.handleBringToTop },
-            { label: 'Bring to top', icon: 'fas fa-plus', command: props.handleBringToBack },
+            { label: 'Bring to back', icon: 'fas fa-plus', command: props.handleBringToBack },
         ]
     },
 

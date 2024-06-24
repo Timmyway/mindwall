@@ -36,6 +36,14 @@ const user = computed<User | null>((): User | null => page.props.user as User | 
 
 const isGalleryVisible = ref<boolean>(false);
 
+const viewImageGallery = () => {
+    isGalleryVisible.value = true;
+}
+const hideImageGallery = () => {
+    setTimeout(() => {
+        isGalleryVisible.value = false;
+    }, 200);
+}
 const toggleImageGallery = () => {
     isGalleryVisible.value = !isGalleryVisible.value;
 }
@@ -255,7 +263,7 @@ const isImageConfig = (config: any): config is ImageConfig => {
     return (config as ImageConfig).is === 'image';
 };
 
-const addTextToWall = (e: PointerEvent, text: string = 'New text...') => {
+const addTextToWall = (e: PointerEvent | MouseEvent, text: string = 'New text...') => {
     let newGroupName = addGroup();
     let textIdentifier: string;
     if (selectedGroupName.value) {
@@ -757,15 +765,16 @@ const bringToBack = (e: any) => {
             </Link>
             <div class="h-8 flex items-center relative">
                 <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
-                    <button @click.prevent="toggleImageGallery">
+                    <button @mouseover.prevent="viewImageGallery">
                         <i class="fas fa-images"></i>
                     </button>
                     <div
                         v-show="isGalleryVisible"
                         class="fixed top-10 left-0 bg-white z-20 p-2 bg-red-300"
+                        @mouseleave.prevent="hideImageGallery"
                     >
                         <tw-image-gallery
-                            :upload="false"
+                            :upload="true"
                             :scrollable="true"
                             :user="user"
                             class="max-w-xs"
@@ -792,7 +801,7 @@ const bringToBack = (e: any) => {
             <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addGroup()"
+                    @click.prevent="addTextToWall"
                 >
                     <i class="fas fa-plus-circle"></i>
                 </button>
