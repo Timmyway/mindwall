@@ -791,9 +791,12 @@ const bringToBack = () => {
         if (group && group.items) {
             const items = Object.values(group.items);
 
-            // Find the minimum zIndex among siblings
+            // Find the minimum zIndex among siblings, ensuring undefined zIndexes are ignored
             const minZIndex = items.reduce((minIndex, item) => {
-                return item.zIndex !== undefined && item.zIndex < minIndex ? item.zIndex : minIndex;
+                if (item.zIndex !== undefined) {
+                    return item.zIndex < minIndex ? item.zIndex : minIndex;
+                }
+                return minIndex;
             }, Number.MAX_SAFE_INTEGER);
 
             // Calculate the new zIndex
@@ -801,6 +804,11 @@ const bringToBack = () => {
 
             // Ensure newZIndex is non-negative and within the range of siblings
             newZIndex = Math.max(0, newZIndex);
+
+            // If the newZIndex is still higher than the zIndex of all items, set it to 0
+            if (newZIndex < minZIndex) {
+                newZIndex = 0;
+            }
 
             // Set the zIndex
             selectedConfig.value.zIndex = newZIndex;
