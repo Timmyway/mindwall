@@ -1,12 +1,12 @@
 <template>
     <div>
         <FileUpload
+            ref="uploadRef"
             name="images[]"
             :url="$apiUrl + 'api/images'"
             :multiple="true"
             :accept="accept"
             :maxFileSize="1000000"
-            :fileLimit="10"
             customUpload
             @uploader="onSending($event)"
             @upload="onUploadFinished"
@@ -37,6 +37,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import ImageApi from '../../api/galleryApi'
 import { inject } from 'vue';
 import { FileUploadUploadEvent, FileUploadUploaderEvent } from 'primevue/fileupload';
@@ -52,6 +53,8 @@ const props = withDefaults(defineProps<Props>(), {
     accept: 'image/*',
     auto: true
 });
+
+const uploadRef = ref();
 
 // Inject the $apiBaseURI
 const $apiUrl = inject<string>('$apiUrl');
@@ -74,6 +77,7 @@ const onUploadFinished = (e: FileUploadUploadEvent) => {
     // Handle successful upload
     if (e.xhr.status === 200) {
         console.log('File uploaded successfully');
+        uploadRef.value.clear();
     } else {
         // Handle upload failure
         console.error('File upload failed');

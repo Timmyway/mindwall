@@ -265,7 +265,7 @@ const isImageConfig = (config: any): config is ImageConfig => {
     return (config as ImageConfig).is === 'image';
 };
 
-const addTextToWall = (e: PointerEvent | MouseEvent, text: string = 'New text...') => {
+const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') => {
     let newGroupName = addGroup();
     let textIdentifier: string;
     if (selectedGroupName.value) {
@@ -810,6 +810,37 @@ const bringToBack = () => {
     }
 };
 
+const cloneGroup = (groupName: string): string | null => {
+    const originalGroup = wall[groupName];
+    if (!originalGroup) return null;
+
+    const newGroupName = addGroup();
+    const newGroup = wall[newGroupName];
+
+    // Clone properties of the original group
+    newGroup.scaleX = originalGroup.scaleX;
+    newGroup.scaleY = originalGroup.scaleY;
+    newGroup.visible = originalGroup.visible;
+    newGroup.draggable = originalGroup.draggable;
+
+    // Clone items of the original group and generate unique IDs for each
+    Object.keys(originalGroup.items).forEach(itemId => {
+        const originalItem = originalGroup.items[itemId];
+        const itemCopyName = `${newGroupName}-${originalItem.is}-${uuid()}`;
+        const newItem = { ...originalItem, id: itemCopyName, name: itemCopyName };
+        newGroup.items[newItem.id] = newItem;
+    });
+
+    return newGroupName;
+};
+
+const handleCloneGroup = (event: MenuItemCommandEvent) => {
+    if (selectedGroupName.value) {
+        const clonedGroupName = cloneGroup(selectedGroupName.value);
+        console.log('Cloned group:', clonedGroupName);
+    }
+};
+
 onMounted(() => {
     const handleKeydown = (event: KeyboardEvent) => {
         if (event.key === 'Delete') {
@@ -932,6 +963,7 @@ const handleKeyup = () => {
                 :handle-add-image="pickImage"
                 :handle-remove-shape="deleteShape"
                 :handle-add-text="addTextToWall"
+                :handle-clone="handleCloneGroup"
                 :handle-bring-to-top="bringToTop"
                 :handle-bring-to-back="bringToBack"
             ></tw-context-menu>

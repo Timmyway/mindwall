@@ -10,7 +10,8 @@ const props = defineProps<{
     handleAddImage: (event: MenuItemCommandEvent) => void,
     handleRemoveShape: (event: MenuItemCommandEvent) => void,
     handleBringToTop: (event: MenuItemCommandEvent) => void,
-    handleBringToBack: (event: MenuItemCommandEvent) => void
+    handleBringToBack: (event: MenuItemCommandEvent) => void,
+    handleClone: (event: MenuItemCommandEvent) => void
 }>();
 
 const canvaStore = useCanvasStore();
@@ -44,6 +45,11 @@ const items = ref<MenuItem[]>([
             { label: 'Bring to back', icon: 'fas fa-plus', command: props.handleBringToBack },
         ]
     },
+    {
+        label: 'Clone',
+        icon: 'fas fa-clone',
+        command: props.handleClone
+    }
 
 ]);
 
