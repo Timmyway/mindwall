@@ -6,11 +6,11 @@ import { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem';
 import { ref } from 'vue';
 
 const props = defineProps<{
-    handleAddText: Function,
-    handleAddImage: Function,
-    handleRemoveShape: Function,
-    handleBringToTop: Function,
-    handleBringToBack: Function
+    handleAddText: (event: MenuItemCommandEvent) => void,
+    handleAddImage: (event: MenuItemCommandEvent) => void,
+    handleRemoveShape: (event: MenuItemCommandEvent) => void,
+    handleBringToTop: (event: MenuItemCommandEvent) => void,
+    handleBringToBack: (event: MenuItemCommandEvent) => void
 }>();
 
 const canvaStore = useCanvasStore();

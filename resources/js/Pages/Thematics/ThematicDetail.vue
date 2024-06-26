@@ -23,6 +23,8 @@ import ThematicList from './ThematicList.vue';
 import useActionPanel from '../../composable/useActionPanel';
 import TwImageGallery from '@/Components/media/TwImageGallery.vue';
 import { User } from '@/types';
+import { onUnmounted } from 'vue';
+import { MenuItemCommandEvent } from 'primevue/menuitem';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -404,6 +406,38 @@ const removeText = (groupName: string, textId: string) => {
 const selectedGroupName = ref<string | null>(null);
 const selectedConfigName = ref<string | null>(null);
 
+const handleMouseRelease = () => {
+    if (selectedConfig.value) {
+        if (isTextConfig(selectedConfig.value)) {
+            console.log('-- 12 -> Mouse release');
+            // selectedConfig.value.draggable = false;
+        }
+    }
+}
+
+const handleTextBlur = () => {
+    console.log('-- 20 -> Text shape has losen focus');
+    if (selectedConfig.value) {
+        selectedConfig.value.draggable = false;
+    }
+}
+
+const handleTextMouseDown = (e: any, groupName: string, configName: string) => {
+    selectConfig(groupName, configName)
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        console.log('-- 12 -> Mouse down on text shape');
+        // Check if Ctrl key is pressed
+        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+        if (ctrl) {
+            selectedConfig.value.draggable = true;
+            console.log('-- 13 -> Text should be draggable', selectedConfig.value.draggable);
+        } else {
+            selectedConfig.value.draggable = false;
+        }
+    }
+    updateTransformer();
+}
+
 const selectConfig = (groupName: string, configName: string) => {
     selectedGroupName.value = groupName;
     selectedConfigName.value = configName;
@@ -458,7 +492,7 @@ const selectedConfig = computed<TextConfig | ImageConfig | null>({
         }
         return null;
     },
-    set: (newConfig: Partial<TextConfig> | Partial<ImageConfig>) => {
+    set: (newConfig: Partial<TextConfig> | Partial<ImageConfig> | null) => {
         if (selectedGroupName.value && selectedConfigName.value) {
             const currentConfig = wall[selectedGroupName.value].items[selectedConfigName.value];
             if (currentConfig) {
@@ -487,7 +521,7 @@ const handleTransformEnd = (e: any) => {
 const onTextClick = (e: any) => {
     // Check if Ctrl key is pressed
     const ctrl = e.evt.ctrlKey || e.evt.metaKey; // metaKey for Mac Command key
-    console.log('====> Has ctrl: ', ctrl);
+    console.log('-- 11 -> Is Ctrl key holded: ', ctrl);
     if (selectedConfig.value) {
         selectedConfig.value.draggable = ctrl ? true : false;
     }
@@ -675,7 +709,8 @@ const textareaStyle = reactive<TextareaStyle>({
 const onDragstart = (e: any) => {
     if (e.target) {
         if (e.target.getType() === 'Group') {
-            e.target.opacity(0.5)
+            e.target.opacity(0.5);
+            console.log('==> Group draggable: ', e.target.draggable());
         }
     }
 }
@@ -716,26 +751,81 @@ const changeColor = (color: string) => {
 const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
 
 /* SET ZINDEX */
-const bringToTop = (e: any) => {
-    // TODO
+const bringToTop = () => {
+    if (selectedConfig.value && selectedGroupName.value) {
+        const groupName = selectedGroupName.value;
+        const configName = selectedConfig.value.name;
 
-    // if (selectedConfig.value) {
-    //     // Get the selected group and config name
-    //     const groupName = selectedGroupName.value;
-    //     const configName = selectedConfigName.value;
+        const group = wall[groupName];
+        if (group && group.items) {
+            const items = Object.values(group.items);
 
-    //     if (groupName && configName) {
-    //         // Check if the group exists
-    //         if (wall[groupName] && wall[groupName].items[configName]) {
-    //             const maxIndex = Object.keys(wall[groupName].items[configName]).length;
-    //             wall[groupName].items[configName].zIndex = maxIndex;
-    //         }
-    //     }
-    // }
-}
+            // Find the maximum zIndex among siblings
+            const maxZIndex = items.reduce((maxIndex, item) => {
+                return item.zIndex !== undefined && item.zIndex > maxIndex ? item.zIndex : maxIndex;
+            }, -1);
 
-const bringToBack = (e: any) => {
-    // TODO
+            // Calculate the new zIndex
+            const newZIndex = maxZIndex + 1;
+
+            // Check if the new zIndex exceeds the expected range
+            if (newZIndex >= items.length) {
+                // Adjust zIndex to stay within valid range
+                selectedConfig.value.zIndex = items.length - 1;
+                console.warn(`Adjusted zIndex to ${items.length - 1} to stay within valid range.`);
+            } else {
+                selectedConfig.value.zIndex = newZIndex;
+            }
+
+            console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex}`);
+        }
+    }
+};
+
+const bringToBack = () => {
+    if (selectedConfig.value && selectedGroupName.value) {
+        const groupName = selectedGroupName.value;
+        const configName = selectedConfig.value.name;
+
+        const group = wall[groupName];
+        if (group && group.items) {
+            const items = Object.values(group.items);
+
+            // Find the minimum zIndex among siblings
+            const minZIndex = items.reduce((minIndex, item) => {
+                return item.zIndex !== undefined && item.zIndex < minIndex ? item.zIndex : minIndex;
+            }, Number.MAX_SAFE_INTEGER);
+
+            // Calculate the new zIndex
+            let newZIndex = minZIndex - 1;
+
+            // Ensure newZIndex is non-negative and within the range of siblings
+            newZIndex = Math.max(0, newZIndex);
+
+            // Set the zIndex
+            selectedConfig.value.zIndex = newZIndex;
+
+            console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex}`);
+        }
+    }
+};
+
+onMounted(() => {
+    const handleKeydown = (event: KeyboardEvent) => {
+        if (event.key === 'Delete') {
+            // Handle delete key press
+            deleteShape();
+        }
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+
+    onUnmounted(() => {
+        window.removeEventListener('keydown', handleKeydown);
+    });
+});
+const handleKeyup = () => {
+
 }
 </script>
 <template>
@@ -770,7 +860,7 @@ const bringToBack = (e: any) => {
                     </button>
                     <div
                         v-show="isGalleryVisible"
-                        class="fixed top-10 left-0 bg-white z-20 p-2 bg-red-300"
+                        class="fixed top-10 left-0 bg-white z-20 p-2"
                         @mouseleave.prevent="hideImageGallery"
                     >
                         <tw-image-gallery
@@ -845,8 +935,11 @@ const bringToBack = (e: any) => {
                 :handle-bring-to-top="bringToTop"
                 :handle-bring-to-back="bringToBack"
             ></tw-context-menu>
-            E: {{ editing }}
-            Is ready: {{ isReady }}
+            <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
+                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>
+                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Ready: {{ isReady }}</div>
+                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ selectedConfig?.draggable }})</div>
+            </div>
             <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
         </div>
         <div class="bg-white canva relative" v-if="isReady">
@@ -867,6 +960,7 @@ const bringToBack = (e: any) => {
                 @mousedown="handleStageMouseDown"
                 @touchstart="handleStageMouseDown"
                 @wheel="canvaStore.handleWheel"
+                @keyup="handleKeyup"
                 :draggable="true"
             >
                 <v-layer>
@@ -889,9 +983,9 @@ const bringToBack = (e: any) => {
                                     <v-text
                                         v-if="isTextConfig(config)"
                                         :config="config"
-                                        @click="onTextClick"
                                         @dblclick="enterEditMode"
-                                        @mousedown="selectConfig(String(groupName), String(configName))"
+                                        @click="handleTextMouseDown($event, String(groupName), String(configName))"
+                                        @dragend="handleTextBlur"
                                         @transformend="handleTransformEnd"
                                     ></v-text>
                                     <v-image
