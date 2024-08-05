@@ -35,7 +35,8 @@ export interface TextConfig  {
     y?: number;
     visible?: boolean;
     draggable?: boolean;
-    zIndex?: number
+    zIndex?: number;
+    width?: number;
 }
 
 export interface ImageConfig {

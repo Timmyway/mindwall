@@ -25,6 +25,10 @@ import TwImageGallery from '@/Components/media/TwImageGallery.vue';
 import { User } from '@/types';
 import { onUnmounted } from 'vue';
 import { MenuItemCommandEvent } from 'primevue/menuitem';
+import AiApi from '../../api/AiApi';
+import useTextSetting from '@/composable/useTextSetting';
+import Dropdown from 'primevue/dropdown';
+import useMarkdownParser from '@/composable/useMarkdownParser';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -32,6 +36,8 @@ const props = defineProps<{
 
 const canvaStore = useCanvasStore();
 const { stageRef } = storeToRefs(canvaStore);
+
+var MIN_WIDTH = 20;
 const page = usePage();
 
 const user = computed<User | null>((): User | null => page.props.user as User | null);
@@ -41,11 +47,13 @@ const isGalleryVisible = ref<boolean>(false);
 const viewImageGallery = () => {
     isGalleryVisible.value = true;
 }
+
 const hideImageGallery = () => {
     setTimeout(() => {
         isGalleryVisible.value = false;
     }, 200);
 }
+
 const toggleImageGallery = () => {
     isGalleryVisible.value = !isGalleryVisible.value;
 }
@@ -265,6 +273,32 @@ const isImageConfig = (config: any): config is ImageConfig => {
     return (config as ImageConfig).is === 'image';
 };
 
+const { parseTextFromMarkDown } = useMarkdownParser();
+
+const addAiTextToWall = async (e: any) => {
+    // const thematicName = prompt('For which thematic?');
+    // if (!thematicName || thematicName.trim() === '') {
+    //     return;
+    // }
+    let thematicName = null;
+    if (selectedConfig.value) {
+        if (isTextConfig(selectedConfig.value)) {
+            thematicName = selectedConfig.value.text;
+        }
+    } else {
+        thematicName = prompt('For which thematic?');
+        if (!thematicName || thematicName.trim() === '') {
+            return;
+        }
+    }
+    if (thematicName) {
+        const response = await AiApi.aiGenerateText(thematicName);
+        const generatedText = await parseTextFromMarkDown(response.data.generatedText);
+
+        addTextToWall(e, generatedText);
+    }
+}
+
 const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') => {
     let newGroupName = addGroup();
     let textIdentifier: string;
@@ -284,10 +318,11 @@ const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') =>
         scaleX: 1,
         scaleY: 1,
         fontFamily: 'Calibri',
-        fontSize: 16,
+        fontSize: 24,
         text: text,
         fill: 'black',
-        visible: true
+        visible: true,
+        width: 320
     };
 
     if (selectedGroupName.value) {
@@ -425,6 +460,8 @@ const handleTextBlur = () => {
 const handleTextMouseDown = (e: any, groupName: string, configName: string) => {
     selectConfig(groupName, configName)
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        console.log('-- 11 -> Set fontsize to : ', selectedConfig.value.fontSize);
+        setFontSize(selectedConfig.value.fontSize);
         console.log('-- 12 -> Mouse down on text shape');
         // Check if Ctrl key is pressed
         const ctrl = e.evt.ctrlKey || e.evt.metaKey;
@@ -515,6 +552,9 @@ const handleTransformEnd = (e: any) => {
         selectedConfig.value.rotation = e.target.rotation();
         selectedConfig.value.scaleX = e.target.scaleX();
         selectedConfig.value.scaleY = e.target.scaleY();
+        if (isTextConfig(selectedConfig.value)) {
+            selectedConfig.value.width = e.target.width();
+        }
     }
 }
 
@@ -625,7 +665,7 @@ const enterEditMode = (e: Event) => {
     // };
     // Set its dimension
     const calculatedWidth = (
-        (textNode?.width?.() ?? 0) * 1.25 -
+        (textNode?.width?.() ?? 0) * 5 -
         ((textNode?.padding?.() ?? 0) * 2)
     );
     textareaStyle.width = calculatedWidth + 'px';
@@ -739,6 +779,17 @@ const syncPosition = (x: number, y: number) => {
 }
 
 const { paletteColor } = usePaletteColor();
+const { fontSize, setFontSize, availableTextSize, decreaseFontSize, increaseFontSize } = useTextSetting();
+const updateFontSize = (mode: '+' | '-' | null = null) => {
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        if (mode === '+') {
+            increaseFontSize();
+        } else if (mode === '-') {
+            decreaseFontSize();
+        }
+        selectedConfig.value.fontSize = fontSize.value;
+    }
+}
 
 const changeColor = (color: string) => {
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
@@ -866,6 +917,18 @@ onMounted(() => {
 const handleKeyup = () => {
 
 }
+
+const handleTransform = (e: any) => {
+    if (e.target) {
+        const textNode = e.target;
+        console.log('=====> New width: ', textNode.width() * textNode.scaleX())
+        textNode.setAttrs({
+            width: Math.max(textNode.width() * textNode.scaleX(), MIN_WIDTH),
+            scaleX: 1,
+            scaleY: 1,
+        });
+    }
+}
 </script>
 <template>
     <div>
@@ -935,6 +998,12 @@ const handleKeyup = () => {
                     <i class="fas fa-plus-circle"></i>
                 </button>
                 <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-pink-400 btn-icon--xs"
+                    @click.prevent="addAiTextToWall"
+                >
+                    <i class="fas fa-robot"></i>
+                </button>
+                <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
                     @click.prevent="addImageToWall()"
                 >
@@ -958,6 +1027,21 @@ const handleKeyup = () => {
                                 @click="changeColor(color)"></button>
                         </template>
                     </div>
+                </div>
+                <div v-show="selectedConfig && isTextConfig(selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                    <button @click.prevent="updateFontSize('-')">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <Dropdown
+                        v-model="fontSize"
+                        :options="availableTextSize"
+                        placeholder="Font size"
+                        class="w-full md:w-23"
+                        @change="updateFontSize()"
+                    />
+                    <button @click.prevent="updateFontSize('+')">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
                 <button
                     v-show="!isSaving"
@@ -1026,6 +1110,7 @@ const handleKeyup = () => {
                                         @dblclick="enterEditMode"
                                         @click="handleTextMouseDown($event, String(groupName), String(configName))"
                                         @dragend="handleTextBlur"
+                                        @transform="handleTransform"
                                         @transformend="handleTransformEnd"
                                     ></v-text>
                                     <v-image
@@ -1038,7 +1123,9 @@ const handleKeyup = () => {
                                 </template>
                             </v-group>
                         </div>
-                        <v-transformer ref="transformer" />
+                        <v-transformer ref="transformer" :config="{
+                            enabledAnchors: ['middle-left', 'middle-right', 'bottom-right'],
+                        }" />
                     </div>
                 </v-layer>
             </v-stage>
@@ -1048,6 +1135,7 @@ const handleKeyup = () => {
 
 <style>
 .canva {
+    width: 100%;
     height: calc(100vh - 48px);
     overflow: hidden;
 }
