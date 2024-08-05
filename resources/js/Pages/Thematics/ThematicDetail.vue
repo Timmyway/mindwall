@@ -756,6 +756,8 @@ const bringToTop = () => {
         const groupName = selectedGroupName.value;
         const configName = selectedConfig.value.name;
 
+        console.log('============> S', selectedConfig.value);
+
         const group = wall[groupName];
         if (group && group.items) {
             const items = Object.values(group.items);
@@ -772,9 +774,12 @@ const bringToTop = () => {
             if (newZIndex >= items.length) {
                 // Adjust zIndex to stay within valid range
                 selectedConfig.value.zIndex = items.length - 1;
+                transformer.value.zIndex = items.length - 1;
                 console.warn(`Adjusted zIndex to ${items.length - 1} to stay within valid range.`);
             } else {
                 selectedConfig.value.zIndex = newZIndex;
+                transformer.value.zIndex = newZIndex;
+                console.log('====> Transformer: ', transformer.value.getNode());
             }
 
             console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex}`);
@@ -813,7 +818,7 @@ const bringToBack = () => {
             // Set the zIndex
             selectedConfig.value.zIndex = newZIndex;
 
-            console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex}`);
+            console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex} of ${minZIndex}`);
         }
     }
 };
