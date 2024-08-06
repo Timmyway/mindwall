@@ -577,6 +577,12 @@ const handleStageMouseDown = (e: any) => {
         resetConfig();
         updateTransformer();
         return;
+    } else {
+        console.log('CLicked element ==> ', e.target);
+        console.log('Last text ==> ', lastEditedText.value?.config);
+        if (editing.value && selectedConfig.value?.name !== lastEditedText.value.config) {
+            exitEditMode();
+        }
     }
 
     // clicked on transformer - do nothing
@@ -590,99 +596,111 @@ const handleStageMouseDown = (e: any) => {
 
 const handleGroupContextMenu = (e: any) => {
     e.evt.preventDefault();
-    if (e.target === stageRef.value.getStage()) {
-        console.log('===> We are on an empty place of the stage');
-        return;
+    if (stageRef.value) {
+        if (e.target === stageRef.value.getStage()) {
+            console.log('===> We are on an empty place of the stage');
+            return;
+        }
     }
-    canvaStore.menu.show(e.evt);
-    const currentShape = e.target;
-    console.log('===> Current shape: ', currentShape);
+    if (canvaStore.menu) {
+        canvaStore.menu.show(e.evt);
+        const currentShape = e.target;
+        console.log('===> Current shape: ', currentShape);
+    }
 
 }
 
 const updateTransformer = () => {
     // here we need to manually attach or detach Transformer node
     const transformerNode = transformer.value?.getNode();
-    const stage = stageRef.value.getStage();
+    if (stageRef.value) {
+        const stage = stageRef.value.getStage();
+        const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
+        // do nothing if selected node is already attached
+        if (transformerNode) {
+            if (selectedNode === transformerNode.node()) {
+                return;
+            }
 
-    const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
-    // do nothing if selected node is already attached
-    if (transformerNode) {
-        if (selectedNode === transformerNode.node()) {
-            return;
+            if (selectedNode) {
+                // attach to another node
+                transformerNode.nodes([selectedNode]);
+            } else {
+                // remove transformer
+                transformerNode.nodes([]);
+            }
         }
-
-        if (selectedNode) {
-            // attach to another node
-            transformerNode.nodes([selectedNode]);
-        } else {
-            // remove transformer
-            transformerNode.nodes([]);
-        }
     }
 }
 
-const handleQuoteDblClicked = (e: Event) => {
-    console.log('Double clicked');
-    const textNode = e.target as Text | null;
-    // Find the quote config that was double-clicked
-    const quote = findQuote(textNode?.name() ?? '');
+// const handleQuoteDblClicked = (e: Event) => {
+//     console.log('Double clicked');
+//     const textNode = e.target as Text | null;
+//     // Find the quote config that was double-clicked
+//     const quote = findQuote(textNode?.name() ?? '');
 
-    if (quote) {
-        // Reset the rotation to 0
-        quote.rotation = 0;
-    }
-}
+//     if (quote) {
+//         // Reset the rotation to 0
+//         quote.rotation = 0;
+//     }
+// }
 
-const handleQuoteEditText = (name: string, text: string) => {
-    console.log('Edit quote: ', name);
-    // Find the quote config that was double-clicked
-    const quote = findQuote(name);
-    if (quote) {
-        quote.text = text;
-    }
-}
+// const handleQuoteEditText = (name: string, text: string) => {
+//     console.log('Edit quote: ', name);
+//     // Find the quote config that was double-clicked
+//     const quote = findQuote(name);
+//     if (quote) {
+//         quote.text = text;
+//     }
+// }
 
 const editing = ref(false);
 const editedQuoteText = ref<string>('');
 const quoteAreaRef = ref();
 
 const enterEditMode = (e: Event) => {
-    console.log('===> T', typeof e)
     const textNode = e.target as Text | null;
-    console.log('====> Text node: ', textNode);
-    if (selectedConfig.value) {
+
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
         selectedConfig.value.visible = false;
     }
     // hide text node and transformer:
     transformer.value.getNode().hide();
 
-    // so position of textarea will be the sum of positions above:
-    const textPosition = textNode?.absolutePosition();
+    // So position of textarea will be the sum of positions above:
+    const textPosition = textNode?.absolutePosition() ?? { x: 0, y: 0 };
     // const areaPosition = {
     //     x: stageRef.value.getStage().container().offsetLeft + textPosition.x,
     //     y: stageRef.value.getStage().container().offsetTop + textPosition.y,
     // };
     // Set its dimension
     const calculatedWidth = (
-        (textNode?.width?.() ?? 0) * 5 -
+        // Get the width of the text node. If it doesn't exist, default to 0.
+        // Multiply by 1 (or other ratio) to ensure it's a number
+        // Do the same with padding (take it into account)
+        (textNode?.width?.() ?? 0) * 1 -
         ((textNode?.padding?.() ?? 0) * 2)
     );
-    textareaStyle.width = calculatedWidth + 'px';
+    const constrainedWidth = Math.max(200, Math.min(calculatedWidth, 480));
+    textareaStyle.width = constrainedWidth + 'px';
     textareaStyle.height =
         (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
-    const areaPosition = {
-        x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth / 2),
-        y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
-    };
-    console.log('Offset x: ', stageRef.value.getStage().container().offsetLeft)
-    console.log('Offset y: ', stageRef.value.getStage().container().offsetTop)
-    console.log('Text position: ', textPosition)
-    console.log('Area position: ', areaPosition);
-    console.log('Text node: ', textNode?.align());
-    // Set textarea position
-    textareaStyle.left = areaPosition.x + 'px';
-    textareaStyle.top = areaPosition.y + 'px';
+
+    if (stageRef.value) {
+        const areaPosition = {
+            x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth / 2),
+            y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
+        };
+        console.log('Offset x: ', stageRef.value.getStage().container().offsetLeft)
+        console.log('Offset y: ', stageRef.value.getStage().container().offsetTop)
+        console.log('Text position: ', textPosition)
+        console.log('Area position: ', areaPosition);
+        console.log('Text node: ', textNode?.align());
+        // Set textarea position
+        textareaStyle.left = areaPosition.x + 'px';
+        textareaStyle.top = areaPosition.y + 'px';
+    }
+
     // Set typography related styles
     textareaStyle.fontSize = textNode?.fontSize() + 'px';
     textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
@@ -690,14 +708,35 @@ const enterEditMode = (e: Event) => {
     textareaStyle.transformOrigin = 'left top';
     textareaStyle.textAlign = 'left';
     textareaStyle.color = 'black';
+    textareaStyle.zIndex = 999;
 
     setTimeout(() => {
         quoteAreaRef.value.focus();
     }, 0);
 
     console.log('--> TEXTAREA STYLE: ', textareaStyle)
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        editedQuoteText.value = selectedConfig.value.text.trim();
+    }
+    backupLastEditedText();
     editing.value = true;
 }
+
+const lastEditedText = ref({group: '', config: ''});
+const backupLastEditedText = () => {
+    if (selectedConfig.value && lastEditedText.value && isTextConfig(selectedConfig.value)) {
+        lastEditedText.value.group = selectedGroupName.value ?? '';
+        lastEditedText.value.config = selectedConfigName.value ?? '';
+    }
+}
+
+const restoreLastEditedText = () => {
+    if (lastEditedText.value) {
+        selectedGroupName.value = lastEditedText.value.group;
+        selectedConfigName.value = lastEditedText.value.config;
+    }
+    lastEditedText.value = { group: '', config: '' };
+};
 
 const exitEditMode = () => {
     if (editedQuoteText.value.trim() === '') {
@@ -718,6 +757,7 @@ const exitEditMode = () => {
         editedQuoteText.value = '';
         editing.value = false; // Exit edit mode
     }
+    restoreLastEditedText();
 }
 
 const editQuote = () => {
@@ -743,7 +783,8 @@ const textareaStyle = reactive<TextareaStyle>({
     transformOrigin: '',
     textAlign: '',
     color: '',
-    transform: ''
+    transform: '',
+    zIndex: 0,
 });
 
 const onDragstart = (e: any) => {
@@ -909,7 +950,9 @@ onMounted(() => {
     const handleKeydown = (event: KeyboardEvent) => {
         if (event.key === 'Delete') {
             // Handle delete key press
-            deleteShape();
+            if (!editing.value) {
+                deleteShape();
+            }
         }
     };
 

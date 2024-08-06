@@ -3,11 +3,10 @@ import { Ref, ref } from 'vue';
 import useZoom from '../composable/useZoom';
 import { debounce } from "lodash";
 import { KonvaEventObject } from "konva/lib/Node";
-import { CanvasStore, CanvasState } from "../types/canvas.types";
 import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
 
-export const useCanvasStore = defineStore<'app', CanvasState, {}, CanvasStore>('app', () => {
+export const useCanvasStore = defineStore('app', () => {
     // Todo: not working when using typescript
     const stageRef = ref<Stage | null>(null);
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();

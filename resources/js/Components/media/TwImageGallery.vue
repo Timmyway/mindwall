@@ -85,7 +85,7 @@ import { User } from '../../types/auth.types';
 const props = defineProps<{
     upload: boolean;
     scrollable: boolean;
-    user: User;
+    user: User | null;
     maxHeight: number;
 }>();
 
