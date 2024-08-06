@@ -6,17 +6,13 @@ import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
-import { WallConfig, TextConfig, ImageConfig } from '../../types/konva.config';
-import { Ref } from 'vue';
+import { TextConfig, ImageConfig } from '../../types/konva.config';
 import { Thematic } from '../../types/thematic.types';
-import { Transformer } from 'konva/lib/shapes/Transformer';
 import { Text } from 'konva/lib/shapes/Text';
 import { reactive } from 'vue';
 import { TextareaStyle } from '../../types/canvas.types'
 import TwContextMenu from '../../Components/menu/TwContextMenu.vue';
 import { useFileDialog } from '@vueuse/core'
-import { Rect } from 'konva/lib/shapes/Rect';
-import { Image } from 'konva/lib/shapes/Image';
 import usePaletteColor from '../../composable/usePaletteColor';
 import canvasApi from '../../api/canvasApi';
 import ThematicList from './ThematicList.vue';
@@ -30,17 +26,21 @@ import useTextSetting from '@/composable/useTextSetting';
 import Dropdown from 'primevue/dropdown';
 import useMarkdownParser from '@/composable/useMarkdownParser';
 import useFontFamily from '@/composable/useFontFamily';
+import { useCanvasConditions } from '@/composable/useCanvasConditions';
+import { useWidgetSettingStore } from '@/store/widgetSettingStore';
+import TwLoading from '@/Components/ui/TwLoading.vue';
 
 const props = defineProps<{
     thematic: Thematic,
 }>();
 
 const canvaStore = useCanvasStore();
+const widgetStore = useWidgetSettingStore();
 const { stageRef } = storeToRefs(canvaStore);
+const { isTextConfig, isImageConfig } = useCanvaConditions();
 
 var MIN_WIDTH = 20;
 const page = usePage();
-
 const user = computed<User | null>((): User | null => page.props.user as User | null);
 
 const isGalleryVisible = ref<boolean>(false);
@@ -64,77 +64,6 @@ const { files, open, reset, onChange } = useFileDialog({
     directory: false, // Select directories instead of files if set true
 })
 
-const wall = reactive<WallConfig>({});
-
-const serializeWall = async (): Promise<any> => {
-    // Initialize an empty object to store the serialized wall
-    const serializedWall: any = {};
-
-    // Loop through each group in the wall object
-    for (const groupKey of Object.keys(wall)) {
-        // Get the group from the wall object
-        const group = wall[groupKey];
-        // Create a shallow copy of the group
-        const serializedGroup = { ...group };
-
-        // Check if the group has items
-        if (group.items) {
-            serializedGroup.items = {};
-
-            for (const itemKey of Object.keys(group.items)) {
-                // Get the item from the group
-                const item = group.items[itemKey];
-                const serializedItem: any = { ...item };
-
-                // Check if the item is an image configuration and the image is an HTMLImageElement
-                if (isImageConfig(item) && item.image instanceof HTMLImageElement) {
-                    // Convert the image to a Base64 string and store it in the serialized item
-                    console.log('=======------------> 2024: ', item.image.src);
-                    // serializedItem.image = await imageToBase64(item.image);
-                    serializedItem.image = item.image.src;
-                }
-
-                serializedGroup.items[itemKey] = serializedItem;
-            }
-        }
-
-        serializedWall[groupKey] = serializedGroup;
-    }
-
-    return serializedWall;
-};
-
-const deserializeWall = async (serializedWall: any): Promise<any> => {
-    const deserializedWall: any = {};
-
-    for (const groupKey of Object.keys(serializedWall)) {
-        const group = serializedWall[groupKey];
-        const deserializedGroup = { ...group };
-
-        if (group.items) {
-            deserializedGroup.items = {};
-
-            for (const itemKey of Object.keys(group.items)) {
-                const item = group.items[itemKey];
-                const deserializedItem = { ...item };
-
-                if (item.is === 'image' && typeof item.image === 'string') {
-                    // deserializedItem.image = await base64ToImage(item.image);
-
-                    // Create an HTMLImageElement from the URL
-                    deserializedItem.image = await loadImageFromURL(item.image);
-                }
-
-                deserializedGroup.items[itemKey] = deserializedItem;
-            }
-        }
-
-        deserializedWall[groupKey] = deserializedGroup;
-    }
-
-    return deserializedWall;
-};
-
 // const form = useForm({
 //     thematicId: props.thematic.id,
 //     wall: ''
@@ -145,7 +74,7 @@ const isSaving = ref<boolean>(false);
 const saveWallToServer = async () => {
     try {
         isSaving.value = true;
-        const serializedWall = await serializeWall();
+        const serializedWall = await canvaStore.serializeWall();
         // form.wall = JSON.stringify(serializedWall);
 
         // form.post('/api/wall/update', { preserveScroll: true });
@@ -186,10 +115,10 @@ const cook = async () => {
     const thematicWall = safeJsonParse(props.thematic.wall);
     // Then deserialize it (images).
     if (thematicWall) {
-        const deserialized = await deserializeWall(thematicWall);
+        const deserialized = await canvaStore.deserializeWall(thematicWall);
 
         // Use Object.assign to merge properties into the reactive wall object
-        Object.assign(wall, deserialized);
+        Object.assign(canvaStore.wall, deserialized);
         isReady.value = true;
     }
 }
@@ -234,15 +163,15 @@ const deleteShape = () => {
 
         if (groupName && configName) {
             // Check if the group exists
-            if (wall[groupName] && wall[groupName].items[configName]) {
+            if (canvaStore.wall[groupName] && canvaStore.wall[groupName].items[configName]) {
                 // Delete the shape config from the items object
-                delete wall[groupName].items[configName];
+                delete canvaStore.wall[groupName].items[configName];
                 console.log(`---- 99 -> '${configName}' shape has been removed from group '${groupName}'`);
 
                 // Check if the group is empty after deleting the shape
-                if (Object.keys(wall[groupName].items).length === 0) {
+                if (Object.keys(canvaStore.wall[groupName].items).length === 0) {
                     // If the group is empty, delete the group itself
-                    delete wall[groupName];
+                    delete canvaStore.wall[groupName];
                     console.log(`---- 99 -> Group '${groupName}' has been removed because it became empty.`);
                 }
             }
@@ -253,7 +182,7 @@ const deleteShape = () => {
 const addGroup = () => {
     const groupName = `group-${uuid()}`;
     console.log('==> Add new group: ', groupName);
-    wall[groupName] = {
+    canvaStore.wall[groupName] = {
         id: groupName,
         name: groupName,
         is: 'group',
@@ -266,20 +195,6 @@ const addGroup = () => {
     return groupName;
 };
 
-const isTextConfig = (config: any): config is TextConfig => {
-    if (!config) {
-        return false;
-    }
-    return (config as TextConfig).is === 'text';
-};
-
-const isImageConfig = (config: any): config is ImageConfig => {
-    if (!config) {
-        return false;
-    }
-    return (config as ImageConfig).is === 'image';
-};
-
 const { parseTextFromMarkDown } = useMarkdownParser();
 
 const addAiTextToWall = async (e: any) => {
@@ -287,6 +202,7 @@ const addAiTextToWall = async (e: any) => {
     // if (!thematicName || thematicName.trim() === '') {
     //     return;
     // }
+    widgetStore.isLoading.aiGenerateText = true;
     let thematicName = null;
     if (selectedConfig.value) {
         if (isTextConfig(selectedConfig.value)) {
@@ -299,14 +215,20 @@ const addAiTextToWall = async (e: any) => {
         }
     }
     if (thematicName) {
+        // Back up the initial group to which the generated text belongs
+        const groupName = selectedGroupName.value ?? '';
+
         const response = await AiApi.aiGenerateText(thematicName);
         const generatedText = await parseTextFromMarkDown(response.data.generatedText);
 
-        addTextToWall(e, generatedText);
+        addTextToWall(e, generatedText, groupName);
+        widgetStore.isLoading.aiGenerateText = false;
+    } else {
+        widgetStore.isLoading.aiGenerateText = false;
     }
 }
 
-const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') => {
+const addTextToWall = (e: MenuItemCommandEvent, text: string = 'Unleash your thoughts !', groupName = '') => {
     let newGroupName = addGroup();
     let textIdentifier: string;
     if (selectedGroupName.value) {
@@ -332,12 +254,16 @@ const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') =>
         width: 320
     };
 
-    if (selectedGroupName.value) {
-        console.log('==========> Add into group: ', selectedGroupName.value);
+    const targetGroup = groupName || selectedGroupName.value;
+
+    if (targetGroup) {
+        console.log('==========> Add into group: ', targetGroup);
         console.log('==========> the following text: ', newTextConfig);
-        wall[selectedGroupName.value].items[textIdentifier] = newTextConfig;
+        console.log('==========> Found groupname: ', groupName);
+
+        canvaStore.wall[targetGroup].items[textIdentifier] = newTextConfig;
     } else {
-        wall[newGroupName] = {
+        canvaStore.wall[newGroupName] = {
             id: newGroupName,
             name: newGroupName,
             is: 'group',
@@ -347,7 +273,7 @@ const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') =>
             draggable: true,
             items: {}
         };
-        wall[newGroupName].items[textIdentifier] = newTextConfig;
+        canvaStore.wall[newGroupName].items[textIdentifier] = newTextConfig;
     }
 };
 
@@ -401,7 +327,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
             newImageConfig.height = h;
 
             if (selectedGroupName.value) {
-                wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
+                canvaStore.wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
             }
         }
     } else {
@@ -421,7 +347,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
                 newImageConfig.image = resizedImage;
 
                 if (selectedGroupName.value) {
-                    wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
+                    canvaStore.wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
                 }
             }
         };
@@ -430,23 +356,20 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
 };
 
 const removeConfig = (groupName: string, configName: string) => {
-    if (wall[groupName] && wall[groupName].items[configName]) {
-    delete wall[groupName].items[configName];
+    if (canvaStore.wall[groupName] && canvaStore.wall[groupName].items[configName]) {
+    delete canvaStore.wall[groupName].items[configName];
     } else {
     console.log(`Config with name ${configName} not found in group ${groupName}.`);
     }
 };
 
 const removeText = (groupName: string, textId: string) => {
-    if (wall[groupName] && wall[groupName].items[textId]) {
-        delete wall[groupName].items[textId];
+    if (canvaStore.wall[groupName] && canvaStore.wall[groupName].items[textId]) {
+        delete canvaStore.wall[groupName].items[textId];
     } else {
     console.log(`Text with id ${textId} not found in group ${groupName}.`);
     }
 };
-
-const selectedGroupName = ref<string | null>(null);
-const selectedConfigName = ref<string | null>(null);
 
 const handleMouseRelease = () => {
     if (selectedConfig.value) {
@@ -544,25 +467,9 @@ const thematicTextConfig = ref({
     fill: '#fff',
 });
 
-const selectedConfig = computed<TextConfig | ImageConfig | null>({
-    get: (): TextConfig | ImageConfig | null => {
-        if (selectedGroupName.value && selectedConfigName.value) {
-            return wall[selectedGroupName.value]?.items[selectedConfigName.value];
-        }
-        return null;
-    },
-    set: (newConfig: Partial<TextConfig> | Partial<ImageConfig> | null) => {
-        if (selectedGroupName.value && selectedConfigName.value) {
-            const currentConfig = wall[selectedGroupName.value].items[selectedConfigName.value];
-            if (currentConfig) {
-                wall[selectedGroupName.value].items[selectedConfigName.value] = {
-                    ...currentConfig,
-                    ...newConfig
-                };
-            }
-        }
-    }
-});
+const { selectedConfig, selectedGroupName, selectedConfigName, wall } = storeToRefs(canvaStore);
+
+console.log('==============> Wall', wall);
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
@@ -821,10 +728,12 @@ const onDragstart = (e: any) => {
 const onDragend = (e: any) => {
     if (e.target) {
         if (e.target.getType() === 'Group') {
-            console.log('===> Group selected: ', e.target.name());
+            const targetName = e.target.name();
+            console.log('===> Group selected: ', targetName);
             e.target.opacity(1)
-            wall[e.target.name()].x = e.target.x();
-            wall[e.target.name()].y = e.target.y();
+
+            canvaStore.wall[targetName].x = e.target.x();
+            canvaStore.wall[targetName].y = e.target.y();
         } else if (e.target.constructor.name === '_Image') {
             const groupName = e.target.getParent().name();
             const imageName = e.target.name();
@@ -880,7 +789,7 @@ const bringToTop = () => {
 
         console.log('============> S', selectedConfig.value);
 
-        const group = wall[groupName];
+        const group = canvaStore.wall[groupName];
         if (group && group.items) {
             const items = Object.values(group.items);
 
@@ -914,7 +823,7 @@ const bringToBack = () => {
         const groupName = selectedGroupName.value;
         const configName = selectedConfig.value.name;
 
-        const group = wall[groupName];
+        const group = canvaStore.wall[groupName];
         if (group && group.items) {
             const items = Object.values(group.items);
 
@@ -946,11 +855,11 @@ const bringToBack = () => {
 };
 
 const cloneGroup = (groupName: string): string | null => {
-    const originalGroup = wall[groupName];
+    const originalGroup = canvaStore.wall[groupName];
     if (!originalGroup) return null;
 
     const newGroupName = addGroup();
-    const newGroup = wall[newGroupName];
+    const newGroup = canvaStore.wall[newGroupName];
 
     // Clone properties of the original group
     newGroup.scaleX = originalGroup.scaleX;
@@ -1070,72 +979,81 @@ const handleTransform = (e: any) => {
             </div>
             <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
                 <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addTextToWall"
-                >
-                    <i class="fas fa-plus-circle"></i>
-                </button>
-                <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-pink-400 btn-icon--xs"
-                    @click.prevent="addAiTextToWall"
-                >
-                    <i class="fas fa-robot"></i>
-                </button>
-                <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addImageToWall()"
-                >
-                    <i class="fas fa-image"></i>
-                </button>
-                <div class="flex items-center">
-                    <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
-                        @mouseover="showPanel('palette')"
-                    >
-                        <i class="fas fa-font"></i>
-                    </button>
-                    <div
-                        v-show="viewPanel.palette"
-                        class="absolute top-full w-full max-w-xs bg-white z-10 p-2 flex flex-wrap gap-[3px]"
-                        style="box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;"
-                        @mouseleave="hidePanel('palette')">
-                        <template v-for="color in paletteColor">
-                            <button
-                                class="btn btn-icon p-0 w-4 h-4 rounded-full"
-                                :style="{ backgroundColor: color }"
-                                @click="changeColor(color)"></button>
-                        </template>
-                    </div>
-                </div>
-                <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-                    <button @click.prevent="updateFontSize('-')">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <Dropdown
-                        v-model="fontSize"
-                        :options="availableTextSize"
-                        placeholder="Font size"
-                        class="w-full md:w-23"
-                        @change="updateFontSize()"
-                    />
-                    <button @click.prevent="updateFontSize('+')">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-                <Dropdown
-                    v-show="isTextConfig(selectedConfig)"
-                    v-model="fontFamily"
-                    :options="fontFamilies"
-                    placeholder="Font"
-                    class="w-full md:w-23"
-                    @change="updateFontFamily()"
-                />
-                <button
                     v-show="!isSaving"
                     class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
                     @click.prevent="saveWallToServer()"
                 >
                     <i class="fas fa-save"></i>
                 </button>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+                    @click.prevent="addTextToWall"
+                >
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+                <div class="flex items-center">
+                    <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
+                    <button
+                        v-show="!widgetStore.isLoading.aiGenerateText"
+                        class="btn btn-icon btn-xs btn-icon--flat bg-pink-400 btn-icon--xs"
+                        @click.prevent="addAiTextToWall"
+                    >
+                        <i class="fas fa-robot"></i>
+                    </button>
+                </div>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+                    @click.prevent="addImageToWall()"
+                >
+                    <i class="fas fa-image"></i>
+                </button>
+
+                <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-2">
+                    <!-- SETTING: color palette -->
+                    <div class="flex items-center">
+                        <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
+                            @mouseover="showPanel('palette')"
+                        >
+                            <i class="fas fa-font"></i>
+                        </button>
+                        <div
+                            v-show="viewPanel.palette"
+                            class="absolute top-full w-full max-w-xs bg-white z-10 p-2 flex flex-wrap gap-[3px]"
+                            style="box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;"
+                            @mouseleave="hidePanel('palette')">
+                            <template v-for="color in paletteColor">
+                                <button
+                                    class="btn btn-icon p-0 w-4 h-4 rounded-full"
+                                    :style="{ backgroundColor: color }"
+                                    @click="changeColor(color)"></button>
+                            </template>
+                        </div>
+                    </div>
+                    <!-- SETTING: text size -->
+                    <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                        <button @click.prevent="updateFontSize('-')">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <Dropdown
+                            v-model="fontSize"
+                            :options="availableTextSize"
+                            placeholder="Font size"
+                            class="w-full md:w-23"
+                            @change="updateFontSize()"
+                        />
+                        <button @click.prevent="updateFontSize('+')">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <!-- SETTING: text family -->
+                    <Dropdown
+                        v-model="fontFamily"
+                        :options="fontFamilies"
+                        placeholder="Font"
+                        class="w-full md:w-23"
+                        @change="updateFontFamily()"
+                    />
+                </div>
             </div>
             <tw-context-menu
                 :handle-add-image="pickImage"
@@ -1144,6 +1062,7 @@ const handleTransform = (e: any) => {
                 :handle-clone="handleCloneGroup"
                 :handle-bring-to-top="bringToTop"
                 :handle-bring-to-back="bringToBack"
+                :handle-text-ai-generate="addAiTextToWall"
             ></tw-context-menu>
             <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
                 <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>

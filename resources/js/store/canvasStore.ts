@@ -1,10 +1,13 @@
 import { defineStore } from "pinia";
-import { Ref, ref } from 'vue';
+import { Ref, ref, computed, reactive } from 'vue';
 import useZoom from '../composable/useZoom';
 import { debounce } from "lodash";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
+import { ImageConfig, TextConfig, WallConfig } from "@/types/konva.config";
+import { loadImageFromURL } from "@/helpers/utils";
+import { useCanvaConditions } from "@/composable/useCanvasConditions";
 
 export const useCanvasStore = defineStore('app', () => {
     // Todo: not working when using typescript
@@ -69,6 +72,103 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }, 50);
 
-    return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel, menu,
+    const wall = reactive<WallConfig>({});
+    const selectedGroupName = ref<string | null>(null);
+    const selectedConfigName = ref<string | null>(null);
+
+    const selectedConfig = computed<TextConfig | ImageConfig | null>({
+        get: (): TextConfig | ImageConfig | null => {
+            if (selectedGroupName.value && selectedConfigName.value) {
+                return wall[selectedGroupName.value]?.items[selectedConfigName.value];
+            }
+            return null;
+        },
+        set: (newConfig: Partial<TextConfig> | Partial<ImageConfig> | null) => {
+            if (selectedGroupName.value && selectedConfigName.value) {
+                const currentConfig = wall[selectedGroupName.value].items[selectedConfigName.value];
+                if (currentConfig) {
+                    wall[selectedGroupName.value].items[selectedConfigName.value] = {
+                        ...currentConfig,
+                        ...newConfig
+                    };
+                }
+            }
+        }
+    });
+
+    const { isImageConfig } = useCanvaConditions();
+
+    const serializeWall = async (): Promise<any> => {
+        // Initialize an empty object to store the serialized wall
+        const serializedWall: any = {};
+
+        // Loop through each group in the wall object
+        for (const groupKey of Object.keys(wall)) {
+            // Get the group from the wall object
+            const group = wall[groupKey];
+            // Create a shallow copy of the group
+            const serializedGroup = { ...group };
+
+            // Check if the group has items
+            if (group.items) {
+                serializedGroup.items = {};
+
+                for (const itemKey of Object.keys(group.items)) {
+                    // Get the item from the group
+                    const item = group.items[itemKey];
+                    const serializedItem: any = { ...item };
+
+                    // Check if the item is an image configuration and the image is an HTMLImageElement
+                    if (isImageConfig(item) && item.image instanceof HTMLImageElement) {
+                        // Convert the image to a Base64 string and store it in the serialized item
+                        console.log('=======------------> 2024: ', item.image.src);
+                        // serializedItem.image = await imageToBase64(item.image);
+                        serializedItem.image = item.image.src;
+                    }
+
+                    serializedGroup.items[itemKey] = serializedItem;
+                }
+            }
+
+            serializedWall[groupKey] = serializedGroup;
+        }
+
+        return serializedWall;
+    };
+
+    const deserializeWall = async (serializedWall: any): Promise<any> => {
+        const deserializedWall: any = {};
+
+        for (const groupKey of Object.keys(serializedWall)) {
+            const group = serializedWall[groupKey];
+            const deserializedGroup = { ...group };
+
+            if (group.items) {
+                deserializedGroup.items = {};
+
+                for (const itemKey of Object.keys(group.items)) {
+                    const item = group.items[itemKey];
+                    const deserializedItem = { ...item };
+
+                    if (item.is === 'image' && typeof item.image === 'string') {
+                        // deserializedItem.image = await base64ToImage(item.image);
+
+                        // Create an HTMLImageElement from the URL
+                        deserializedItem.image = await loadImageFromURL(item.image);
+                    }
+
+                    deserializedGroup.items[itemKey] = deserializedItem;
+                }
+            }
+
+            deserializedWall[groupKey] = deserializedGroup;
+        }
+
+        return deserializedWall;
+    };
+
+    return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
+        menu, selectedConfig, selectedGroupName, selectedConfigName, wall,
+        serializeWall, deserializeWall
     }
 });

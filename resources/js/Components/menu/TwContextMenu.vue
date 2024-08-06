@@ -11,7 +11,8 @@ const props = defineProps<{
     handleRemoveShape: (event: MenuItemCommandEvent) => void,
     handleBringToTop: (event: MenuItemCommandEvent) => void,
     handleBringToBack: (event: MenuItemCommandEvent) => void,
-    handleClone: (event: MenuItemCommandEvent) => void
+    handleClone: (event: MenuItemCommandEvent) => void,
+    handleTextAiGenerate: (event: MenuItemCommandEvent) => void
 }>();
 
 const canvaStore = useCanvasStore();
@@ -30,6 +31,7 @@ const items = ref<MenuItem[]>([
         icon: 'fas fa-font',
         items: [
             { label: 'Add', icon: 'fas fa-plus', command: props.handleAddText },
+            { label: 'Gemini Saves the Day', icon: 'fas fa-plus', command: props.handleTextAiGenerate },
         ]
     },
     {
