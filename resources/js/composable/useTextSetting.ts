@@ -7,6 +7,11 @@ export default function useTextSetting() {
     ];
 
     const fontSize = ref(16);
+    const fontFamily = ref('Montserrat');
+    const defaultSetting = {
+        fontSize: 16,
+        fontFamily: 'Montserrat'
+    };
 
     const increaseFontSize = () => {
         const currentSizeIndex = availableTextSize.indexOf(fontSize.value);
@@ -23,8 +28,16 @@ export default function useTextSetting() {
     };
 
     const setFontSize = (newValue: number) => {
-        fontSize.value = newValue;
+        if (newValue && newValue >= 6) {
+            fontSize.value = newValue;
+        } else {
+            fontSize.value = defaultSetting.fontSize;
+        }
+    }
+    const setFontFamily = (newValue: string) => {
+        console.log('===========> New FF', newValue)
+        fontFamily.value = newValue ?? defaultSetting.fontFamily;
     }
 
-    return { availableTextSize, fontSize, increaseFontSize, decreaseFontSize, setFontSize };
+    return { availableTextSize, fontSize, fontFamily, increaseFontSize, decreaseFontSize, setFontSize, setFontFamily, defaultSetting };
 }

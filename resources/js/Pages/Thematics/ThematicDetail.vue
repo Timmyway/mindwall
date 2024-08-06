@@ -29,6 +29,7 @@ import AiApi from '../../api/AiApi';
 import useTextSetting from '@/composable/useTextSetting';
 import Dropdown from 'primevue/dropdown';
 import useMarkdownParser from '@/composable/useMarkdownParser';
+import useFontFamily from '@/composable/useFontFamily';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -202,7 +203,7 @@ cook();
 //         y: randPos('y'),
 //         scaleX: 1,
 //         scaleY: 1,
-//         fontFamily: 'Verdana',
+//         fontFamily: 'Montserrat',
 //         fontSize: 12,
 //         name: `quote-${quote.id}`,
 //         text: quote.name,
@@ -266,10 +267,16 @@ const addGroup = () => {
 };
 
 const isTextConfig = (config: any): config is TextConfig => {
+    if (!config) {
+        return false;
+    }
     return (config as TextConfig).is === 'text';
 };
 
 const isImageConfig = (config: any): config is ImageConfig => {
+    if (!config) {
+        return false;
+    }
     return (config as ImageConfig).is === 'image';
 };
 
@@ -317,7 +324,7 @@ const addTextToWall = (e: MenuItemCommandEvent, text: string = 'New text...') =>
         y: center.y -50,
         scaleX: 1,
         scaleY: 1,
-        fontFamily: 'Calibri',
+        fontFamily: 'Montserrat',
         fontSize: 24,
         text: text,
         fill: 'black',
@@ -460,8 +467,10 @@ const handleTextBlur = () => {
 const handleTextMouseDown = (e: any, groupName: string, configName: string) => {
     selectConfig(groupName, configName)
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        console.log('-- 11 -> Set fontsize to : ', selectedConfig.value.fontSize);
+        console.log('-- 11 -> Set fontsize & family');
         setFontSize(selectedConfig.value.fontSize);
+        setFontFamily(selectedConfig.value.fontFamily);
+        console.log('-- 11 -> Set fontsize to : ', selectedConfig.value.fontSize);
         console.log('-- 12 -> Mouse down on text shape');
         // Check if Ctrl key is pressed
         const ctrl = e.evt.ctrlKey || e.evt.metaKey;
@@ -486,6 +495,19 @@ const resetConfig = () => {
 }
 
 const transformer = ref();
+
+const transformerConfig = computed(() => {
+    const tempConfig = { enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'] };
+
+    if (selectedConfig.value) {
+        if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        tempConfig.enabledAnchors = ['middle-left', 'middle-right'];
+        } else if (isImageConfig(selectedConfig.value)) {
+            tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];
+        }
+    }
+    return tempConfig;
+});
 
 const stageConfig: {
   width: number;
@@ -704,7 +726,7 @@ const enterEditMode = (e: Event) => {
     // Set typography related styles
     textareaStyle.fontSize = textNode?.fontSize() + 'px';
     textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
-    textareaStyle.fontFamily = textNode?.fontFamily() ?? 'Verdana';
+    textareaStyle.fontFamily = textNode?.fontFamily() ?? 'Montserrat';
     textareaStyle.transformOrigin = 'left top';
     textareaStyle.textAlign = 'left';
     textareaStyle.color = 'black';
@@ -779,7 +801,7 @@ const textareaStyle = reactive<TextareaStyle>({
     fontSize: '',
     overflow: '',
     lineHeight: 1,
-    fontFamily: 'Verdana',
+    fontFamily: 'Montserrat',
     transformOrigin: '',
     textAlign: '',
     color: '',
@@ -820,7 +842,9 @@ const syncPosition = (x: number, y: number) => {
 }
 
 const { paletteColor } = usePaletteColor();
-const { fontSize, setFontSize, availableTextSize, decreaseFontSize, increaseFontSize } = useTextSetting();
+const { fontFamilies } = useFontFamily();
+const { fontFamily, fontSize, setFontSize, setFontFamily, availableTextSize, decreaseFontSize, increaseFontSize } = useTextSetting();
+
 const updateFontSize = (mode: '+' | '-' | null = null) => {
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
         if (mode === '+') {
@@ -829,6 +853,12 @@ const updateFontSize = (mode: '+' | '-' | null = null) => {
             decreaseFontSize();
         }
         selectedConfig.value.fontSize = fontSize.value;
+    }
+}
+
+const updateFontFamily = () => {
+    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
+        selectedConfig.value.fontFamily = fontFamily.value;
     }
 }
 
@@ -1076,7 +1106,7 @@ const handleTransform = (e: any) => {
                         </template>
                     </div>
                 </div>
-                <div v-show="selectedConfig && isTextConfig(selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
                     <button @click.prevent="updateFontSize('-')">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -1091,6 +1121,14 @@ const handleTransform = (e: any) => {
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
+                <Dropdown
+                    v-show="isTextConfig(selectedConfig)"
+                    v-model="fontFamily"
+                    :options="fontFamilies"
+                    placeholder="Font"
+                    class="w-full md:w-23"
+                    @change="updateFontFamily()"
+                />
                 <button
                     v-show="!isSaving"
                     class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
@@ -1171,9 +1209,7 @@ const handleTransform = (e: any) => {
                                 </template>
                             </v-group>
                         </div>
-                        <v-transformer ref="transformer" :config="{
-                            enabledAnchors: ['middle-left', 'middle-right', 'bottom-right'],
-                        }" />
+                        <v-transformer ref="transformer" :config="transformerConfig" />
                     </div>
                 </v-layer>
             </v-stage>

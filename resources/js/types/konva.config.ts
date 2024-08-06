@@ -55,3 +55,7 @@ export interface ImageConfig {
     draggable?: boolean;
     zIndex?: number
 }
+
+export interface TransformerConfig {
+
+}
