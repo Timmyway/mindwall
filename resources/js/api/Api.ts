@@ -5,4 +5,9 @@ var Api = axios.create({
     headers: { Accept: 'application/json' }
 });
 
-export { Api };
+var InfinideaApi = axios.create({
+    baseURL: 'http://budgetdevis.local/kmailing',
+    headers: { Accept: 'application/json' }
+});
+
+export { Api, InfinideaApi };

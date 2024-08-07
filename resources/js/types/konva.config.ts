@@ -1,3 +1,5 @@
+import { TextAlign } from "./widgetSetting.types";
+
 export interface WallConfig {
     [group: string]: GroupConfig;
 }
@@ -37,6 +39,7 @@ export interface TextConfig  {
     draggable?: boolean;
     zIndex?: number;
     width?: number;
+    align?: TextAlign
 }
 
 export interface ImageConfig {

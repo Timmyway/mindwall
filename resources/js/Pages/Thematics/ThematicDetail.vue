@@ -22,15 +22,16 @@ import { User } from '@/types';
 import { onUnmounted } from 'vue';
 import { MenuItemCommandEvent } from 'primevue/menuitem';
 import AiApi from '../../api/AiApi';
-import useTextSetting from '@/composable/useTextSetting';
-import Dropdown from 'primevue/dropdown';
 import useMarkdownParser from '@/composable/useMarkdownParser';
-import useFontFamily from '@/composable/useFontFamily';
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
 import TwLoading from '@/Components/ui/TwLoading.vue';
 import { TextGeneratorOption } from '@/types/infinidea.types';
 import TwMenubarPaletteColor from '@/Components/menubar/TwMenubarPaletteColor.vue';
+import TwZoomLevel from '@/Components/menubar/TwZoomLevel.vue';
+import TwActionText from '@/Components/menubar/TwActionText.vue';
+import { useCommandBarStore } from '@/store/commandBarStore';
+import TwImageBankGallery from '@/Components/media/TwImageBankGallery.vue';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -38,6 +39,8 @@ const props = defineProps<{
 
 const canvaStore = useCanvasStore();
 const widgetStore = useWidgetSettingStore();
+const commandBarStore = useCommandBarStore();
+
 const { stageRef } = storeToRefs(canvaStore);
 const { isTextConfig, isImageConfig } = useCanvasConditions();
 
@@ -46,6 +49,7 @@ const page = usePage();
 const user = computed<User | null>((): User | null => page.props.user as User | null);
 
 const isGalleryVisible = ref<boolean>(false);
+const isBankGalleryVisible = ref<boolean>(false);
 
 const viewImageGallery = () => {
     isGalleryVisible.value = true;
@@ -54,6 +58,16 @@ const viewImageGallery = () => {
 const hideImageGallery = () => {
     setTimeout(() => {
         isGalleryVisible.value = false;
+    }, 200);
+}
+
+const viewBankImageGallery = () => {
+    isBankGalleryVisible.value = true;
+}
+
+const hideBankImageGallery = () => {
+    setTimeout(() => {
+        isBankGalleryVisible.value = false;
     }, 200);
 }
 
@@ -272,7 +286,8 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         text: text,
         fill: 'black',
         visible: true,
-        width: 320
+        width: 320,
+        align: 'left'
     };
 
     const targetGroup = groupName || selectedGroupName.value;
@@ -412,8 +427,15 @@ const handleTextMouseDown = (e: any, groupName: string, configName: string) => {
     selectConfig(groupName, configName)
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
         console.log('-- 11 -> Set fontsize & family');
-        setFontSize(selectedConfig.value.fontSize);
-        setFontFamily(selectedConfig.value.fontFamily);
+        commandBarStore.setFontSize(selectedConfig.value.fontSize);
+        commandBarStore.setFontFamily(selectedConfig.value.fontFamily);
+        // Check if selectedConfig.value.align is not undefined
+        if (typeof selectedConfig.value.align !== 'undefined') {
+            console.log('====================> Update alignement: ', selectedConfig.value.align)
+            commandBarStore.setTextAlign(selectedConfig.value.align);
+        } else {
+            commandBarStore.setTextAlign('left');
+        }
         console.log('-- 11 -> Set fontsize to : ', selectedConfig.value.fontSize);
         console.log('-- 12 -> Mouse down on text shape');
         // Check if Ctrl key is pressed
@@ -489,8 +511,6 @@ const thematicTextConfig = ref({
 });
 
 const { selectedConfig, selectedGroupName, selectedConfigName, wall } = storeToRefs(canvaStore);
-
-console.log('==============> Wall', wall);
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
@@ -772,25 +792,6 @@ const syncPosition = (x: number, y: number) => {
 }
 
 const { paletteColor } = usePaletteColor();
-const { fontFamilies } = useFontFamily();
-const { fontFamily, fontSize, setFontSize, setFontFamily, availableTextSize, decreaseFontSize, increaseFontSize } = useTextSetting();
-
-const updateFontSize = (mode: '+' | '-' | null = null) => {
-    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        if (mode === '+') {
-            increaseFontSize();
-        } else if (mode === '-') {
-            decreaseFontSize();
-        }
-        selectedConfig.value.fontSize = fontSize.value;
-    }
-}
-
-const updateFontFamily = () => {
-    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        selectedConfig.value.fontFamily = fontFamily.value;
-    }
-}
 
 const changeColor = (color: string) => {
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
@@ -947,238 +948,222 @@ const handleTransform = (e: any) => {
 }
 </script>
 <template>
-    <div>
-        <div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
-            <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
-                <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto">
-                    <div v-for="conf in selectedConfig">
-                        <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
-                            {{ confName }} => {{ confValue }}
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
-                    <div v-for="g in wall">
-                        <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
-                            {{ sName }} => {{ sValue }}
-                        </div>
-                    </div>
+<div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
+    <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
+        <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto">
+            <div v-for="conf in selectedConfig">
+                <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
+                    {{ confName }} => {{ confValue }}
                 </div>
             </div>
-            <Link
-                :href="route('thematic.list')"
-                class="btn btn-icon--xs btn-icon--flat btn-icon py-1"
-            >
-                <i class="fas fa-chevron-left text-red-600"></i>
-            </Link>
-            <div class="h-8 flex items-center relative">
-                <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
-                    <button @mouseover.prevent="viewImageGallery">
-                        <i class="fas fa-images"></i>
-                    </button>
-                    <div
-                        v-show="isGalleryVisible"
-                        class="fixed top-10 left-0 bg-white z-20 p-2"
-                        @mouseleave.prevent="hideImageGallery"
-                    >
-                        <tw-image-gallery
-                            :upload="true"
-                            :scrollable="true"
-                            :user="user"
-                            class="max-w-xs"
-                            :max-height="480"
-                            @select="addImageToWall"
-                        ></tw-image-gallery>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
-                    <button @click.prevent="canvaStore.setZoomLevel('-')">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <span class="text-xs">{{ canvaStore.zoomLevel }}%</span>
-                    <button @click.prevent="canvaStore.setZoomLevel('+')">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button
-                        v-show="canvaStore.zoomLevel !== 100"
-                        class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
-                        @click="canvaStore.resetZoomLevel()"
-                    >Reset</button>
-                </div>
-            </div>
-            <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
-                <button
-                    v-show="!isSaving"
-                    class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
-                    @click.prevent="saveWallToServer()"
-                >
-                    <i class="fas fa-save"></i>
-                </button>
-                <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addTextToWall()"
-                >
-                    <i class="fas fa-plus-circle"></i>
-                </button>
-                <div class="flex items-center gap-2">
-                    <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
-                    <button
-                        v-show="!widgetStore.isLoading.aiGenerateText"
-                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
-                        @click.prevent="addAiTextToWall()"
-                    >
-                        <i class="fas fa-robot text-blue-600"></i>
-                    </button>
-                    <button
-                        v-show="!widgetStore.isLoading.aiGenerateText"
-                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
-                        @click.prevent="addAiTextToWall('hot')"
-                    >
-                        <i class="fas fa-robot text-orange-600"></i>
-                    </button>
-                    <button
-                        v-show="!widgetStore.isLoading.aiGenerateText"
-                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
-                        @click.prevent="aiImageExplain('hot')"
-                    >
-                        <i class="fas fa-camera"></i>
-                    </button>
-                </div>
-                <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addImageToWall()"
-                >
-                    <i class="fas fa-image"></i>
-                </button>
-
-                <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-2">
-                    <!-- SETTING: color palette -->
-                    <div class="flex items-center">
-                        <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
-                            @mouseover="showPanel('palette')"
-                        >
-                            <i class="fas fa-font"></i>
-                        </button>
-                        <tw-menubar-palette-color
-                            :palette-color="paletteColor"
-                            :is-visible="viewPanel.palette"
-                            :handle-change-color="changeColor"
-                            :handle-hide-panel="hidePanel"
-                        ></tw-menubar-palette-color>
-                    </div>
-                    <!-- SETTING: text size -->
-                    <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-                        <button @click.prevent="updateFontSize('-')">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <Dropdown
-                            v-model="fontSize"
-                            :options="availableTextSize"
-                            placeholder="Font size"
-                            class="w-full md:w-23"
-                            @change="updateFontSize()"
-                        />
-                        <button @click.prevent="updateFontSize('+')">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    <!-- SETTING: text family -->
-                    <Dropdown
-                        v-model="fontFamily"
-                        :options="fontFamilies"
-                        placeholder="Font"
-                        class="w-full md:w-23"
-                        @change="updateFontFamily()"
-                    />
-                </div>
-            </div>
-            <tw-context-menu
-                :handle-add-image="pickImage"
-                :handle-remove-shape="deleteShape"
-                :handle-add-text="(e) => addTextToWall()"
-                :handle-clone="handleCloneGroup"
-                :handle-bring-to-top="bringToTop"
-                :handle-bring-to-back="bringToBack"
-                :handle-text-ai-generate="(e) => addAiTextToWall()"
-            ></tw-context-menu>
-            <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
-                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>
-                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Ready: {{ isReady }}</div>
-                <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ selectedConfig?.draggable }})</div>
-            </div>
-            <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
         </div>
-        <div class="bg-white canva relative" v-if="isReady">
-            <textarea
-                v-show="editing"
-                ref="quoteAreaRef"
-                class="quote-textarea"
-                type="text"
-                v-model="editedQuoteText"
-                @blur="editQuote"
-                @keyup.enter="editQuote"
-                @keyup.escape="exitEditMode"
-                :style="textareaStyle"
-            ></textarea>
-            <v-stage
-                ref="stageRef"
-                :config="stageConfig"
-                @mousedown="handleStageMouseDown"
-                @touchstart="handleStageMouseDown"
-                @wheel="canvaStore.handleWheel"
-                @keyup="handleKeyup"
-                :draggable="true"
-            >
-                <v-layer>
-                    <div>
-                        <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
-                            <v-group :config="groupConfig">
-                                <v-rect :config="thematicRectConfig"></v-rect>
-                                <v-text :config="thematicTextConfig"></v-text>
-                            </v-group>
-                        </div>
-                        <div v-for="(group, groupName) in wall" :key="groupName">
-                            <v-group
-                                :config="group"
-                                @transformend="handleTransformEnd"
-                                @contextmenu="handleGroupContextMenu"
-                                @dragstart="onDragstart"
-                                @dragend="onDragend"
-                            >
-                                <template v-for="config, configName in group.items" :key="configName">
-                                    <v-text
-                                        v-if="isTextConfig(config)"
-                                        :config="config"
-                                        @dblclick="enterEditMode"
-                                        @click="handleTextMouseDown($event, String(groupName), String(configName))"
-                                        @dragend="handleTextBlur"
-                                        @transform="handleTransform"
-                                        @transformend="handleTransformEnd"
-                                    ></v-text>
-                                    <v-image
-                                        v-if="isImageConfig(config)"
-                                        :config="config"
-                                        @mousedown="selectConfig(String(groupName), String(configName))"
-                                        @dragend="onDragend"
-                                        @transformend="handleTransformEnd"
-                                    />
-                                </template>
-                            </v-group>
-                        </div>
-                        <v-transformer ref="transformer" :config="transformerConfig" />
-                    </div>
-                </v-layer>
-            </v-stage>
+        <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
+            <div v-for="g in wall">
+                <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
+                    {{ sName }} => {{ sValue }}
+                </div>
+            </div>
         </div>
     </div>
+    <Link
+        :href="route('thematic.list')"
+        class="btn btn-icon--xs btn-icon--flat btn-icon py-1"
+    >
+        <i class="fas fa-chevron-left text-red-600"></i>
+    </Link>
+    <div class="h-8 flex items-center relative">
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+            <button @mouseover.prevent="viewImageGallery">
+                <i class="fas fa-images"></i>
+            </button>
+            <div
+                v-show="isGalleryVisible"
+                class="fixed top-10 left-0 bg-white z-20 p-2"
+                @mouseleave.prevent="hideImageGallery"
+            >
+                <tw-image-gallery
+                    :upload="true"
+                    :scrollable="true"
+                    :user="user"
+                    class="max-w-xs"
+                    :max-height="480"
+                    @select="addImageToWall"
+                ></tw-image-gallery>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+            <button @mouseover.prevent="viewBankImageGallery">
+                <i class="fas fa-images"></i>
+            </button>
+            <div
+                v-show="!isBankGalleryVisible"
+                class="fixed top-10 left-0 bg-white z-20 p-2"
+                @mouseleave.prevent="hideBankImageGallery"
+            >
+                <tw-image-bank-gallery
+                    :scrollable="true"
+                    :max-height="480"
+                    @select="addImageToWall"
+                ></tw-image-bank-gallery>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full transition-all">
+            <tw-zoom-level></tw-zoom-level>
+        </div>
+    </div>
+    <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+        <button
+            v-show="!isSaving"
+            class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
+            @click.prevent="saveWallToServer()"
+        >
+            <i class="fas fa-save"></i>
+        </button>
+        <button
+            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+            @click.prevent="addTextToWall()"
+        >
+            <i class="fas fa-plus-circle"></i>
+        </button>
+        <div class="flex items-center gap-2">
+            <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
+            <button
+                v-show="!widgetStore.isLoading.aiGenerateText"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                @click.prevent="addAiTextToWall()"
+            >
+                <i class="fas fa-robot text-blue-600"></i>
+            </button>
+            <button
+                v-show="!widgetStore.isLoading.aiGenerateText"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                @click.prevent="addAiTextToWall('hot')"
+            >
+                <i class="fas fa-robot text-orange-600"></i>
+            </button>
+            <button
+                v-show="!widgetStore.isLoading.aiGenerateText"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                @click.prevent="aiImageExplain('hot')"
+            >
+                <i class="fas fa-camera"></i>
+            </button>
+        </div>
+        <button
+            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+            @click.prevent="addImageToWall()"
+        >
+            <i class="fas fa-image"></i>
+        </button>
+
+        <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-2">
+            <!-- SETTING: color palette -->
+            <div class="flex items-center">
+                <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
+                    @mouseover="showPanel('palette')"
+                >
+                    <i class="fas fa-font"></i>
+                </button>
+                <tw-menubar-palette-color
+                    :palette-color="paletteColor"
+                    :is-visible="viewPanel.palette"
+                    :handle-change-color="changeColor"
+                    :handle-hide-panel="hidePanel"
+                ></tw-menubar-palette-color>
+            </div>
+            <!-- SETTING: text size -->
+            <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                <tw-action-text></tw-action-text>
+            </div>
+        </div>
+    </div>
+    <tw-context-menu
+        :handle-add-image="pickImage"
+        :handle-remove-shape="deleteShape"
+        :handle-add-text="(e) => addTextToWall()"
+        :handle-clone="handleCloneGroup"
+        :handle-bring-to-top="bringToTop"
+        :handle-bring-to-back="bringToBack"
+        :handle-text-ai-generate="(e) => addAiTextToWall()"
+    ></tw-context-menu>
+    <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
+        <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>
+        <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Ready: {{ isReady }}</div>
+        <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ selectedConfig?.draggable }})</div>
+    </div>
+    <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
+</div>
+<div class="bg-white tw-canva relative" v-if="isReady">
+    <textarea
+        v-show="editing"
+        ref="quoteAreaRef"
+        class="quote-textarea"
+        type="text"
+        v-model="editedQuoteText"
+        @blur="editQuote"
+        @keyup.enter="editQuote"
+        @keyup.escape="exitEditMode"
+        :style="textareaStyle"
+    ></textarea>
+    <v-stage
+        ref="stageRef"
+        :config="stageConfig"
+        @mousedown="handleStageMouseDown"
+        @touchstart="handleStageMouseDown"
+        @wheel="canvaStore.handleWheel"
+        @keyup="handleKeyup"
+        :draggable="true"
+    >
+        <v-layer>
+            <div>
+                <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
+                    <v-group :config="groupConfig">
+                        <v-rect :config="thematicRectConfig"></v-rect>
+                        <v-text :config="thematicTextConfig"></v-text>
+                    </v-group>
+                </div>
+                <div v-for="(group, groupName) in wall" :key="groupName">
+                    <v-group
+                        :config="group"
+                        @transformend="handleTransformEnd"
+                        @contextmenu="handleGroupContextMenu"
+                        @dragstart="onDragstart"
+                        @dragend="onDragend"
+                    >
+                        <template v-for="config, configName in group.items" :key="configName">
+                            <v-text
+                                v-if="isTextConfig(config)"
+                                :config="config"
+                                @dblclick="enterEditMode"
+                                @click="handleTextMouseDown($event, String(groupName), String(configName))"
+                                @dragend="handleTextBlur"
+                                @transform="handleTransform"
+                                @transformend="handleTransformEnd"
+                            ></v-text>
+                            <v-image
+                                v-if="isImageConfig(config)"
+                                :config="config"
+                                @mousedown="selectConfig(String(groupName), String(configName))"
+                                @dragend="onDragend"
+                                @transformend="handleTransformEnd"
+                            />
+                        </template>
+                    </v-group>
+                </div>
+                <v-transformer ref="transformer" :config="transformerConfig" />
+            </div>
+        </v-layer>
+    </v-stage>
+</div>
 </template>
 
 <style>
-.canva {
+.tw-canva {
     width: 100%;
     height: calc(100vh - 48px);
     overflow: hidden;
 }
+
 .quote-textarea {
     border: 2px solid yellow;
     padding: 0px;

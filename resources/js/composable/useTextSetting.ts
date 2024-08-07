@@ -1,3 +1,4 @@
+import { TextAlign } from "@/types/widgetSetting.types";
 import { ref } from "vue";
 
 export default function useTextSetting() {
@@ -6,11 +7,13 @@ export default function useTextSetting() {
         110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300
     ];
 
-    const fontSize = ref(16);
-    const fontFamily = ref('Montserrat');
+    const fontSize = ref<number>(16);
+    const fontFamily = ref<string>('Montserrat');
+    const textAlign = ref<string>('left');
     const defaultSetting = {
         fontSize: 16,
-        fontFamily: 'Montserrat'
+        fontFamily: 'Montserrat',
+        textAlign: 'left',
     };
 
     const increaseFontSize = () => {
@@ -34,10 +37,15 @@ export default function useTextSetting() {
             fontSize.value = defaultSetting.fontSize;
         }
     }
+
     const setFontFamily = (newValue: string) => {
         console.log('===========> New FF', newValue)
         fontFamily.value = newValue ?? defaultSetting.fontFamily;
     }
 
-    return { availableTextSize, fontSize, fontFamily, increaseFontSize, decreaseFontSize, setFontSize, setFontFamily, defaultSetting };
+    const setTextAlign = (newValue: TextAlign) => {
+        textAlign.value = newValue ?? defaultSetting.textAlign;
+    }
+
+    return { availableTextSize, fontSize, fontFamily, textAlign, increaseFontSize, decreaseFontSize, setFontSize, setFontFamily, defaultSetting, setTextAlign };
 }

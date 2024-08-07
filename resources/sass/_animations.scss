@@ -1,0 +1,8 @@
+.fade-slide-enter-active, .fade-slide-leave-active {
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.fade-slide-enter, .fade-slide-leave-to /* .fade-leave-active in <2.1.8 */ {
+    opacity: 0;
+    transform: translateY(-5px); /* Slide up effect */
+}

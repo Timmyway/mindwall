@@ -11,6 +11,7 @@ import 'primevue/resources/themes/aura-light-green/theme.css'
 import Paginator from 'primevue/paginator';
 import { createPinia } from 'pinia';
 import DropZone from 'dropzone-vue';
+import Tooltip from 'primevue/tooltip';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Mindwall';
 const apiUrl = import.meta.env.VITE_APP_ENV === 'prod'
@@ -31,6 +32,8 @@ createInertiaApp({
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob<DefineComponent>('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });
+
+        app.directive('tooltip', Tooltip);
 
         app.config.globalProperties.$route = route;
 
