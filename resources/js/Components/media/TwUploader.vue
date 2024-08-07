@@ -46,6 +46,7 @@ import FileUpload from 'primevue/fileupload';
 export interface Props {
     accept: string;
     auto: boolean;
+    handleRefresh: () => void
 }
 
 // Define props
@@ -67,6 +68,7 @@ const onSending = async (e: FileUploadUploaderEvent) => {
     try {
         await ImageApi.saveImage(formData);
         console.log(`Images have been uploaded`);
+        props.handleRefresh();
     } catch (error: any) {
         console.error(`Images haven't been uploaded due to the following error: ${error}`);
         throw error;

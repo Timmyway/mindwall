@@ -16,6 +16,7 @@ export default function useActionPanel(): {
     }
 
     const hidePanel = (panel: keyof ActionPanelView) => {
+        console.log('=========================> Hide panel: ', panel)
         viewPanel.value[panel] = false;
     }
 

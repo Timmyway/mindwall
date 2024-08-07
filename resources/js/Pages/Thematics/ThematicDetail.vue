@@ -30,6 +30,7 @@ import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
 import TwLoading from '@/Components/ui/TwLoading.vue';
 import { TextGeneratorOption } from '@/types/infinidea.types';
+import TwMenubarPaletteColor from '@/Components/menubar/TwMenubarPaletteColor.vue';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -1050,18 +1051,12 @@ const handleTransform = (e: any) => {
                         >
                             <i class="fas fa-font"></i>
                         </button>
-                        <div
-                            v-show="viewPanel.palette"
-                            class="absolute top-full w-full max-w-xs bg-white z-10 p-2 flex flex-wrap gap-[3px]"
-                            style="box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;"
-                            @mouseleave="hidePanel('palette')">
-                            <template v-for="color in paletteColor">
-                                <button
-                                    class="btn btn-icon p-0 w-4 h-4 rounded-full"
-                                    :style="{ backgroundColor: color }"
-                                    @click="changeColor(color)"></button>
-                            </template>
-                        </div>
+                        <tw-menubar-palette-color
+                            :palette-color="paletteColor"
+                            :is-visible="viewPanel.palette"
+                            :handle-change-color="changeColor"
+                            :handle-hide-panel="hidePanel"
+                        ></tw-menubar-palette-color>
                     </div>
                     <!-- SETTING: text size -->
                     <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">

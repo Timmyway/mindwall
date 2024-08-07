@@ -28,7 +28,7 @@
             </div>
 
             <div v-show="upload">
-                <tw-uploader accept="image/*" auto></tw-uploader>
+                <tw-uploader accept="image/*" auto :handle-refresh="fetchImages"></tw-uploader>
             </div>
 
             <!-- Pagination : use primevue paginator component -->
@@ -53,7 +53,7 @@
                     <div>ID: {{ image.id }}</div>
                     <!-- Show delete icon only on user's images -->
                     <i
-                        v-show="upload && (loggedInUser.id === image.user_id)"
+                        v-show="upload && (loggedInUser?.id === image.user_id)"
                         class="fas fa-times delete-button"
                         @click="deleteImage(image.id)"
                     ></i>
@@ -111,7 +111,7 @@ const selected = ref<any[]>([]);
 const deleteMultiple = ref(false);
 
 // Setup
-const loggedInUser: User = props.user;
+const loggedInUser: User | null = props.user;
 const { superCopy, copied } = useSuperCopy();
 
 // Methods
