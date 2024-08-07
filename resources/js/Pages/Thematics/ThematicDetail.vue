@@ -731,7 +731,7 @@ const textareaStyle = reactive<TextareaStyle>({
     lineHeight: 1,
     fontFamily: 'Montserrat',
     transformOrigin: '',
-    textAlign: '',
+    textAlign: 'left',
     color: '',
     transform: '',
     zIndex: 0,
@@ -916,10 +916,18 @@ onMounted(() => {
         }
     };
 
+    const preventZoom = (event: WheelEvent) => {
+        if (event.ctrlKey) {
+            event.preventDefault();
+        }
+    };
+
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('wheel', preventZoom, { passive: false });
 
     onUnmounted(() => {
         window.removeEventListener('keydown', handleKeydown);
+        window.removeEventListener('wheel', preventZoom);
     });
 });
 const handleKeyup = () => {
@@ -1033,7 +1041,7 @@ const handleTransform = (e: any) => {
                         class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
                         @click.prevent="aiImageExplain('hot')"
                     >
-                        <i class="fas fa-lightbulb"></i>
+                        <i class="fas fa-camera"></i>
                     </button>
                 </div>
                 <button

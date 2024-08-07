@@ -1,4 +1,5 @@
 import { Stage } from 'konva/lib/Stage';
+import { CSSProperties } from 'vue';
 
 export interface CanvasState {
   stageRef: Stage | null;
@@ -17,21 +18,21 @@ export interface CanvasState {
 //   resetZoomLevel: () => void;
 // }
 
-export interface TextareaStyle {
+export interface TextareaStyle extends CSSProperties {
     position: 'absolute';
-    top: string;
-    left: string;
-    width: string;
-    height: string;
+    top?: string;
+    left?: string;
+    width?: string;
+    height?: string;
     x?: number;
     y?: number;
-    fontSize: string;
-    overflow: string;
-    lineHeight: number;
-    fontFamily: string;
-    transformOrigin: string;
-    textAlign: string;
-    color: string;
-    transform: string;
-    zIndex: number;
+    fontSize?: string;
+    overflow?: string;
+    lineHeight?: number;
+    fontFamily?: string;
+    transformOrigin?: string;
+    textAlign?: 'left' | 'right' | 'center' | 'justify' | 'start' | 'end';
+    color?: string;
+    transform?: string;
+    zIndex?: number;
 }
