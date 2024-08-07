@@ -29,6 +29,7 @@ import useFontFamily from '@/composable/useFontFamily';
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
 import TwLoading from '@/Components/ui/TwLoading.vue';
+import { TextGeneratorOption } from '@/types/infinidea.types';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -37,7 +38,7 @@ const props = defineProps<{
 const canvaStore = useCanvasStore();
 const widgetStore = useWidgetSettingStore();
 const { stageRef } = storeToRefs(canvaStore);
-const { isTextConfig, isImageConfig } = useCanvaConditions();
+const { isTextConfig, isImageConfig } = useCanvasConditions();
 
 var MIN_WIDTH = 20;
 const page = usePage();
@@ -197,38 +198,57 @@ const addGroup = () => {
 
 const { parseTextFromMarkDown } = useMarkdownParser();
 
-const addAiTextToWall = async (e: any) => {
+const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = null) => {
     // const thematicName = prompt('For which thematic?');
     // if (!thematicName || thematicName.trim() === '') {
     //     return;
     // }
     widgetStore.isLoading.aiGenerateText = true;
-    let thematicName = null;
-    if (selectedConfig.value) {
-        if (isTextConfig(selectedConfig.value)) {
-            thematicName = selectedConfig.value.text;
+    try {
+        let thematicName = null;
+        const aiOption: TextGeneratorOption = { engine: 'descriptor', base64Image: null }
+        if (selectedConfig.value) {
+            if (isTextConfig(selectedConfig.value)) {
+                thematicName = selectedConfig.value.text;
+            } else if (isImageConfig(selectedConfig.value)) {
+                thematicName = 'Décris cette image';
+                aiOption.engine = 'photo-analyst';
+                aiOption.base64Image = base64Image;
+            }
+        } else {
+            thematicName = prompt('For which thematic?');
+            if (!thematicName || thematicName.trim() === '') {
+                return;
+            }
         }
-    } else {
-        thematicName = prompt('For which thematic?');
-        if (!thematicName || thematicName.trim() === '') {
-            return;
+        if (thematicName) {
+            // Back up the initial group to which the generated text belongs
+            const groupName = selectedGroupName.value ?? '';
+            const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
+            const generatedText = await parseTextFromMarkDown(response.data.generatedText);
+
+            addTextToWall(generatedText, groupName);
+            widgetStore.isLoading.aiGenerateText = false;
+        } else {
+            widgetStore.isLoading.aiGenerateText = false;
         }
-    }
-    if (thematicName) {
-        // Back up the initial group to which the generated text belongs
-        const groupName = selectedGroupName.value ?? '';
-
-        const response = await AiApi.aiGenerateText(thematicName);
-        const generatedText = await parseTextFromMarkDown(response.data.generatedText);
-
-        addTextToWall(e, generatedText, groupName);
-        widgetStore.isLoading.aiGenerateText = false;
-    } else {
+    } catch (error) {
+        console.log('Error: ', error);
         widgetStore.isLoading.aiGenerateText = false;
     }
 }
 
-const addTextToWall = (e: MenuItemCommandEvent, text: string = 'Unleash your thoughts !', groupName = '') => {
+const aiImageExplain = async (iaFeeling: string) => {
+    if (isImageConfig(selectedConfig.value)) {
+        // console.log('Ai image explain', selectedConfig.value.image.src);
+        const base64Image = await imageToBase64(selectedConfig.value.image as HTMLImageElement);
+        if (base64Image) {
+            addAiTextToWall(iaFeeling, base64Image);
+        }
+    }
+}
+
+const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '') => {
     let newGroupName = addGroup();
     let textIdentifier: string;
     if (selectedGroupName.value) {
@@ -987,18 +1007,32 @@ const handleTransform = (e: any) => {
                 </button>
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
-                    @click.prevent="addTextToWall"
+                    @click.prevent="addTextToWall()"
                 >
                     <i class="fas fa-plus-circle"></i>
                 </button>
-                <div class="flex items-center">
+                <div class="flex items-center gap-2">
                     <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
                     <button
                         v-show="!widgetStore.isLoading.aiGenerateText"
-                        class="btn btn-icon btn-xs btn-icon--flat bg-pink-400 btn-icon--xs"
-                        @click.prevent="addAiTextToWall"
+                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                        @click.prevent="addAiTextToWall()"
                     >
-                        <i class="fas fa-robot"></i>
+                        <i class="fas fa-robot text-blue-600"></i>
+                    </button>
+                    <button
+                        v-show="!widgetStore.isLoading.aiGenerateText"
+                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                        @click.prevent="addAiTextToWall('hot')"
+                    >
+                        <i class="fas fa-robot text-orange-600"></i>
+                    </button>
+                    <button
+                        v-show="!widgetStore.isLoading.aiGenerateText"
+                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                        @click.prevent="aiImageExplain('hot')"
+                    >
+                        <i class="fas fa-lightbulb"></i>
                     </button>
                 </div>
                 <button
@@ -1058,11 +1092,11 @@ const handleTransform = (e: any) => {
             <tw-context-menu
                 :handle-add-image="pickImage"
                 :handle-remove-shape="deleteShape"
-                :handle-add-text="addTextToWall"
+                :handle-add-text="(e) => addTextToWall()"
                 :handle-clone="handleCloneGroup"
                 :handle-bring-to-top="bringToTop"
                 :handle-bring-to-back="bringToBack"
-                :handle-text-ai-generate="addAiTextToWall"
+                :handle-text-ai-generate="(e) => addAiTextToWall()"
             ></tw-context-menu>
             <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
                 <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>

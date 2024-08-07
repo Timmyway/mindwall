@@ -11,4 +11,12 @@ export interface InfinideaParams {
 	topK: number;
 	topP: number;
 	restrictionLevel: string;
+    base64Image?: string | null;
 }
+
+export interface TextGeneratorOption {
+    base64Image?: string | null;
+    engine: InfinideaEngine;
+}
+
+type InfinideaEngine = 'photo-analyst' | 'descriptor';

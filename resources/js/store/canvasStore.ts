@@ -7,7 +7,7 @@ import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
 import { ImageConfig, TextConfig, WallConfig } from "@/types/konva.config";
 import { loadImageFromURL } from "@/helpers/utils";
-import { useCanvaConditions } from "@/composable/useCanvasConditions";
+import { useCanvasConditions } from "@/composable/useCanvasConditions";
 
 export const useCanvasStore = defineStore('app', () => {
     // Todo: not working when using typescript
@@ -96,7 +96,7 @@ export const useCanvasStore = defineStore('app', () => {
         }
     });
 
-    const { isImageConfig } = useCanvaConditions();
+    const { isImageConfig } = useCanvasConditions();
 
     const serializeWall = async (): Promise<any> => {
         // Initialize an empty object to store the serialized wall
