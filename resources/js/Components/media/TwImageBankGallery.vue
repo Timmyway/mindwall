@@ -3,17 +3,19 @@
     <div v-bind="$attrs" class="image-gallery-container">
         <div class="image-gallery-command">
             <!-- Gallery command bar -->
-            <div class="mb-2 px-2">
-                <div class="flex item-center gap-4">
-                    <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs text-primary" @click="fetchImages()">
+            <div class="mb-2 px-2 max-w-xl mx-auto">
+                <div class="flex items-center gap-4">
+                    <button class="btn btn-icon--xs btn-icon--flat btn-icon py-1" @click="fetchImages()">
                         <i class="fa fa-sync"></i>
                     </button>
-                    <h2 class="py-2 font-bold">Powered by Freepik</h2>
+                    <h2 class="py-2 font-bold text-lg text-gray-400">Powered by Freepik</h2>
                 </div>
                 <div class="flex flex-col gap-2">
                     <div>
-                        <InputText type="text" v-model="form.term" placeholder="Search for image..." @keyDown.enter="fetchImages" />
-                    </button>
+                        <input class="px-4 py-2 outline-none rounded-full w-full text-lg" type="text"
+                            v-model="form.term" placeholder="Search for image..."
+                            @keyup.enter="fetchImages()"
+                        />
                     </div>
                 </div>
             </div>
@@ -29,8 +31,8 @@
         </div>
 
         <!-- Image gallery area -->
-        <div class="image-gallery" :style="[scrollable ? `max-height: ${maxHeight}px; overflow: auto;` : '']">
-            <div v-for="image in images" :key="image.id" class="image-container">
+        <div v-if="!isLoading" class="image-gallery">
+            <div v-for="image in images" :key="image.id" class="image-container" :class="image.orientation">
                 <img
                     class="image-container__image"
                     :src="image.url_thumbnail ?? image.url" alt=""
@@ -38,41 +40,40 @@
                 />
             </div>
         </div>
+        <div v-else class="max-w-xl mx-auto flex justify-center py-4">
+            <tw-loading :is-visible="isLoading" width="96px" height="96px"></tw-loading>
+        </div>
     </div>
     </template>
 
 <script setup lang="ts">
-import { ref, reactive, inject, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import ImageApi from '../../api/galleryApi';
 import { ImageBankMeta, ImageBankResource } from '@/types/imageBank.types';
-import InputText from 'primevue/inputtext';
+import TwLoading from '@/Components/ui/TwLoading.vue';
+
+export interface Props {
+    scrollable?: boolean;
+}
 
 // Define props with TypeScript
-const props = defineProps<{
-    scrollable: boolean;
-    maxHeight: number;
-}>();
+const props = withDefaults(defineProps<Props>(), {
 
-// Default props values
-const scrollable = props.scrollable ?? false;
+});
+
+const isLoading = ref<boolean>(false);
 
 // Reactive state
-const paginationInfos = ref(null);
-const apiDatas = ref(null);
 const images = ref<any[]>([]);
 const clickedPage = ref<number>(1);
 const noResult = ref(false);
 const message = ref('');
 const form = reactive({
     page: 1,
-    limit: 5,
+    limit: 20,
     term: 'Nature'
 });
-const options = reactive({
-    page: 1,
-    limit: 5,
-    term: ''
-});
+
 const pageInfo = reactive({
     current_page: 1,
     last_page: 1,
@@ -81,11 +82,18 @@ const pageInfo = reactive({
 });
 const selected = ref<any[]>([]);
 
+const startFetching = () => {
+    isLoading.value = true;
+    images.value = [];
+}
+const stopFetching = () => {
+    isLoading.value = false;
+}
 const fetchImages = async (mode: string | number | null = null) => {
     if (mode === 'refresh') {
         clickedPage.value = 1;
     }
-    images.value = [];
+    startFetching();
 
     // let apiURL = `${page.value}`;
     try {
@@ -98,12 +106,30 @@ const fetchImages = async (mode: string | number | null = null) => {
 
         console.log('Upload images value...')
         images.value = [...foundImages];
+        stopFetching();
     } catch (error) {
+        stopFetching();
         console.error(error);
         noResult.value = true;
         message.value = 'Error loading data';
     }
 };
+
+const setImageSize = (orientation: 'horizontal' | 'vertical' | 'square'): { width: string, height: string } => {
+    let size: { width: string, height: string };
+    switch (orientation) {
+        case 'horizontal':
+            size = { width: '261px', height: 'auto' }
+            break;
+        case 'vertical':
+            size = { width: 'auto', height: '320px' }
+            break;
+        default:
+            size = { width: '261px', height: 'auto' }
+            break;
+    }
+    return size;
+}
 
 const onPage = (event: { page: number }) => {
     form.page = event.page + 1;
@@ -123,12 +149,11 @@ const fetchImageFromBank = async (): Promise<{ foundImages: string[], meta: Imag
     const response = await ImageApi.fetchImagesFromBank(form);
     const { resources, meta } = response.data;
 
-    console.log('====> R', resources)
-
     const foundImages = resources.map((image: ImageBankResource) => {
         return {
-            url: image.image_url,
+            url: image.image_source_url,
             title: image.title,
+            orientation: image.orientation
         }
     });
 
@@ -156,7 +181,6 @@ onMounted(() => {
 }
 
 .image-gallery-command {
-    background-color: white;
     color: #333;
 }
 
@@ -164,13 +188,18 @@ onMounted(() => {
     box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
     padding: 0 5px;
     width: 100%;
+    height: 100%;
+    overflow-y: auto;
 }
 
 .image-gallery {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 1100px;
+    // display: flex;
+    // flex-wrap: wrap;
+    // justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    max-width: 95%;
     margin: 0 auto;
     padding: 0 1rem;
     background-color: white;
@@ -185,15 +214,33 @@ onMounted(() => {
         margin: 0.3rem 0.5rem;
         box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
         background-color: white;
+        &.horizontal {
+            grid-column: span 2;
+            grid-row: span 1;
+        }
+
+        &.vertical {
+            grid-column: span 1;
+            grid-row: span 2;
+        }
+
+        &.square {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+        &.panoramic {
+            grid-column: span 3;
+            grid-row: span 1;
+        }
         &__image {
+            width: 100%;
+            height: 100%;
             opacity: .9;
             box-shadow: var(--shadow-primary);
-            width: 180px; height: 120px;
-            object-fit: contain;
+            object-fit: cover;
             transition: all .2s;
             &:hover {
                 opacity: 1;
-                transform: scale(1.05);
                 cursor: pointer;
             }
         }
@@ -212,9 +259,6 @@ onMounted(() => {
         font-size: 1.5rem;
         color: white;
         cursor: pointer;
-    }
-    i.delete-button {
-        color: #C42847;
     }
 }
 </style>

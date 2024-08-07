@@ -1,6 +1,8 @@
 <script setup lang="ts">
 interface Props {
-    isVisible: boolean
+    isVisible: boolean;
+    width?: string;
+    height?: string;
 }
 
 const props = defineProps<Props>();
@@ -9,6 +11,7 @@ const props = defineProps<Props>();
 <template>
 <img
     v-show="isVisible" src="../../../images/loading.gif" alt="..."
-    class="w-6 h-6 block"
+    class="block"
+    :style="{ width: width || '24px', height: height || '24px' }"
 >
 </template>

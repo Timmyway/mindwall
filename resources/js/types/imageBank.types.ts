@@ -14,8 +14,9 @@ export interface ImageBankResource {
     title: string;
     url: string;
     filename: string;
-    image_url: string;
+    image_source_url: string;
     author: ImageBankAuthor;
+    orientation: ImageBankOrientation;
 }
 
 export interface ImageBankOptions {
@@ -31,3 +32,5 @@ export interface ImageBankMeta {
 	total: number;
 	clean_search: boolean;
 }
+
+export type ImageBankOrientation = 'horizontal' | 'vertical' | 'square' | 'panoramic';

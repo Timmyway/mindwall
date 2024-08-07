@@ -287,7 +287,8 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         fill: 'black',
         visible: true,
         width: 320,
-        align: 'left'
+        align: 'left',
+        lineHeight: 2,
     };
 
     const targetGroup = groupName || selectedGroupName.value;
@@ -389,6 +390,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
         };
         reader.readAsDataURL(src);
     }
+    hideBankImageGallery();
 };
 
 const removeConfig = (groupName: string, configName: string) => {
@@ -748,7 +750,7 @@ const textareaStyle = reactive<TextareaStyle>({
     height: '',
     fontSize: '',
     overflow: '',
-    lineHeight: 1,
+    lineHeight: 1.5,
     fontFamily: 'Montserrat',
     transformOrigin: '',
     textAlign: 'left',
@@ -996,13 +998,12 @@ const handleTransform = (e: any) => {
                 <i class="fas fa-images"></i>
             </button>
             <div
-                v-show="!isBankGalleryVisible"
-                class="fixed top-10 left-0 bg-white z-20 p-2"
+                v-show="isBankGalleryVisible"
+                class="fixed top-10 left-0 bg-gray-200 w-full h-full max-h-[90%] z-20 p-2"
                 @mouseleave.prevent="hideBankImageGallery"
             >
                 <tw-image-bank-gallery
-                    :scrollable="true"
-                    :max-height="480"
+                    class="bg-white"
                     @select="addImageToWall"
                 ></tw-image-bank-gallery>
             </div>
