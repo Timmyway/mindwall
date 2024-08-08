@@ -282,7 +282,7 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         scaleX: 1,
         scaleY: 1,
         fontFamily: 'Montserrat',
-        fontSize: 24,
+        fontSize: 20,
         text: text,
         fill: 'black',
         visible: true,
@@ -492,17 +492,17 @@ const groupConfig = {
 const thematicRectConfig = {
     x: center.x,
     y: center.y,
-    width: 200, // Add some padding
-    height: 40, // Add some padding
+    width: 100, // Add some padding
+    height: 30, // Add some padding
     fill: '#000',
     stroke: 'white',
-    strokeWidth: 4,
-    shadowBlur: 10,
+    strokeWidth: 2,
+    shadowBlur: 1,
 };
 
 const thematicTextConfig = ref({
-    x: center.x,
-    y: center.y,
+    x: center.x + 20,
+    y: center.y + 5,
     text: props.thematic.name,
     ellipsis: true,
     align: 'center',
@@ -940,7 +940,6 @@ const handleKeyup = () => {
 const handleTransform = (e: any) => {
     if (e.target) {
         const textNode = e.target;
-        console.log('=====> New width: ', textNode.width() * textNode.scaleX())
         textNode.setAttrs({
             width: Math.max(textNode.width() * textNode.scaleX(), MIN_WIDTH),
             scaleX: 1,

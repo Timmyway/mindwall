@@ -165,7 +165,7 @@ const fetchImageFromBank = async (): Promise<{ foundImages: string[], meta: Imag
 
 // Fetch images on mount
 onMounted(() => {
-    fetchImages();
+    // fetchImages();
 });
 </script>
 

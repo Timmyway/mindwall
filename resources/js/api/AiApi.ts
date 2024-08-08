@@ -12,7 +12,7 @@ export default {
             "count": 1,
             "tones": [],
             "segments": [],
-            "language": "English",
+            "language": "Français",
             "engine": engine ?? "descriptor",
             "preheader": false,
             "examples": "",
