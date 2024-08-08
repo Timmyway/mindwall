@@ -96,7 +96,7 @@ export const useCanvasStore = defineStore('app', () => {
         }
     });
 
-    const { isImageConfig } = useCanvasConditions();
+    const { isImageConfig, isTextConfig } = useCanvasConditions();
 
     const serializeWall = async (): Promise<any> => {
         // Initialize an empty object to store the serialized wall
@@ -167,8 +167,16 @@ export const useCanvasStore = defineStore('app', () => {
         return deserializedWall;
     };
 
+    const prettify = () => {
+        if (isTextConfig(selectedConfig.value)) {
+            const text = selectedConfig.value.text;
+            // Replace multiple consecutive newline characters with a single newline
+            selectedConfig.value.text = text.replace(/\n\s*\n/g, '\n').trim();
+        }
+    }
+
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
         menu, selectedConfig, selectedGroupName, selectedConfigName, wall,
-        serializeWall, deserializeWall
+        serializeWall, deserializeWall, prettify
     }
 });

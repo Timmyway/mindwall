@@ -12,6 +12,7 @@ import Paginator from 'primevue/paginator';
 import { createPinia } from 'pinia';
 import DropZone from 'dropzone-vue';
 import Tooltip from 'primevue/tooltip';
+import Ripple from 'primevue/ripple';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Mindwall';
 const apiUrl = import.meta.env.VITE_APP_ENV === 'prod'
@@ -34,6 +35,7 @@ createInertiaApp({
         const app = createApp({ render: () => h(App, props) });
 
         app.directive('tooltip', Tooltip);
+        app.directive('ripple', Ripple);
 
         app.config.globalProperties.$route = route;
 

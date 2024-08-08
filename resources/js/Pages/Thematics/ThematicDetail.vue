@@ -272,13 +272,21 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         textIdentifier = `${newGroupName}-text-${uuid()}`;
     }
 
+    // Estimate the position of a new Text, place it near the parent if possible.
+    let estimateX = center.x - 10;
+    let estimateY = center.y -50;
+    if (selectedConfig.value) {
+        estimateX = selectedConfig.value.x;
+        estimateY = selectedConfig.value.y - 50;
+    }
+
     const newTextConfig: TextConfig = {
         id: textIdentifier,
         name: textIdentifier,
         is: 'text',
         rotation: 0,
-        x: center.x - 10,
-        y: center.y -50,
+        x: estimateX,
+        y: estimateY,
         scaleX: 1,
         scaleY: 1,
         fontFamily: 'Montserrat',
@@ -288,7 +296,7 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         visible: true,
         width: 320,
         align: 'left',
-        lineHeight: 2,
+        lineHeight: 1.7,
     };
 
     const targetGroup = groupName || selectedGroupName.value;
