@@ -81,7 +81,7 @@ const items = ref([
                     <template #end>
                         <div class="flex items-center gap-2">
                             <Link
-                                v-if="canLogin"
+                                v-if="!$page.props.auth.user"
                                 :href="route('login')"
                                 class="btn bg-slate-900 px-3 py-0 text-white"
                             >
@@ -97,7 +97,7 @@ const items = ref([
                             </Link>
 
                             <Link
-                                v-if="!canLogin"
+                                v-if="$page.props.auth.user"
                                 :href="route('logout')"
                                 class="btn bg-red-700 p-1 rounded-full text-white"
                             >
@@ -137,6 +137,9 @@ const items = ref([
 
 <style>
 .item--active {
-    color:
+    color: #ffd166;
+    background: -webkit-linear-gradient(#ffd166, #af7f10);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 </style>

@@ -32,6 +32,7 @@ import TwZoomLevel from '@/Components/menubar/TwZoomLevel.vue';
 import TwActionText from '@/Components/menubar/TwActionText.vue';
 import { useCommandBarStore } from '@/store/commandBarStore';
 import TwImageBankGallery from '@/Components/media/TwImageBankGallery.vue';
+import { debounce } from 'lodash';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -136,6 +137,7 @@ const cook = async () => {
         // Use Object.assign to merge properties into the reactive wall object
         Object.assign(canvaStore.wall, deserialized);
         isReady.value = true;
+        console.log('===> Finished cooking. You can use now.', canvaStore.wall);
     }
 }
 
@@ -670,7 +672,7 @@ const enterEditMode = (e: Event) => {
 
     if (stageRef.value) {
         const areaPosition = {
-            x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth / 2),
+            x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth),
             y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
         };
         console.log('Offset x: ', stageRef.value.getStage().container().offsetLeft)
@@ -684,8 +686,9 @@ const enterEditMode = (e: Event) => {
     }
 
     // Set typography related styles
+    console.log('=====> Scale: ', textNode?.scale()?.x);
     textareaStyle.fontSize = textNode?.fontSize() + 'px';
-    textareaStyle.lineHeight = textNode?.lineHeight() ?? 1;
+    textareaStyle.lineHeight = textNode?.lineHeight() ?? 1.5;
     textareaStyle.fontFamily = textNode?.fontFamily() ?? 'Montserrat';
     textareaStyle.transformOrigin = 'left top';
     textareaStyle.textAlign = 'left';
@@ -742,11 +745,32 @@ const exitEditMode = () => {
     restoreLastEditedText();
 }
 
-const editQuote = () => {
+const autoResizeTextarea = () => {
+    if (quoteAreaRef.value) {
+        quoteAreaRef.value.style.height = 'auto'; // Reset the height
+        quoteAreaRef.value.style.height = `${quoteAreaRef.value.scrollHeight}px`;
+    }
+};
+
+const editQuote = (e: any) => {
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        selectedConfig.value.fontSize = 20;
-        selectedConfig.value.fontFamily = 'Monospace';
+        // selectedConfig.value.fontSize = 20;
+        // selectedConfig.value.fontFamily = 'Monospace';
         selectedConfig.value.rotation = 0;
+    }
+    if (e.key === 'Enter') {
+        if (e.altKey) {
+            // User pressed Alt + Enter, do not exit edit mode
+            console.log('===> Alt + Enter pressed, staying in edit mode');
+            editedQuoteText.value += '\n';
+            setTimeout(() => {
+                autoResizeTextarea();
+            }, 0);
+            // Trigger textarea resize
+
+            return; // Prevent exiting edit mode
+        }
+        console.log('===> From Enter');
     }
     exitEditMode();
     console.log('Finished editing...');
@@ -941,6 +965,8 @@ onMounted(() => {
     onUnmounted(() => {
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('wheel', preventZoom);
+        console.log('==> Unmount now... Destory the wall');
+        canvaStore.wall = {};
     });
 });
 const handleKeyup = () => {
@@ -1110,9 +1136,10 @@ const handleTransform = (e: any) => {
         class="quote-textarea"
         type="text"
         v-model="editedQuoteText"
-        @blur="editQuote"
-        @keyup.enter="editQuote"
+        @blur="editQuote($event)"
+        @keyup.enter="editQuote($event)"
         @keyup.escape="exitEditMode"
+        @input="autoResizeTextarea"
         :style="textareaStyle"
     ></textarea>
     <v-stage
@@ -1175,15 +1202,16 @@ const handleTransform = (e: any) => {
 }
 
 .quote-textarea {
-    border: 2px solid yellow;
-    padding: 0px;
+    padding: 15px 10px;
+    outline: none;
     margin: 0px;
     overflow: hidden;
     background: none;
-    outline: none;
+    border-radius: 12px;
+    border: none;
     resize: none;
     top: 0; left: 50%;
     transform: translate(-50%, 0);
-    outline: none;
+    resize: none;       /* Disable manual resizing by the user */
 }
 </style>
