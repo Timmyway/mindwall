@@ -89,6 +89,14 @@ onUnmounted(() => {
                         <h6 class="tw-wall-poster__title pt-6 text-2xl lg:text-4xl">{{ poster.name }}</h6>
                     </div>
                 </div>
+                <div class="flex flex-col gap-4 p-2">
+                    <Link
+                        class="btn btn-xs text-base bg-yellow-400"
+                        :href="$route('thematic.detail', poster.id)">
+                        <i class="fas fa-light-bulb"></i>
+                        <span>Wall of mind</span>
+                    </Link>
+                </div>
             </div>
         </div>
     </div>
