@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import Menubar from 'primevue/menubar';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 defineProps<{
     canLogin?: boolean;
     canRegister?: boolean;
 }>();
+
+const page = usePage();
+
+const currentUrl = computed(() => {
+    return page.url;
+})
 
 function handleImageError() {
     document.getElementById('screenshot-container')?.classList.add('!hidden');
@@ -15,11 +22,17 @@ function handleImageError() {
     document.getElementById('background')?.classList.add('!hidden');
 }
 
+const getPath = (url: string) => new URL(url, window.location.origin).pathname;
+
+const isActive = (url: string) => {
+    return getPath(currentUrl.value) === getPath(url);
+}
+
 const items = ref([
     {
         label: 'Home',
         icon: 'fa fa-home',
-        url: '/',
+        url: route('home'),
         private: false
     },
     {
@@ -51,13 +64,13 @@ const items = ref([
             <header class="w-full">
                 <Menubar :model="items" class="w-full px-2 lg:px-4">
                     <template #start>
-                        <img src="images/logo.png" alt="Mindwall" class="w-8 lg:w-10">
+                        <img src="images/logo.png" alt="Mindwall" class="w-8 lg:w-24">
                     </template>
                     <template #item="{ item }">
-                        {{ $page.url }}{{ item.url }}
                         <Link
                             v-if="(!item.private) || (item.private && $page.props.auth.user)"
-                            class="flex items-center gap-2 ml-4"
+                            class="flex items-center gap-2 ml-6 font-bold"
+                            :class="{'item--active': isActive(item?.url ?? '')}"
                             v-ripple
                             :href="item.url ?? ''"
                         >
@@ -81,6 +94,14 @@ const items = ref([
                                 class="btn bg-slate-900 px-3 py-0 text-white"
                             >
                                 Register
+                            </Link>
+
+                            <Link
+                                v-if="!canLogin"
+                                :href="route('logout')"
+                                class="btn bg-red-700 p-1 rounded-full text-white"
+                            >
+                                <i class="fas fa-power-off"></i>
                             </Link>
                         </div>
                     </template>
@@ -113,3 +134,9 @@ const items = ref([
         </div>
     </div>
 </template>
+
+<style>
+.item--active {
+    color:
+}
+</style>

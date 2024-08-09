@@ -7,7 +7,7 @@ interface User {
 }
 
 export interface Thematic {
-    id: string;
+    id: number;
     name: string;
     user: User;
     wall: WallConfig;

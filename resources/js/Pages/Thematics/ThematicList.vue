@@ -5,6 +5,7 @@ import Column from 'primevue/column';
 import { ref } from 'vue';
 import InputText from 'primevue/inputtext';
 import { useForm } from '@inertiajs/vue3';
+import TwWallPoster from '@/Components/wall/TwWallPoster.vue';
 
 interface User {
     id: number;
@@ -22,38 +23,11 @@ interface Thematic {
 const props = defineProps<{
     thematics: Thematic[]
 }>();
-
-const form = useForm({
-    name: ''
-});
-
-const editingRows = ref([]);
-
-const saveThematic = (thematicId: number | string, thematicName: string) => {
-    form.name = thematicName;
-    form.put(`thematics/${thematicId}`, {
-        preserveState: true,
-        onSuccess: () => {
-            console.log('-->', form.name);
-            // Optionally, handle success actions
-        },
-        onError: (errors) => {
-            console.error('Update failed: ', errors);
-            // Optionally, handle error actions
-        }
-    });
-}
-
-const onRowEditSave = (event: DataTableRowEditSaveEvent) => {
-    let { newData, index } = event;
-    console.log('event: ', event);
-    saveThematic(newData.id, newData.name);
-    console.log('-->', newData.name)
-};
 </script>
 <template>
 <Layout>
-    <div class="p-4 bg-gray-100">
+    <div class="p-4 tw-thematic-list h-screen">
+        <!--
         <DataTable
             :value="thematics"
             editMode="row"
@@ -78,6 +52,19 @@ const onRowEditSave = (event: DataTableRowEditSaveEvent) => {
                 </template>
             </Column>
         </DataTable>
+        -->
+        <tw-wall-poster :posters="thematics"></tw-wall-poster>
     </div>
 </Layout>
 </template>
+
+<style lang="scss">
+.tw-thematic-list {
+    background:
+        linear-gradient(#062FD9 0%, #FD000D 90%),
+        linear-gradient(to right, #A7F200 0%, #560CBE 60%),
+        url('images/pages/thematics/wall.WebP') 30px,
+        url('images/pages/thematics/wall.WebP') 20px;
+        background-blend-mode: multiply, difference, lighten;
+}
+</style>

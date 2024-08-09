@@ -40,9 +40,9 @@ const submit = () => {
 
                 <div class="flex items-center gap-2">
                     <div class="px-2">
-                        <i class="fas fa-envelope text-2xl"></i>
+                        <i class="fas fa-envelope text-lg"></i>
                     </div>
-                    <InputLabel class="text-xl" for="email" value="Email" />
+                    <InputLabel class="text-lg" for="email" value="Email" />
                 </div>
                 <TextInput
                         id="email"
@@ -61,9 +61,9 @@ const submit = () => {
 
                 <div class="flex items-center gap-2">
                     <div class="px-2">
-                        <i class="fas fa-lock text-2xl"></i>
+                        <i class="fas fa-lock text-lg"></i>
                     </div>
-                    <InputLabel class="text-xl" for="password" value="Password" />
+                    <InputLabel class="text-lg" for="password" value="Password" />
                 </div>
                 <TextInput
                     id="password"

@@ -1,4 +1,5 @@
 <script setup>
+import TwAuthorCredit from '@/Components/media/TwAuthorCredit.vue';
 import Layout from '../Layouts/Layout.vue';
 </script>
 
@@ -11,9 +12,11 @@ import Layout from '../Layouts/Layout.vue';
                 form: { email: '', password: '' }
             }"
         >
-            <div class="absolute bottom-0 right-0 px-2 pb-1">
-                <a class="text-white text-sm" href="https://www.freepik.com/free-photo/email-messages-network-circuit-board-link-connection-technology_1198384.htm#fromView=search&page=1&position=9&uuid=debce617-2cae-4e50-9b9a-d26108d8325a">Image by natanaelginting on Freepik</a>
-            </div>
+
+                <tw-author-credit>
+                    <!-- Image by natanaelginting on Freepik -->
+                </tw-author-credit>
+
             <div>
                 <div class="max-w-4xl mx-auto px-12 py-8 text-center">
                     <h1 class="text-3xl text-white font-black uppercase lg:text-6xl">INFINIDEA: Unleash Your Thoughts</h1>

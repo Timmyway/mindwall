@@ -222,14 +222,16 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
     try {
         let thematicName = null;
         const aiOption: TextGeneratorOption = { engine: 'descriptor', base64Image: null }
+
         if (selectedConfig.value) {
             if (isTextConfig(selectedConfig.value)) {
                 thematicName = selectedConfig.value.text;
-            } else if (isImageConfig(selectedConfig.value)) {
-                thematicName = 'Décris cette image';
-                aiOption.engine = 'photo-analyst';
-                aiOption.base64Image = base64Image;
             }
+            // else if (isImageConfig(selectedConfig.value)) {
+            //     thematicName = 'Décris cette image';
+            //     aiOption.engine = 'photo-analyst';
+            //     aiOption.base64Image = base64Image;
+            // }
         } else {
             thematicName = prompt('For which thematic?');
             if (!thematicName || thematicName.trim() === '') {
