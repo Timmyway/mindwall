@@ -6,8 +6,6 @@ import { ref } from 'vue';
 defineProps<{
     canLogin?: boolean;
     canRegister?: boolean;
-    laravelVersion: string;
-    phpVersion: string;
 }>();
 
 function handleImageError() {
@@ -56,6 +54,7 @@ const items = ref([
                         <img src="images/logo.png" alt="Mindwall" class="w-8 lg:w-10">
                     </template>
                     <template #item="{ item }">
+                        {{ $page.url }}{{ item.url }}
                         <Link
                             v-if="(!item.private) || (item.private && $page.props.auth.user)"
                             class="flex items-center gap-2 ml-4"
@@ -69,6 +68,7 @@ const items = ref([
                     <template #end>
                         <div class="flex items-center gap-2">
                             <Link
+                                v-if="canLogin"
                                 :href="route('login')"
                                 class="btn bg-slate-900 px-3 py-0 text-white"
                             >

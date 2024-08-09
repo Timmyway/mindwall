@@ -37,33 +37,42 @@ const submit = () => {
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="email" value="Email" />
 
+                <div class="flex items-center gap-2">
+                    <div class="px-2">
+                        <i class="fas fa-envelope text-2xl"></i>
+                    </div>
+                    <InputLabel class="text-xl" for="email" value="Email" />
+                </div>
                 <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
+                        id="email"
+                        type="email"
+                        class="mt-1 block bg-gray-200 w-full focus:bg-gray-50 focus:shadow-lg"
+                        v-model="form.email"
+                        required
+                        autofocus
+                        autocomplete="username"
+                    />
 
                 <InputError class="mt-2" :message="form.errors.email" />
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+            <div class="mt-5">
 
+                <div class="flex items-center gap-2">
+                    <div class="px-2">
+                        <i class="fas fa-lock text-2xl"></i>
+                    </div>
+                    <InputLabel class="text-xl" for="password" value="Password" />
+                </div>
                 <TextInput
                     id="password"
                     type="password"
-                    class="mt-1 block w-full"
+                    class="mt-1 block bg-gray-200 w-full focus:bg-gray-50 focus:shadow-lg"
                     v-model="form.password"
                     required
                     autocomplete="current-password"
                 />
-
                 <InputError class="mt-2" :message="form.errors.password" />
             </div>
 
@@ -83,8 +92,8 @@ const submit = () => {
                     Forgot your password?
                 </Link>
 
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Log in
+                <PrimaryButton class="w-full px-4 py-3 rounded-lg text-theme mt-2 text-2xl justify-center" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                    Let's go!
                 </PrimaryButton>
             </div>
         </form>
