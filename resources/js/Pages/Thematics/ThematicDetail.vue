@@ -7,7 +7,7 @@ import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
 import { TextConfig, ImageConfig } from '../../types/konva.config';
-import { Thematic } from '../../types/thematic.types';
+import { Thematic, Engine } from '../../types/thematic.types';
 import { Text } from 'konva/lib/shapes/Text';
 import { reactive } from 'vue';
 import { TextareaStyle } from '../../types/canvas.types'
@@ -32,10 +32,11 @@ import TwZoomLevel from '@/Components/menubar/TwZoomLevel.vue';
 import TwActionText from '@/Components/menubar/TwActionText.vue';
 import { useCommandBarStore } from '@/store/commandBarStore';
 import TwImageBankGallery from '@/Components/media/TwImageBankGallery.vue';
-import { debounce } from 'lodash';
+import Dropdown from 'primevue/dropdown';
 
 const props = defineProps<{
     thematic: Thematic,
+    engines: Engine[],
 }>();
 
 const canvaStore = useCanvasStore();
@@ -223,23 +224,24 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
     widgetStore.isLoading.aiGenerateText = true;
     try {
         let thematicName = null;
-        const aiOption: TextGeneratorOption = { engine: 'descriptor', base64Image: null }
+        const aiOption: TextGeneratorOption = { engine: widgetStore.usedEngine, base64Image: null }
 
         if (selectedConfig.value) {
             if (isTextConfig(selectedConfig.value)) {
                 thematicName = selectedConfig.value.text;
             }
-            // else if (isImageConfig(selectedConfig.value)) {
-            //     thematicName = 'Décris cette image';
-            //     aiOption.engine = 'photo-analyst';
-            //     aiOption.base64Image = base64Image;
-            // }
+            else if (isImageConfig(selectedConfig.value)) {
+                thematicName = 'Infinidea-Image';
+                aiOption.base64Image = await imageToBase64(selectedConfig.value.image as HTMLImageElement);
+            }
         } else {
             thematicName = prompt('For which thematic?');
             if (!thematicName || thematicName.trim() === '') {
+                widgetStore.isLoading.aiGenerateText = false;
                 return;
             }
         }
+        console.log('===> Detail: ');
         if (thematicName) {
             // Back up the initial group to which the generated text belongs
             const groupName = selectedGroupName.value ?? '';
@@ -1063,6 +1065,14 @@ const handleTransform = (e: any) => {
         </button>
         <div class="flex items-center gap-2">
             <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
+            <Dropdown
+                v-model="widgetStore.usedEngine"
+                :options="engines"
+                option-label="name"
+                option-value="slug"
+                placeholder="Engine"
+                class="w-full max-w-xs"
+            ></Dropdown>
             <button
                 v-show="!widgetStore.isLoading.aiGenerateText"
                 class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"

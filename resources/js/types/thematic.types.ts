@@ -17,3 +17,11 @@ export interface QuotePositionObject {
     x: number,
     y: number
 }
+
+export interface Engine {
+    id: number;
+    name: number;
+    blade_view: string;
+    icon_class?: string;
+    thumbnail_url?: string;
+}
