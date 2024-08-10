@@ -11,6 +11,7 @@ export const useWidgetSettingStore = defineStore('widgetSetting', () => {
     const defaultEngine = 'descriptor';
 
     const usedEngine = ref<string>('descriptor');
+    const language
 
     const changeEngine = (newEngine: string) => {
         usedEngine.value = newEngine;

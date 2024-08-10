@@ -39,6 +39,7 @@ export interface TextConfig  {
     draggable?: boolean;
     zIndex?: number;
     width?: number;
+    height?: number;
     align?: TextAlign;
     lineHeight?: number;
 }

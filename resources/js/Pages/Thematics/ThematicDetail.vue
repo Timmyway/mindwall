@@ -209,7 +209,7 @@ const addGroup = () => {
         scaleY: 1,
         visible: true,
         draggable: true,
-        items: {}
+        items: {},
     };
     return groupName;
 };
@@ -282,8 +282,8 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
     let estimateX = center.x - 10;
     let estimateY = center.y -50;
     if (selectedConfig.value) {
-        estimateX = selectedConfig.value.x;
-        estimateY = selectedConfig.value.y - 50;
+        estimateX = selectedConfig.value.x ?? (center.x - 10);
+        estimateY = selectedConfig.value?.y ? (selectedConfig.value?.y - 50) : (center.y - 50);
     }
 
     const newTextConfig: TextConfig = {
@@ -806,6 +806,7 @@ const onDragstart = (e: any) => {
 
 const onDragend = (e: any) => {
     if (e.target) {
+        console.log('================> Target: ', e.target.getType());
         if (e.target.getType() === 'Group') {
             const targetName = e.target.name();
             console.log('===> Group selected: ', targetName);
@@ -813,6 +814,8 @@ const onDragend = (e: any) => {
 
             canvaStore.wall[targetName].x = e.target.x();
             canvaStore.wall[targetName].y = e.target.y();
+        } else if (e.target.getType() === 'Text') {
+            console.log('================> TTTTTTTTTTTT');
         } else if (e.target.constructor.name === '_Image') {
             const groupName = e.target.getParent().name();
             const imageName = e.target.name();
@@ -969,6 +972,8 @@ onMounted(() => {
         window.removeEventListener('wheel', preventZoom);
         console.log('==> Unmount now... Destory the wall');
         canvaStore.wall = {};
+        stageRef.value?.getStage().destroy();
+
     });
 });
 const handleKeyup = () => {
@@ -985,13 +990,25 @@ const handleTransform = (e: any) => {
         });
     }
 }
+
+const handleCommandBarMouseLeave = () => {
+    hideImageGallery();
+    hideBankImageGallery();
+}
 </script>
 <template>
-<div class="py-2 px-3 bg-gray-50 flex flex-wrap items-center gap-4">
+<div
+    class="relative px-3 bg-gray-50 flex flex-wrap items-center gap-4 h-16 border-2 border-pink-600"
+    @mouseleave.prevent="handleCommandBarMouseLeave"
+>
     <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
-        <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto">
-            <div v-for="conf in selectedConfig">
-                <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
+        <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
+            <div class="py-2 flex flex-col gap-2">
+                <span>x: {{ selectedConfig?.x }} | y: {{ selectedConfig?.y }}</span>
+                <span>StageX{{ selectedConfig?.x }} | StageY: {{ selectedConfig?.y }}</span>
+            </div>
+            <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
+                <div class="h-12">
                     {{ confName }} => {{ confValue }}
                 </div>
             </div>
@@ -1010,14 +1027,14 @@ const handleTransform = (e: any) => {
     >
         <i class="fas fa-chevron-left text-red-600"></i>
     </Link>
-    <div class="h-8 flex items-center relative">
-        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+    <div class="h-8 flex items-center">
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 h-full">
             <button @mouseover.prevent="viewImageGallery">
-                <i class="fas fa-images"></i>
+                <i class="fas fa-images text-2xl"></i>
             </button>
             <div
                 v-show="isGalleryVisible"
-                class="fixed top-10 left-0 bg-white z-20 p-2"
+                class="absolute top-full left-0 bg-white z-20 p-2"
                 @mouseleave.prevent="hideImageGallery"
             >
                 <tw-image-gallery
@@ -1030,17 +1047,17 @@ const handleTransform = (e: any) => {
                 ></tw-image-gallery>
             </div>
         </div>
-        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 h-full">
             <button @mouseover.prevent="viewBankImageGallery">
-                <i class="fas fa-images"></i>
+                <i class="fas fa-images text-2xl"></i>
             </button>
             <div
                 v-show="isBankGalleryVisible"
-                class="fixed top-10 left-0 bg-gray-200 w-full h-full max-h-[90%] z-20 p-2"
+                class="absolute top-full left-0 transform z-20 p-2 w-full h-[80vh]"
                 @mouseleave.prevent="hideBankImageGallery"
             >
                 <tw-image-bank-gallery
-                    class="bg-white"
+                    class=""
                     @select="addImageToWall"
                 ></tw-image-bank-gallery>
             </div>
@@ -1049,7 +1066,7 @@ const handleTransform = (e: any) => {
             <tw-zoom-level></tw-zoom-level>
         </div>
     </div>
-    <div class="relative flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full">
+    <div class="flex items-center gap-3 text-xs border border-indigo-600 rounded px-2 py-1 h-full">
         <button
             v-show="!isSaving"
             class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
@@ -1065,6 +1082,14 @@ const handleTransform = (e: any) => {
         </button>
         <div class="flex items-center gap-2">
             <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
+            <Dropdown
+                v-model="widgetStore.usedEngine"
+                :options="engines"
+                option-label="name"
+                option-value="slug"
+                placeholder="Engine"
+                class="w-full max-w-xs"
+            ></Dropdown>
             <Dropdown
                 v-model="widgetStore.usedEngine"
                 :options="engines"
@@ -1131,6 +1156,7 @@ const handleTransform = (e: any) => {
         :handle-bring-to-top="bringToTop"
         :handle-bring-to-back="bringToBack"
         :handle-text-ai-generate="(e) => addAiTextToWall()"
+        :handle-center-on-element="(e) => canvaStore.centerOnElement()"
     ></tw-context-menu>
     <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>
@@ -1139,6 +1165,7 @@ const handleTransform = (e: any) => {
     </div>
     <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
 </div>
+
 <div class="bg-white tw-canva relative" v-if="isReady">
     <textarea
         v-show="editing"

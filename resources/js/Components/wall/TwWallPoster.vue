@@ -91,12 +91,12 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="flex flex-col gap-4 p-2">
-                    <Link
+                    <a
                         class="btn btn-xs text-base bg-yellow-400"
                         :href="route('thematic.detail', poster.id)">
                         <i class="fas fa-light-bulb"></i>
                         <span>Wall of mind</span>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </div>

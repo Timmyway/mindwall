@@ -175,8 +175,41 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }
 
+    const centerOnElement = () => {
+        if (!selectedConfig.value?.x || !selectedConfig.value?.y || !stageRef.value) {
+            return;
+        }
+        if (isTextConfig(selectedConfig.value) || isImageConfig(selectedConfig.value)) {
+            const stage = stageRef.value.getStage();
+            // Calculate the center of the element
+            const centerX = selectedConfig.value.x + (selectedConfig.value?.width ?? 0) / 2;
+            const centerY = selectedConfig.value.y + (selectedConfig.value?.height ?? 0) / 2;
+
+            // Get the current scale of the stage
+            const scaleX = stage.scaleX();
+            const scaleY = stage.scaleY();
+
+            // Calculate the new position of the stage to center the element
+            const newX = (centerX - stage.width() / 2 / scaleX) * scaleX;
+            const newY = (centerY - stage.height() / 2 / scaleY) * scaleY;
+
+            console.log('===> Center on element: ', newX, newY);
+            console.log('====> Selected element: ', selectedConfig.value);
+
+            // Set the new position of the stage
+            stage.position({ x: newX, y: newY });
+
+            // Optionally, set a zoom level (e.g., zoom in)
+            stageRef.value.getStage().scale({ x: 1, y: 1 });
+            zoomLevel.value = 100;
+
+            // Redraw the stage
+            stage.batchDraw();
+        }
+    }
+
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
         menu, selectedConfig, selectedGroupName, selectedConfigName, wall,
-        serializeWall, deserializeWall, prettify
+        serializeWall, deserializeWall, prettify, centerOnElement
     }
 });

@@ -13,12 +13,18 @@ const props = defineProps<{
     handleBringToBack: (event: MenuItemCommandEvent) => void,
     handleClone: (event: MenuItemCommandEvent) => void,
     handleTextAiGenerate: (event: MenuItemCommandEvent) => void
+    handleCenterOnElement: (event: MenuItemCommandEvent) => void
 }>();
 
 const canvaStore = useCanvasStore();
 const { menu } = storeToRefs(canvaStore);
 
 const items = ref<MenuItem[]>([
+    {
+        label: 'Focus',
+        icon: 'fas fa-crosshairs',
+        command: props.handleCenterOnElement
+    },
     {
         label: 'Image',
         icon: 'fas fa-image',

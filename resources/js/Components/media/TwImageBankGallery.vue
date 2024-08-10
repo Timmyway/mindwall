@@ -185,6 +185,7 @@ onMounted(() => {
 }
 
 .image-gallery-container {
+    background-color: rgba(255, 255, 255, .9);
     box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
     padding: 0 5px;
     width: 100%;
@@ -202,7 +203,6 @@ onMounted(() => {
     max-width: 95%;
     margin: 0 auto;
     padding: 0 1rem;
-    background-color: white;
     &--mobile {
         max-width: 640px;
         max-height: 90%;
@@ -213,7 +213,6 @@ onMounted(() => {
         position: relative;
         margin: 0.3rem 0.5rem;
         box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
-        background-color: white;
         &.horizontal {
             grid-column: span 2;
             grid-row: span 1;
