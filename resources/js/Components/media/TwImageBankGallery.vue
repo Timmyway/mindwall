@@ -9,6 +9,9 @@
                         <i class="fa fa-sync"></i>
                     </button>
                     <h2 class="py-2 font-bold text-lg text-gray-400">Powered by Freepik</h2>
+                    <button class="btn btn-icon--xs btn-icon--flat btn-icon py-1" @click="close()">
+                        <i class="fa fa-times text-pink-600"></i>
+                    </button>
                 </div>
                 <div class="flex flex-col gap-2">
                     <div>
@@ -21,7 +24,7 @@
             </div>
 
             <!-- Pagination : use primevue paginator component -->
-            <div class="mb-2">
+            <div v-if="images?.length > 0" class="mb-2">
                 <Paginator
                     :rows="pageInfo.perPage"
                     :totalRecords="pageInfo.total"
@@ -51,9 +54,23 @@ import { ref, reactive, onMounted } from 'vue';
 import ImageApi from '../../api/galleryApi';
 import { ImageBankMeta, ImageBankResource } from '@/types/imageBank.types';
 import TwLoading from '@/Components/ui/TwLoading.vue';
+import { pickRandomElement } from '../../helpers/utils';
 
 export interface Props {
     scrollable?: boolean;
+}
+
+interface PaginationForm {
+    page: number;
+    limit: number;
+    term?: string;
+}
+
+interface PageInfo {
+    current_page: number;
+    last_page: number;
+    total: number;
+    perPage: number;
 }
 
 // Define props with TypeScript
@@ -66,15 +83,26 @@ const isLoading = ref<boolean>(false);
 // Reactive state
 const images = ref<any[]>([]);
 const clickedPage = ref<number>(1);
-const noResult = ref(false);
-const message = ref('');
-const form = reactive({
+const noResult = ref<boolean>(false);
+const message = ref<string>('');
+const form = reactive<PaginationForm>({
     page: 1,
     limit: 20,
     term: 'Nature'
 });
 
-const pageInfo = reactive({
+const keywords = [
+    'Nature', 'Technology', 'Urban', 'Travel', 'Health', 'Food', 'Fashion', 'Animals', 'Architecture',
+    'Adventure', 'Art', 'Education', 'Sports', 'Lifestyle', 'Music', 'Business', 'Finance', 'Abstract',
+    'Culture', 'Science', 'Vintage', 'Beauty', 'Festivals', 'Space', 'Photography', 'Landscape',
+    'Minimalism', 'Holiday', 'Wellness', 'Transportation', 'Outdoors', 'Design', 'Creativity', 'Gaming',
+    'Social Media', 'Environment', 'Family', 'Digital', 'Retro', 'Modern', 'Luxury', 'Craft', 'Innovation',
+    'Tradition', 'Entertainment'
+];
+
+form.term = pickRandomElement(keywords);
+
+const pageInfo = reactive<PageInfo>({
     current_page: 1,
     last_page: 1,
     total: 0,
@@ -136,7 +164,8 @@ const onPage = (event: { page: number }) => {
     fetchImages();
 };
 
-const emit = defineEmits(['select']);
+const emit = defineEmits(['select', 'close']);
+
 const selectImageFromGallery = (imageUrl: string) => {
     // Emit an event using a custom event handler
     // You can define a custom event handler to emit this event
@@ -144,6 +173,11 @@ const selectImageFromGallery = (imageUrl: string) => {
     // Example: emit('selected');
     emit('select', imageUrl);
 };
+
+const close = () => {
+    console.log('-- Action --> Close bank image gallery');
+    emit('close');
+}
 
 const fetchImageFromBank = async (): Promise<{ foundImages: string[], meta: ImageBankMeta }> => {
     const response = await ImageApi.fetchImagesFromBank(form);
@@ -185,7 +219,7 @@ onMounted(() => {
 }
 
 .image-gallery-container {
-    background-color: rgba(255, 255, 255, .9);
+    background-color: rgba(247, 247, 168, 0.9);
     box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
     padding: 0 5px;
     width: 100%;

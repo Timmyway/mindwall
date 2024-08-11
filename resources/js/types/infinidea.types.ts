@@ -17,6 +17,7 @@ export interface InfinideaParams {
 export interface TextGeneratorOption {
     base64Image?: string | null;
     engine: string;
+    language?: string;
 }
 
 type InfinideaEngine = 'photo-analyst' | 'descriptor';

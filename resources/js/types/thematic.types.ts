@@ -20,8 +20,14 @@ export interface QuotePositionObject {
 
 export interface Engine {
     id: number;
-    name: number;
+    name: string;
     blade_view: string;
     icon_class?: string;
     thumbnail_url?: string;
+}
+
+export interface Language {
+    id: number;
+    name: string;
+    flag?: string;
 }

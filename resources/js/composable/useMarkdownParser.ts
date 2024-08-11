@@ -1,6 +1,6 @@
 import { marked } from 'marked';
 
-export default function useMarkdownParser() {
+export default function useMarkdownParser(usePrettify = false) {
     const parseTextFromMarkDown = async (mdString: string | Promise<string>): Promise<string> => {
         // Resolve the input if it is a Promise
         const resolvedString: string = typeof mdString === 'string' ? mdString : await mdString;
@@ -12,6 +12,16 @@ export default function useMarkdownParser() {
 
         const htmlString = await marked(resolvedString);
         console.log('=========> HTML before marked js: ', resolvedString);
+
+        if (usePrettify) {
+            const prettifiedText = prettify(htmlString);
+            return prettifiedText;
+        }
+
+        return htmlString;
+    }
+
+    const prettify = (htmlString: string) => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlString, 'text/html');
         const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
@@ -31,11 +41,8 @@ export default function useMarkdownParser() {
         const joinedText = textList.join('\n');
         // Replace multiple consecutive newlines with a single newline
         const prettifiedText = joinedText.replace(/\n\s{2,}\n/g, '\n').trim();
-
         return prettifiedText;
     }
-
-
 
     return { parseTextFromMarkDown }
 }

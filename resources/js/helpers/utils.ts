@@ -106,5 +106,9 @@ function loadImageFromURL(url: string): Promise<HTMLImageElement> {
     });
 }
 
+function pickRandomElement<T>(elements: T[]): T {
+    const randomIndex = Math.floor(Math.random() * elements.length);
+    return elements[randomIndex];
+}
 
-export { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage, loadImageFromURL }
+export { safeJsonParse, uuid, imageToBase64, base64ToImage, resizeImage, loadImageFromURL, pickRandomElement }

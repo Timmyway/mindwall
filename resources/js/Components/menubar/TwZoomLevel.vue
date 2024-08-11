@@ -15,7 +15,7 @@ const canvaStore = useCanvasStore();
 <transition name="fade-slide">
     <button
         v-show="canvaStore.zoomLevel !== 100"
-        class="btn btn-xs text-xs py-1 px-1 bg-orange-300 font-normal"
+        class="btn btn-xs text-xs py-1 px-1 bg-orange-300 text-black font-normal"
         @click="canvaStore.resetZoomLevel()"
     >Reset</button>
 </transition>

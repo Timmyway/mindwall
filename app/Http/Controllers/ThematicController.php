@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Language;
 use App\Models\Prompt;
 use App\Models\Thematic;
 use Illuminate\Http\Request;
@@ -49,9 +50,11 @@ class ThematicController extends Controller
         $thematic = Thematic::with(['user'])
             ->findOrFail($thematic->id);
         $engines = Prompt::all();
+        $languages = Language::all();
         return Inertia::render('Thematics/ThematicDetail', [
             'thematic' => $thematic,
-            'engines' => $engines
+            'engines' => $engines,
+            'languages' => $languages,
         ]);
     }
 }

@@ -4,17 +4,18 @@ import axios from "axios";
 export default {
     async aiGenerateText(thematic: string, iaFeeling = 'cold', options: TextGeneratorOption = {
         base64Image: null,
-        engine: 'descriptor'
+        engine: 'descriptor',
+        language: 'Français',
     }) {
-        const { base64Image, engine } = options;
+        const { base64Image, engine, language } = options;
         const setting: InfinideaParams = {
             "thematic": thematic,
-            "count": 1,
+            "count": 5,
             "tones": [],
             "segments": [],
-            "language": "Français",
+            "language": language ?? 'English',
             "engine": engine ?? "descriptor",
-            "preheader": false,
+            "preheader": true,
             "examples": "",
             "temperature": 0.4,
             "topK": 1,

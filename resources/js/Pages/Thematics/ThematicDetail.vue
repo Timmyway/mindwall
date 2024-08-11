@@ -7,7 +7,7 @@ import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
 import { storeToRefs } from 'pinia';
 import { TextConfig, ImageConfig } from '../../types/konva.config';
-import { Thematic, Engine } from '../../types/thematic.types';
+import { Thematic, Engine, Language } from '../../types/thematic.types';
 import { Text } from 'konva/lib/shapes/Text';
 import { reactive } from 'vue';
 import { TextareaStyle } from '../../types/canvas.types'
@@ -15,7 +15,6 @@ import TwContextMenu from '../../Components/menu/TwContextMenu.vue';
 import { useFileDialog } from '@vueuse/core'
 import usePaletteColor from '../../composable/usePaletteColor';
 import canvasApi from '../../api/canvasApi';
-import ThematicList from './ThematicList.vue';
 import useActionPanel from '../../composable/useActionPanel';
 import TwImageGallery from '@/Components/media/TwImageGallery.vue';
 import { User } from '@/types';
@@ -37,6 +36,7 @@ import Dropdown from 'primevue/dropdown';
 const props = defineProps<{
     thematic: Thematic,
     engines: Engine[],
+    languages: Language[]
 }>();
 
 const canvaStore = useCanvasStore();
@@ -138,7 +138,6 @@ const cook = async () => {
         // Use Object.assign to merge properties into the reactive wall object
         Object.assign(canvaStore.wall, deserialized);
         isReady.value = true;
-        console.log('===> Finished cooking. You can use now.', canvaStore.wall);
     }
 }
 
@@ -224,7 +223,11 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
     widgetStore.isLoading.aiGenerateText = true;
     try {
         let thematicName = null;
-        const aiOption: TextGeneratorOption = { engine: widgetStore.usedEngine, base64Image: null }
+        const aiOption: TextGeneratorOption = {
+            engine: widgetStore.usedEngine,
+            base64Image: null,
+            language: widgetStore.usedLanguage,
+        }
 
         if (selectedConfig.value) {
             if (isTextConfig(selectedConfig.value)) {
@@ -246,7 +249,8 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
             // Back up the initial group to which the generated text belongs
             const groupName = selectedGroupName.value ?? '';
             const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
-            const generatedText = await parseTextFromMarkDown(response.data.generatedText);
+            // const generatedText = await parseTextFromMarkDown(response.data.generatedText);
+            const generatedText = await response.data.generatedText;
 
             addTextToWall(generatedText, groupName);
             widgetStore.isLoading.aiGenerateText = false;
@@ -667,18 +671,25 @@ const enterEditMode = (e: Event) => {
         (textNode?.width?.() ?? 0) * 1 -
         ((textNode?.padding?.() ?? 0) * 2)
     );
-    const constrainedWidth = Math.max(200, Math.min(calculatedWidth, 480));
+    const textNodeHeight = (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5;
+    const constrainedWidth = Math.max(320, Math.min(calculatedWidth, 480));
+    const contrainedHeight = Math.min(360, Math.max(textNodeHeight, 72));
     textareaStyle.width = constrainedWidth + 'px';
-    textareaStyle.height =
-        (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5 + 'px';
+    textareaStyle.height = contrainedHeight + 'px';
+
 
     if (stageRef.value) {
+        const stage = stageRef.value.getStage();
+        // const areaPosition = {
+        //     x: stage.container().offsetLeft + (textPosition?.x) + (calculatedWidth),
+        //     y: stage.container().offsetTop + (textPosition?.y),
+        // };
         const areaPosition = {
-            x: stageRef.value.getStage().container().offsetLeft + (textPosition?.x) + (calculatedWidth),
-            y: stageRef.value.getStage().container().offsetTop + (textPosition?.y),
+            x: textPosition?.x + (calculatedWidth / 2) + 10,
+            y: textPosition?.y,
         };
-        console.log('Offset x: ', stageRef.value.getStage().container().offsetLeft)
-        console.log('Offset y: ', stageRef.value.getStage().container().offsetTop)
+        console.log('Offset x: ', stage.container().offsetLeft)
+        console.log('Offset y: ', stage.container().offsetTop)
         console.log('Text position: ', textPosition)
         console.log('Area position: ', areaPosition);
         console.log('Text node: ', textNode?.align());
@@ -764,17 +775,17 @@ const editQuote = (e: any) => {
         if (e.altKey) {
             // User pressed Alt + Enter, do not exit edit mode
             console.log('===> Alt + Enter pressed, staying in edit mode');
-            editedQuoteText.value += '\n';
-            setTimeout(() => {
-                autoResizeTextarea();
-            }, 0);
+            // editedQuoteText.value += '\n';
+            exitEditMode();
+            // setTimeout(() => {
+            //     autoResizeTextarea();
+            // }, 0);
             // Trigger textarea resize
 
             return; // Prevent exiting edit mode
         }
         console.log('===> From Enter');
     }
-    exitEditMode();
     console.log('Finished editing...');
 };
 
@@ -956,6 +967,10 @@ onMounted(() => {
                 deleteShape();
             }
         }
+        if (event.altKey) {
+            event.preventDefault();
+            return;
+        }
     };
 
     const preventZoom = (event: WheelEvent) => {
@@ -973,7 +988,6 @@ onMounted(() => {
         console.log('==> Unmount now... Destory the wall');
         canvaStore.wall = {};
         stageRef.value?.getStage().destroy();
-
     });
 });
 const handleKeyup = () => {
@@ -998,7 +1012,7 @@ const handleCommandBarMouseLeave = () => {
 </script>
 <template>
 <div
-    class="relative px-3 bg-gray-50 flex flex-wrap items-center gap-4 h-16 border-2 border-pink-600"
+    class="tw-mindwall-toolbar relative px-3 flex flex-wrap items-center gap-4 h-16 border-2"
     @mouseleave.prevent="handleCommandBarMouseLeave"
 >
     <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
@@ -1027,7 +1041,7 @@ const handleCommandBarMouseLeave = () => {
     >
         <i class="fas fa-chevron-left text-red-600"></i>
     </Link>
-    <div class="h-8 flex items-center">
+    <div class="h-8 flex items-center gap-2">
         <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 h-full">
             <button @mouseover.prevent="viewImageGallery">
                 <i class="fas fa-images text-2xl"></i>
@@ -1047,38 +1061,38 @@ const handleCommandBarMouseLeave = () => {
                 ></tw-image-gallery>
             </div>
         </div>
-        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 h-full">
+        <div class="flex items-center gap-3 text-xs bg-yellow-400 border border-gray-300 rounded px-2 h-full">
             <button @mouseover.prevent="viewBankImageGallery">
-                <i class="fas fa-images text-2xl"></i>
+                <i class="fas fa-images text-2xl text-black"></i>
             </button>
             <div
                 v-show="isBankGalleryVisible"
-                class="absolute top-full left-0 transform z-20 p-2 w-full h-[80vh]"
+                class="absolute top-full left-0 transform z-20 w-full h-[80vh]"
                 @mouseleave.prevent="hideBankImageGallery"
             >
                 <tw-image-bank-gallery
-                    class=""
                     @select="addImageToWall"
+                    @close="hideBankImageGallery"
                 ></tw-image-bank-gallery>
             </div>
         </div>
-        <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1 h-full transition-all">
+        <div class="flex items-center gap-3 text-xs bg-white text-black border border-gray-300 rounded px-2 py-1 h-full transition-all">
             <tw-zoom-level></tw-zoom-level>
         </div>
     </div>
-    <div class="flex items-center gap-3 text-xs border border-indigo-600 rounded px-2 py-1 h-full">
+    <div class="flex items-center gap-3 text-xs rounded px-2 py-1 h-full">
         <button
             v-show="!isSaving"
-            class="btn btn-icon btn-xs btn-icon--flat bg-green-400 btn-icon--xs"
+            class="btn btn-icon btn-xs btn-icon--flat bg-green-400 w-8 h-8 p-2"
             @click.prevent="saveWallToServer()"
         >
-            <i class="fas fa-save"></i>
+            <i class="fas fa-save text-xl text-black"></i>
         </button>
         <button
-            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
             @click.prevent="addTextToWall()"
         >
-            <i class="fas fa-plus-circle"></i>
+            <i class="fas fa-plus-circle text-xl text-black"></i>
         </button>
         <div class="flex items-center gap-2">
             <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
@@ -1089,43 +1103,62 @@ const handleCommandBarMouseLeave = () => {
                 option-value="slug"
                 placeholder="Engine"
                 class="w-full max-w-xs"
-            ></Dropdown>
+            >
+                <template #value="slotProps">
+                    <div v-if="slotProps.value" class="flex align-items-center">
+                        {{  slotProps.value }}
+                        <i :class="['fa', slotProps.value.icon_class]"></i>
+                        <div>{{ slotProps.value.name }}</div>
+                    </div>
+                    <span v-else>
+                        {{ slotProps.value.name }}
+                    </span>
+                </template>
+                <template #option="slotProps">
+                    <div class="flex items-center gap-4">
+                        <i :class="['fa', slotProps.option.icon_class]"></i>
+                        <div>{{ slotProps.option.name }}</div>
+                    </div>
+                </template>
+            </Dropdown>
             <Dropdown
-                v-model="widgetStore.usedEngine"
-                :options="engines"
+                v-model="widgetStore.usedLanguage"
+                :options="languages"
                 option-label="name"
-                option-value="slug"
-                placeholder="Engine"
-                class="w-full max-w-xs"
+                option-value="name"
+                placeholder="Language"
+                class="w-full max-[120px]"
             ></Dropdown>
             <button
                 v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
                 @click.prevent="addAiTextToWall()"
             >
-                <i class="fas fa-robot text-blue-600"></i>
+                <i class="fas fa-robot text-blue-600 text-xl"></i>
             </button>
             <button
                 v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
                 @click.prevent="addAiTextToWall('hot')"
             >
-                <i class="fas fa-robot text-orange-600"></i>
+                <i class="fas fa-robot text-orange-600 text-xl"></i>
             </button>
             <button
                 v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 btn-icon--xs"
+                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
                 @click.prevent="aiImageExplain('hot')"
             >
-                <i class="fas fa-camera"></i>
+                <i class="fas fa-camera text-black"></i>
             </button>
         </div>
+        <!--
         <button
-            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 btn-icon--xs"
+            class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
             @click.prevent="addImageToWall()"
         >
-            <i class="fas fa-image"></i>
+            <i class="fas fa-image text-black"></i>
         </button>
+        -->
 
         <div v-show="isTextConfig(selectedConfig)" class="flex items-center gap-2">
             <!-- SETTING: color palette -->
@@ -1176,7 +1209,6 @@ const handleCommandBarMouseLeave = () => {
         @blur="editQuote($event)"
         @keyup.enter="editQuote($event)"
         @keyup.escape="exitEditMode"
-        @input="autoResizeTextarea"
         :style="textareaStyle"
     ></textarea>
     <v-stage
@@ -1242,7 +1274,7 @@ const handleCommandBarMouseLeave = () => {
     padding: 15px 10px;
     outline: none;
     margin: 0px;
-    overflow: hidden;
+    overflow: auto;
     background: none;
     border-radius: 12px;
     border: none;
@@ -1250,5 +1282,16 @@ const handleCommandBarMouseLeave = () => {
     top: 0; left: 50%;
     transform: translate(-50%, 0);
     resize: none;       /* Disable manual resizing by the user */
+    max-width: 360px;
+}
+
+.tw-mindwall-toolbar {
+    background:
+        linear-gradient(#062FD9 0%, #FD000D 90%),
+        linear-gradient(to right, #A7F200 0%, #560CBE 60%),
+        url('images/pages/thematics/wall.WebP') 30px,
+        url('images/pages/thematics/wall.WebP') 20px;
+        background-blend-mode: multiply, difference, lighten;
+    color: white;
 }
 </style>
