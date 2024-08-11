@@ -49,7 +49,7 @@ class ThematicController extends Controller
     {
         $thematic = Thematic::with(['user'])
             ->findOrFail($thematic->id);
-        $engines = Prompt::all();
+        $engines = Prompt::orderBy('name', 'asc')->get();
         $languages = Language::all();
         return Inertia::render('Thematics/ThematicDetail', [
             'thematic' => $thematic,

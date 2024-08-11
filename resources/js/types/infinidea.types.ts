@@ -1,3 +1,5 @@
+import { Engine } from "./thematic.types";
+
 export interface InfinideaParams {
     thematic: string;
     count: number;

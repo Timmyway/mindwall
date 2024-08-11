@@ -8,12 +8,18 @@ export const useWidgetSettingStore = defineStore('widgetSetting', () => {
         aiGenerateText: false
     });
 
-    const defaultEngine = 'descriptor';
+    const defaultEngine = {
+        id: 8,
+        name: "The all-rounder",
+        slug: "descriptor",
+        blade_view: "descriptor",
+        icon_class: "fa-pen-alt"
+    };
 
-    const usedEngine = ref<string>('descriptor');
+    const usedEngine = ref<Engine>(defaultEngine);
     const usedLanguage = ref<string>('Anglais');
 
-    const changeEngine = (newEngine: string) => {
+    const changeEngine = (newEngine: Engine) => {
         usedEngine.value = newEngine;
     }
 

@@ -21,6 +21,7 @@ export interface QuotePositionObject {
 export interface Engine {
     id: number;
     name: string;
+    slug: string;
     blade_view: string;
     icon_class?: string;
     thumbnail_url?: string;

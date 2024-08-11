@@ -37,24 +37,29 @@ export const useCanvasStore = defineStore('app', () => {
             const currentZoom = zoomLevel.value;
 
             // Two mode are supported: + and -
-            if (mode === '+') {
-                console.log('Zoom ++')
-                if (zoomLevel.value < maxScale) {
+            if (mode === '-') {
+                console.log('Zoom --')
+                if ((zoomLevel.value < maxScale) && (zoomLevel.value > minScale)) {
                     zoomLevel.value = currentZoom - scaleBy;
+                    // Update the scale
+                    console.log('====> Current zoom', currentZoom);
+                    stageRef.value.getStage().scale({ x: zoomLevel.value / 100, y: zoomLevel.value / 100 });
+
+                    // Redraw the Stage
+                    stageRef.value.getStage().batchDraw();
                 }
             } else {
-                console.log('Zoom --')
-                if (zoomLevel.value > minScale) {
+                console.log('Zoom ++')
+                if (zoomLevel.value > minScale && (zoomLevel.value < maxScale)) {
                     zoomLevel.value = currentZoom + scaleBy;
+                    // Update the scale
+                    console.log('====> Current zoom', currentZoom);
+                    stageRef.value.getStage().scale({ x: zoomLevel.value / 100, y: zoomLevel.value / 100 });
+
+                    // Redraw the Stage
+                    stageRef.value.getStage().batchDraw();
                 }
             }
-
-            // Update the scale
-            console.log('====> Current zoom', currentZoom);
-            stageRef.value.getStage().scale({ x: zoomLevel.value / 100, y: zoomLevel.value / 100 });
-
-            // Redraw the Stage
-            stageRef.value.getStage().batchDraw();
         }
     };
 
@@ -66,9 +71,9 @@ export const useCanvasStore = defineStore('app', () => {
         const direction = e.evt.deltaY > 0 ? 1 : -1;
 
         if (direction > 0) {
-            setZoomLevel('+');
-        } else {
             setZoomLevel('-');
+        } else {
+            setZoomLevel('+');
         }
     }, 50);
 
@@ -182,26 +187,37 @@ export const useCanvasStore = defineStore('app', () => {
         if (isTextConfig(selectedConfig.value) || isImageConfig(selectedConfig.value)) {
             const stage = stageRef.value.getStage();
             // Calculate the center of the element
-            const centerX = selectedConfig.value.x + (selectedConfig.value?.width ?? 0) / 2;
-            const centerY = selectedConfig.value.y + (selectedConfig.value?.height ?? 0) / 2;
+            const elementX = selectedConfig.value.x + (selectedConfig.value?.width ?? 0) / 2;
+            const elementY = selectedConfig.value.y + (selectedConfig.value?.height ?? 0) / 2;
 
             // Get the current scale of the stage
             const scaleX = stage.scaleX();
             const scaleY = stage.scaleY();
+            console.log('===> Stage scale x/y: ', scaleX, scaleY);
+            console.log('===> Stage w/h: ', stage.width(), stage.height());
+            console.log('===> Element x/y: ', elementX, elementY);
 
             // Calculate the new position of the stage to center the element
-            const newX = (centerX - stage.width() / 2 / scaleX) * scaleX;
-            const newY = (centerY - stage.height() / 2 / scaleY) * scaleY;
+            let newX = stage.width() / 2 - (elementX * scaleX);
+            let newY = stage.height() / 2 - (elementY * scaleY);
 
             console.log('===> Center on element: ', newX, newY);
             console.log('====> Selected element: ', selectedConfig.value);
 
             // Set the new position of the stage
-            stage.position({ x: newX, y: newY });
-
-            // Optionally, set a zoom level (e.g., zoom in)
             stageRef.value.getStage().scale({ x: 1, y: 1 });
+
+            // Set a zoom level (e.g., zoom in)
+            const newScale = { x: 1, y: 1 };
+            stage.scale(newScale);
             zoomLevel.value = 100;
+
+            // Recalculate the position after scaling
+            newX = stage.width() / 2 - elementX * newScale.x;
+            newY = stage.height() / 2 - elementY * newScale.y;
+
+            // Update the stage position with the recalculated values
+            stage.position({ x: newX, y: newY });
 
             // Redraw the stage
             stage.batchDraw();

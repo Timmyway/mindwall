@@ -224,7 +224,7 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
     try {
         let thematicName = null;
         const aiOption: TextGeneratorOption = {
-            engine: widgetStore.usedEngine,
+            engine: widgetStore.usedEngine.slug,
             base64Image: null,
             language: widgetStore.usedLanguage,
         }
@@ -304,7 +304,7 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         text: text,
         fill: 'black',
         visible: true,
-        width: 320,
+        width: 640,
         align: 'left',
         lineHeight: 1.7,
     };
@@ -334,8 +334,8 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
 
 const calcOptimizedImageDimension = (
     im: HTMLImageElement,
-    maxWidth = 300,
-    maxHeight = 300
+    maxWidth = 480,
+    maxHeight = 320
 ): { w:number, h:number } => {
     // Get the real size of the image
     const realWidth = im.naturalWidth;
@@ -359,7 +359,13 @@ const calcOptimizedImageDimension = (
 }
 
 const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png') => {
-    const imageIdentifier = `${selectedGroupName.value}-image-${uuid()}`;
+    let groupName;
+    if (selectedGroupName.value) {
+        groupName = selectedGroupName.value;
+    } else {
+        groupName = addGroup();
+    }
+    const imageIdentifier = `${groupName}-image-${uuid()}`;
     const newImageConfig: ImageConfig = {
         id: imageIdentifier,
         name: imageIdentifier,
@@ -381,9 +387,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
             newImageConfig.width = w;
             newImageConfig.height = h;
 
-            if (selectedGroupName.value) {
-                canvaStore.wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
-            }
+            canvaStore.wall[groupName].items[imageIdentifier] = newImageConfig;
         }
     } else {
         // Handle loading an image from a File object
@@ -401,9 +405,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
                 const resizedImage = resizeImage(im, w, h); // Example max width and height
                 newImageConfig.image = resizedImage;
 
-                if (selectedGroupName.value) {
-                    canvaStore.wall[selectedGroupName.value].items[imageIdentifier] = newImageConfig;
-                }
+                canvaStore.wall[groupName].items[imageIdentifier] = newImageConfig;
             }
         };
         reader.readAsDataURL(src);
@@ -512,7 +514,7 @@ const thematicRectConfig = {
     y: center.y,
     width: 100, // Add some padding
     height: 30, // Add some padding
-    fill: '#000',
+    fill: 'transparent',
     stroke: 'white',
     strokeWidth: 2,
     shadowBlur: 1,
@@ -525,9 +527,9 @@ const thematicTextConfig = ref({
     ellipsis: true,
     align: 'center',
     verticalAlign: 'middle',
-    fontSize: 20,
-    fontFamily: 'Calibri',
-    fill: '#fff',
+    fontSize: 16,
+    fontFamily: 'Impact',
+    color: 'black',
 });
 
 const { selectedConfig, selectedGroupName, selectedConfigName, wall } = storeToRefs(canvaStore);
@@ -1015,11 +1017,11 @@ const handleCommandBarMouseLeave = () => {
     class="tw-mindwall-toolbar relative px-3 flex flex-wrap items-center gap-4 h-16 border-2"
     @mouseleave.prevent="handleCommandBarMouseLeave"
 >
-    <div class="flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
+    <div class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
         <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
             <div class="py-2 flex flex-col gap-2">
                 <span>x: {{ selectedConfig?.x }} | y: {{ selectedConfig?.y }}</span>
-                <span>StageX{{ selectedConfig?.x }} | StageY: {{ selectedConfig?.y }}</span>
+                <span>StageX{{ stageRef?.getStage()?.x() }} | StageY: {{ stageRef?.getStage()?.y() }}</span>
             </div>
             <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
                 <div class="h-12">
@@ -1100,13 +1102,11 @@ const handleCommandBarMouseLeave = () => {
                 v-model="widgetStore.usedEngine"
                 :options="engines"
                 option-label="name"
-                option-value="slug"
                 placeholder="Engine"
                 class="w-full max-w-xs"
             >
                 <template #value="slotProps">
-                    <div v-if="slotProps.value" class="flex align-items-center">
-                        {{  slotProps.value }}
+                    <div v-if="slotProps.value" class="flex items-center gap-2">
                         <i :class="['fa', slotProps.value.icon_class]"></i>
                         <div>{{ slotProps.value.name }}</div>
                     </div>
@@ -1124,32 +1124,34 @@ const handleCommandBarMouseLeave = () => {
             <Dropdown
                 v-model="widgetStore.usedLanguage"
                 :options="languages"
-                option-label="name"
+                option-label="flag"
                 option-value="name"
                 placeholder="Language"
                 class="w-full max-[120px]"
             ></Dropdown>
-            <button
-                v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                @click.prevent="addAiTextToWall()"
-            >
-                <i class="fas fa-robot text-blue-600 text-xl"></i>
-            </button>
-            <button
-                v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                @click.prevent="addAiTextToWall('hot')"
-            >
-                <i class="fas fa-robot text-orange-600 text-xl"></i>
-            </button>
-            <button
-                v-show="!widgetStore.isLoading.aiGenerateText"
-                class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                @click.prevent="aiImageExplain('hot')"
-            >
-                <i class="fas fa-camera text-black"></i>
-            </button>
+            <div class="bg-red-600 flex items-center gap-4 w-[150px]">
+                <button
+                    v-show="!widgetStore.isLoading.aiGenerateText"
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                    @click.prevent="addAiTextToWall()"
+                >
+                    <i class="fas fa-robot text-blue-600 text-xl"></i>
+                </button>
+                <button
+                    v-show="!widgetStore.isLoading.aiGenerateText"
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                    @click.prevent="addAiTextToWall('hot')"
+                >
+                    <i class="fas fa-robot text-orange-600 text-xl"></i>
+                </button>
+                <button
+                    v-show="!widgetStore.isLoading.aiGenerateText"
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                    @click.prevent="aiImageExplain('hot')"
+                >
+                    <i class="fas fa-camera text-black"></i>
+                </button>
+            </div>
         </div>
         <!--
         <button
@@ -1191,12 +1193,13 @@ const handleCommandBarMouseLeave = () => {
         :handle-text-ai-generate="(e) => addAiTextToWall()"
         :handle-center-on-element="(e) => canvaStore.centerOnElement()"
     ></tw-context-menu>
-    <div class="flex items-center gap-2 max-w-[100px] overflow-x-auto">
+    <div class="mindwall-debug flex items-center gap-2 max-w-[100px] overflow-x-auto">
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ editing }}</div>
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Ready: {{ isReady }}</div>
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ selectedConfig?.draggable }})</div>
     </div>
     <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
+    <h2 class="text-3xl capitalize font-black ml-auto mr-5">{{ widgetStore.usedEngine?.name }}</h2>
 </div>
 
 <div class="bg-white tw-canva relative" v-if="isReady">
@@ -1224,7 +1227,6 @@ const handleCommandBarMouseLeave = () => {
             <div>
                 <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
                     <v-group :config="groupConfig">
-                        <v-rect :config="thematicRectConfig"></v-rect>
                         <v-text :config="thematicTextConfig"></v-text>
                     </v-group>
                 </div>
