@@ -21,4 +21,8 @@
     <body class="font-sans antialiased flex flex-col overflow-hidden">
         @inertia
     </body>
+
+    <script>
+        var baseApiUrl = '{{ $base_api_url }}';
+    </script>
 </html>

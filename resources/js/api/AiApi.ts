@@ -1,5 +1,6 @@
 import { TextGeneratorOption, InfinideaParams } from "@/types/infinidea.types";
 import axios from "axios";
+import { Api } from './Api';
 
 export default {
     async aiGenerateText(thematic: string, iaFeeling = 'cold', options: TextGeneratorOption = {
@@ -34,7 +35,7 @@ export default {
         }
 
         try {
-            return await axios.post('http://mindwall.local/api/ai/freestyle', setting);
+            return await Api.post('api/ai/freestyle', setting);
         } catch (error) {
             throw error;
         }
