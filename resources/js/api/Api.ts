@@ -6,7 +6,7 @@ var Api = axios.create({
 });
 
 var InfinideaApi = axios.create({
-    baseURL: 'http://budgetdevis.local/kmailing',
+    baseURL: 'http://mindwall.local',
     headers: { Accept: 'application/json' }
 });
 

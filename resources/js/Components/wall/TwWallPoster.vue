@@ -63,7 +63,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="flex justify-center gap-10">
+    <div class="flex justify-center gap-10 flex-wrap">
         <div v-for="(poster, i) in posters" :key="`poster-${poster.id}` ?? `poster-${i}`">
             <div class="tw-wall-poster text-slate-900 flex flex-col gap-2 transition-all" :style="{ backgroundColor: getRandomColor(), cursor: isEditMode ? 'initial' : 'pointer' }">
                 <div class="bg-white mb-auto w-full flex justify-end py-2">
@@ -73,7 +73,7 @@ onUnmounted(() => {
                         </button>
                     </div>
                 </div>
-                <div class="flex flex-col gap-4 p-2">
+                <div class="flex flex-col gap-4 p-2 h-[280px]">
                     <span class="text-2xl lg:text-6xl">{{ poster.id }}</span>
                     <div v-show="isEditMode && (currentThematicId === poster.id)" class="flex items-center gap-2 flex-wrap">
                         <input ref="posterNameInputRefs" class="tw-wall-poster__input w-full text-2xl lg:text-3xl" v-model="thematicStore.form.name" />

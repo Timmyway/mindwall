@@ -34,7 +34,7 @@ export default {
         }
 
         try {
-            return await axios.post('http://budgetdevis.local/kmailing/api/ai/freestyle', setting);
+            return await axios.post('http://mindwall.local/api/ai/freestyle', setting);
         } catch (error) {
             throw error;
         }

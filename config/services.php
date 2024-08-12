@@ -34,5 +34,13 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'google' => [
+        'gemini_api_key' => env('GEMINI_API_KEY'),
+        'gemini_api_url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:'
+    ],
+    'freepik' => [
+        'api_key' => env('FREEPIK_API_KEY'),
+        'api_base_url' => env('FREEPIK_API_BASE_URL'),
+    ]
 
 ];

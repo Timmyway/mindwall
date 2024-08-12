@@ -827,8 +827,10 @@ const onDragend = (e: any) => {
 
             canvaStore.wall[targetName].x = e.target.x();
             canvaStore.wall[targetName].y = e.target.y();
-        } else if (e.target.getType() === 'Text') {
+        } else if (isTextConfig(selectedConfig.value)) {
             console.log('================> TTTTTTTTTTTT');
+            syncPosition(e.target.x(), e.target.y());
+            handleTextBlur();
         } else if (e.target.constructor.name === '_Image') {
             const groupName = e.target.getParent().name();
             const imageName = e.target.name();
@@ -1017,7 +1019,7 @@ const handleCommandBarMouseLeave = () => {
     class="tw-mindwall-toolbar relative px-3 flex flex-wrap items-center gap-4 h-16 border-2"
     @mouseleave.prevent="handleCommandBarMouseLeave"
 >
-    <div class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600">
+    <div class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
         <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
             <div class="py-2 flex flex-col gap-2">
                 <span>x: {{ selectedConfig?.x }} | y: {{ selectedConfig?.y }}</span>
@@ -1129,7 +1131,7 @@ const handleCommandBarMouseLeave = () => {
                 placeholder="Language"
                 class="w-full max-[120px]"
             ></Dropdown>
-            <div class="bg-red-600 flex items-center gap-4 w-[150px]">
+            <div class="flex items-center gap-4 w-[150px]">
                 <button
                     v-show="!widgetStore.isLoading.aiGenerateText"
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
@@ -1244,7 +1246,7 @@ const handleCommandBarMouseLeave = () => {
                                 :config="config"
                                 @dblclick="enterEditMode"
                                 @click="handleTextMouseDown($event, String(groupName), String(configName))"
-                                @dragend="handleTextBlur"
+                                @dragend="onDragend"
                                 @transform="handleTransform"
                                 @transformend="handleTransformEnd"
                             ></v-text>

@@ -99,6 +99,8 @@ const items = ref([
                             <Link
                                 v-if="$page.props.auth.user"
                                 :href="route('logout')"
+                                method="post"
+                                as="button"
                                 class="btn bg-red-700 p-1 rounded-full text-white"
                             >
                                 <i class="fas fa-power-off"></i>
