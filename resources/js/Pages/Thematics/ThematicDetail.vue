@@ -570,9 +570,16 @@ const handleStageMouseDown = (e: any) => {
         updateTransformer();
         return;
     } else {
-        console.log('CLicked element ==> ', e.target);
-        console.log('Last text ==> ', lastEditedText.value?.config);
-        if (editing.value && selectedConfig.value?.name !== lastEditedText.value.config) {
+        console.log('CLicked element ==> ', e.target.name());
+        console.log('-- 60 -> Editing value: ', editing.value);
+        console.log('-- 61 -> Selected config name: ', selectedConfig.value?.name);
+        console.log('-- 62 -> Last edited config: ', lastEditedText.value.config);
+        console.log(`-- 63 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
+        // if (editing.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
+        //     console.log('-- 65 -> Should exit...')
+        //     exitEditMode();
+        // }
+        if (editing.value) {
             exitEditMode();
         }
     }
@@ -724,40 +731,75 @@ const enterEditMode = (e: Event) => {
 
 const lastEditedText = ref({group: '', config: ''});
 const backupLastEditedText = () => {
+    console.log('-- 80 -> Backup last edited text')
     if (selectedConfig.value && lastEditedText.value && isTextConfig(selectedConfig.value)) {
         lastEditedText.value.group = selectedGroupName.value ?? '';
         lastEditedText.value.config = selectedConfigName.value ?? '';
     }
+    console.log('-- 70 -> Last edited text backed up');
 }
 
 const restoreLastEditedText = () => {
-    if (lastEditedText.value) {
+    console.log('-- 80 -> Restoring last backup')
+    if (lastEditedText.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
+        console.log('--> 89 -> Restoring backup from the same Text is not allowed')
         selectedGroupName.value = lastEditedText.value.group;
         selectedConfigName.value = lastEditedText.value.config;
+        lastEditedText.value = { group: '', config: '' };
     }
-    lastEditedText.value = { group: '', config: '' };
 };
 
 const exitEditMode = () => {
+    console.log('-- 00 -> Exit mode');
     if (editedQuoteText.value.trim() === '') {
         // Restore text node and transformer
-        console.log('-- 01 -> Restore text and transformer')
-        if (selectedConfig.value) {
-            selectedConfig.value.visible = true;
-            transformer.value.getNode().show();
-        }
+        console.log('-- 01 -> Restore text and transformer');
+        restoreTextAndTransformer();
         editing.value = false; // Exit edit mode
         return;
     }
+    if (selectedConfig.value) {
+        if (isTextConfig(selectedConfig.value)) {
+            console.log('-- 100 -> Exit mode - is Text');
+            selectedConfig.value.text = editedQuoteText.value.trim();
+            restoreTextAndTransformer();
+            restoreLastEditedText();
+            editing.value = false; // Exit edit mode
+        } else {
+            console.log('-- 101 -> Exit mode - Other shape');
+            // Backup other shape (may be Image or other shape)
+            const { groupName, configName } = backupShape();
+            restoreLastEditedText();
+            restoreTextAndTransformer();
+            // Restore the backed up shape
+            restoreShape(groupName ?? '', configName ?? '');
+
+            editing.value = false; // Exit edit mode
+        }
+    }
+}
+
+const backupShape = (): { groupName: string | null, configName: string | null } => {
+    return {
+        groupName: selectedGroupName.value ?? null,
+        configName: selectedConfigName.value ?? null
+    };
+}
+
+const restoreShape = (groupName: string = '', configName: string = '') => {
+    if (groupName.trim() !== '' && configName.trim() !== '') {
+        selectedGroupName.value = groupName;
+        selectedConfigName.value = configName;
+    }
+}
+
+const restoreTextAndTransformer = () => {
+    // Restore text node and transformer
     if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        selectedConfig.value.text = editedQuoteText.value.trim();
-        // Restore text node and transformer
         selectedConfig.value.visible = true;
         transformer.value.getNode().show();
         editedQuoteText.value = '';
-        editing.value = false; // Exit edit mode
     }
-    restoreLastEditedText();
 }
 
 const autoResizeTextarea = () => {
@@ -774,21 +816,12 @@ const editQuote = (e: any) => {
         selectedConfig.value.rotation = 0;
     }
     if (e.key === 'Enter') {
+        console.log('-- 270 -> Enter key pressed from edit textarea');
         if (e.altKey) {
-            // User pressed Alt + Enter, do not exit edit mode
-            console.log('===> Alt + Enter pressed, staying in edit mode');
-            // editedQuoteText.value += '\n';
             exitEditMode();
-            // setTimeout(() => {
-            //     autoResizeTextarea();
-            // }, 0);
-            // Trigger textarea resize
-
-            return; // Prevent exiting edit mode
+            console.log('Finished editing...');
         }
-        console.log('===> From Enter');
     }
-    console.log('Finished editing...');
 };
 
 const textareaStyle = reactive<TextareaStyle>({
@@ -1285,7 +1318,6 @@ const handleCommandBarMouseLeave = () => {
     resize: none;
     top: 0; left: 50%;
     transform: translate(-50%, 0);
-    resize: none;       /* Disable manual resizing by the user */
     max-width: 360px;
 }
 
