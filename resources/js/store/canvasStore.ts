@@ -14,6 +14,7 @@ export const useCanvasStore = defineStore('app', () => {
     const stageRef = ref<Stage | null>(null);
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
     const menu: Ref<ContextMenu | null> = ref(null);
+    const transformer = ref();
 
     const resetZoomLevel: () => void = () => {
         console.log('==> Reset');
@@ -224,8 +225,23 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }
 
+    const backupShape = (): { groupName: string | null, configName: string | null } => {
+        return {
+            groupName: selectedGroupName.value ?? null,
+            configName: selectedConfigName.value ?? null
+        };
+    }
+
+    const restoreShape = (groupName: string = '', configName: string = '') => {
+        if (groupName.trim() !== '' && configName.trim() !== '') {
+            selectedGroupName.value = groupName;
+            selectedConfigName.value = configName;
+        }
+    }
+
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
-        menu, selectedConfig, selectedGroupName, selectedConfigName, wall,
-        serializeWall, deserializeWall, prettify, centerOnElement
+        menu, selectedConfig, selectedGroupName, selectedConfigName, wall, transformer,
+        serializeWall, deserializeWall, prettify, centerOnElement,
+        backupShape, restoreShape
     }
 });

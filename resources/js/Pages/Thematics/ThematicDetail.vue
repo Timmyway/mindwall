@@ -482,8 +482,6 @@ const resetConfig = () => {
     selectedConfigName.value = '';
 }
 
-const transformer = ref();
-
 const transformerConfig = computed(() => {
     const tempConfig = { enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'] };
 
@@ -532,7 +530,7 @@ const thematicTextConfig = ref({
     color: 'black',
 });
 
-const { selectedConfig, selectedGroupName, selectedConfigName, wall } = storeToRefs(canvaStore);
+const { selectedConfig, selectedGroupName, selectedConfigName, wall, transformer } = storeToRefs(canvaStore);
 
 const handleTransformEnd = (e: any) => {
     // shape is transformed, let us save new attrs back to the node
@@ -768,28 +766,14 @@ const exitEditMode = () => {
         } else {
             console.log('-- 101 -> Exit mode - Other shape');
             // Backup other shape (may be Image or other shape)
-            const { groupName, configName } = backupShape();
+            const { groupName, configName } = canvaStore.backupShape();
             restoreLastEditedText();
             restoreTextAndTransformer();
             // Restore the backed up shape
-            restoreShape(groupName ?? '', configName ?? '');
+            canvaStore.restoreShape(groupName ?? '', configName ?? '');
 
             editing.value = false; // Exit edit mode
         }
-    }
-}
-
-const backupShape = (): { groupName: string | null, configName: string | null } => {
-    return {
-        groupName: selectedGroupName.value ?? null,
-        configName: selectedConfigName.value ?? null
-    };
-}
-
-const restoreShape = (groupName: string = '', configName: string = '') => {
-    if (groupName.trim() !== '' && configName.trim() !== '') {
-        selectedGroupName.value = groupName;
-        selectedConfigName.value = configName;
     }
 }
 
@@ -845,26 +829,27 @@ const onDragstart = (e: any) => {
     if (e.target) {
         if (e.target.getType() === 'Group') {
             e.target.opacity(0.5);
-            console.log('==> Group draggable: ', e.target.draggable());
+            console.log('-- 300 -> Group draggable: ', e.target.draggable());
         }
     }
 }
 
 const onDragend = (e: any) => {
     if (e.target) {
-        console.log('================> Target: ', e.target.getType());
+        console.log('-- 308 -> Target: ', e.target.getType());
         if (e.target.getType() === 'Group') {
             const targetName = e.target.name();
-            console.log('===> Group selected: ', targetName);
+            console.log('-- 309 -> Group selected: ', targetName);
             e.target.opacity(1)
 
             canvaStore.wall[targetName].x = e.target.x();
             canvaStore.wall[targetName].y = e.target.y();
         } else if (isTextConfig(selectedConfig.value)) {
-            console.log('================> TTTTTTTTTTTT');
+            console.log('-- 310 -> Synchronise Text positions');
             syncPosition(e.target.x(), e.target.y());
             handleTextBlur();
         } else if (e.target.constructor.name === '_Image') {
+            console.log('-- 311 -> Synchronise Image positions');
             const groupName = e.target.getParent().name();
             const imageName = e.target.name();
             selectConfig(groupName, imageName);
@@ -898,8 +883,6 @@ const bringToTop = () => {
         const groupName = selectedGroupName.value;
         const configName = selectedConfig.value.name;
 
-        console.log('============> S', selectedConfig.value);
-
         const group = canvaStore.wall[groupName];
         if (group && group.items) {
             const items = Object.values(group.items);
@@ -921,7 +904,7 @@ const bringToTop = () => {
             } else {
                 selectedConfig.value.zIndex = newZIndex;
                 transformer.value.zIndex = newZIndex;
-                console.log('====> Transformer: ', transformer.value.getNode());
+                // console.log('-- 400 -> Transformer value: ', transformer.value.getNode());
             }
 
             console.log(`Set zIndex of ${configName} to ${selectedConfig.value.zIndex}`);
@@ -1022,7 +1005,7 @@ onMounted(() => {
     onUnmounted(() => {
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('wheel', preventZoom);
-        console.log('==> Unmount now... Destory the wall');
+        console.log('-- 999 -> Unmount now... Clean up & destory the wall');
         canvaStore.wall = {};
         stageRef.value?.getStage().destroy();
     });
