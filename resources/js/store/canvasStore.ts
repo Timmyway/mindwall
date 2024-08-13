@@ -78,28 +78,35 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }, 50);
 
-    const wall = reactive<WallConfig>({});
+    const wall = ref<WallConfig>({});
     const selectedGroupName = ref<string | null>(null);
     const selectedConfigName = ref<string | null>(null);
 
     const selectedConfig = computed<TextConfig | ImageConfig | null>({
         get: (): TextConfig | ImageConfig | null => {
             if (selectedGroupName.value && selectedConfigName.value) {
-                return wall[selectedGroupName.value]?.items[selectedConfigName.value];
+                return wall.value[selectedGroupName.value]?.items[selectedConfigName.value];
             }
             return null;
         },
         set: (newConfig: Partial<TextConfig> | Partial<ImageConfig> | null) => {
             if (selectedGroupName.value && selectedConfigName.value) {
-                const currentConfig = wall[selectedGroupName.value].items[selectedConfigName.value];
+                const currentConfig = wall.value[selectedGroupName.value].items[selectedConfigName.value];
                 if (currentConfig) {
-                    wall[selectedGroupName.value].items[selectedConfigName.value] = {
+                    wall.value[selectedGroupName.value].items[selectedConfigName.value] = {
                         ...currentConfig,
                         ...newConfig
                     };
                 }
             }
         }
+    });
+
+    const selectedGroup = computed(() => {
+        if (selectedGroupName.value) {
+            return wall.value[selectedGroupName.value] || null;
+        }
+        return null;
     });
 
     const { isImageConfig, isTextConfig } = useCanvasConditions();
@@ -109,9 +116,9 @@ export const useCanvasStore = defineStore('app', () => {
         const serializedWall: any = {};
 
         // Loop through each group in the wall object
-        for (const groupKey of Object.keys(wall)) {
+        for (const groupKey of Object.keys(wall.value)) {
             // Get the group from the wall object
-            const group = wall[groupKey];
+            const group = wall.value[groupKey];
             // Create a shallow copy of the group
             const serializedGroup = { ...group };
 
@@ -225,6 +232,16 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }
 
+    const selectConfig = (groupName: string, configName: string) => {
+        selectedGroupName.value = groupName;
+        selectedConfigName.value = configName;
+    };
+
+    const resetConfig = () => {
+        selectedGroupName.value = '';
+        selectedConfigName.value = '';
+    }
+
     const backupShape = (): { groupName: string | null, configName: string | null } => {
         return {
             groupName: selectedGroupName.value ?? null,
@@ -239,9 +256,18 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }
 
+    const resetWall = () => {
+        console.log('-- 998 -> Reset wall');
+        wall.value = {
+
+        };
+        console.log('====> ', wall.value)
+    }
+
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
         menu, selectedConfig, selectedGroupName, selectedConfigName, wall, transformer,
         serializeWall, deserializeWall, prettify, centerOnElement,
-        backupShape, restoreShape
+        backupShape, restoreShape, selectConfig, resetConfig, resetWall,
+        selectedGroup,
     }
 });

@@ -247,12 +247,11 @@ const addAiTextToWall = async (iaFeeling = 'cold', base64Image: string | null = 
         console.log('===> Detail: ');
         if (thematicName) {
             // Back up the initial group to which the generated text belongs
-            const groupName = selectedGroupName.value ?? '';
             const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
             // const generatedText = await parseTextFromMarkDown(response.data.generatedText);
             const generatedText = await response.data.generatedText;
 
-            addTextToWall(generatedText, groupName);
+            addTextToWall(generatedText);
             widgetStore.isLoading.aiGenerateText = false;
         } else {
             widgetStore.isLoading.aiGenerateText = false;
@@ -273,12 +272,15 @@ const aiImageExplain = async (iaFeeling: string) => {
     }
 }
 
-const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '') => {
-    let newGroupName = addGroup();
+const addTextToWall = (text: string = 'Unleash your thoughts !', options = { defaultTextSize: 320 }) => {
+    // Create a new group
     let textIdentifier: string;
+    const { defaultTextSize } = options;
     if (selectedGroupName.value) {
         textIdentifier = `${selectedGroupName.value}-text-${uuid()}`;
     } else {
+        let newGroupName = addGroup();
+        selectedGroupName.value = newGroupName;
         textIdentifier = `${newGroupName}-text-${uuid()}`;
     }
 
@@ -304,32 +306,13 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', groupName = '')
         text: text,
         fill: 'black',
         visible: true,
-        width: 640,
+        width: defaultTextSize,
         align: 'left',
         lineHeight: 1.7,
+        draggable: false,
     };
 
-    const targetGroup = groupName || selectedGroupName.value;
-
-    if (targetGroup) {
-        console.log('==========> Add into group: ', targetGroup);
-        console.log('==========> the following text: ', newTextConfig);
-        console.log('==========> Found groupname: ', groupName);
-
-        canvaStore.wall[targetGroup].items[textIdentifier] = newTextConfig;
-    } else {
-        canvaStore.wall[newGroupName] = {
-            id: newGroupName,
-            name: newGroupName,
-            is: 'group',
-            scaleX: 1,
-            scaleY: 1,
-            visible: true,
-            draggable: true,
-            items: {}
-        };
-        canvaStore.wall[newGroupName].items[textIdentifier] = newTextConfig;
-    }
+    canvaStore.wall[selectedGroupName.value].items[textIdentifier] = newTextConfig;
 };
 
 const calcOptimizedImageDimension = (
@@ -374,7 +357,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
         height: 100,
         x: selectedConfig.value?.x ?? 0,
         y: selectedConfig.value?.y ?? 0,
-        draggable: true
+        draggable: false
     };
 
     if (typeof src === 'string') {
@@ -432,54 +415,51 @@ const removeText = (groupName: string, textId: string) => {
 const handleMouseRelease = () => {
     if (selectedConfig.value) {
         if (isTextConfig(selectedConfig.value)) {
-            console.log('-- 12 -> Mouse release');
+            console.log('-- 122 -> Mouse release');
             // selectedConfig.value.draggable = false;
         }
     }
 }
 
 const handleTextBlur = () => {
-    console.log('-- 20 -> Text shape has losen focus');
-    if (selectedConfig.value) {
-        selectedConfig.value.draggable = false;
-    }
+    console.log('-- 850 -> Text shape has losen focus');
+    // if (selectedConfig.value) {
+    //     selectedConfig.value.draggable = false;
+    // }
 }
 
-const handleTextMouseDown = (e: any, groupName: string, configName: string) => {
-    selectConfig(groupName, configName)
-    if (selectedConfig.value && isTextConfig(selectedConfig.value)) {
-        console.log('-- 11 -> Set fontsize & family');
+const handleTextMouseDown = (groupName: string, configName: string) => {
+    canvaStore.selectConfig(String(groupName), String(configName));
+    // Because each text have their own properties,
+    // we need to synchronise with text toolbar values
+    console.log('-- 11 -> Set fontsize & family');
+    if (isTextConfig(selectedConfig.value)) {
         commandBarStore.setFontSize(selectedConfig.value.fontSize);
         commandBarStore.setFontFamily(selectedConfig.value.fontFamily);
-        // Check if selectedConfig.value.align is not undefined
         if (typeof selectedConfig.value.align !== 'undefined') {
-            console.log('====================> Update alignement: ', selectedConfig.value.align)
+            console.log('-- 12 -> Update alignement: ', selectedConfig.value.align)
             commandBarStore.setTextAlign(selectedConfig.value.align);
         } else {
             commandBarStore.setTextAlign('left');
         }
-        console.log('-- 11 -> Set fontsize to : ', selectedConfig.value.fontSize);
-        console.log('-- 12 -> Mouse down on text shape');
-        // Check if Ctrl key is pressed
-        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-        if (ctrl) {
-            selectedConfig.value.draggable = true;
-            console.log('-- 13 -> Text should be draggable', selectedConfig.value.draggable);
-        } else {
-            selectedConfig.value.draggable = false;
-        }
+        console.log('-- 13 -> Set fontsize to : ', selectedConfig.value.fontSize);
+        console.log('-- 14 -> Mouse down on text shape');
     }
-    updateTransformer();
 }
 
-const selectConfig = (groupName: string, configName: string) => {
-    selectedGroupName.value = groupName;
-    selectedConfigName.value = configName;
-};
-
-const resetConfig = () => {
-    selectedGroupName.value = '';
-    selectedConfigName.value = '';
+const handleTextClick = (e: any, groupName: string, configName: string) => {
+    if (isTextConfig(selectedConfig.value)) {
+        // Check if selectedConfig.value.align is not undefined
+        // Check if Ctrl key is pressed
+        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+        // if (ctrl) {
+        //     selectedConfig.value.draggable = true;
+        //     console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
+        // } else {
+        //     selectedConfig.value.draggable = false;
+        // }
+    }
+    updateTransformer();
 }
 
 const transformerConfig = computed(() => {
@@ -564,7 +544,7 @@ const handleStageMouseDown = (e: any) => {
         if (editing.value) {
             exitEditMode();
         }
-        resetConfig();
+        canvaStore.resetConfig();
         updateTransformer();
         return;
     } else {
@@ -825,16 +805,44 @@ const textareaStyle = reactive<TextareaStyle>({
     zIndex: 0,
 });
 
-const onDragstart = (e: any) => {
+const onGroupDragMove = (e: any) => {
+    console.log('=====> Move: ', e.target.name())
+    const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+    if (ctrl) {
+        if (selectedConfig.value) {
+            selectedConfig.value.draggable = true;
+        }
+        if (stageRef.value) {
+            stageRef.value.getStage().batchDraw();
+        }
+        console.log('-- 303 -> Group is being dragged', selectedConfig.value?.draggable);
+    }
+}
+const onGroupDragstart = (e: any) => {
+    console.log('-- 750 ->', selectedConfig.value?.is);
+    console.log('-- 751 ->', e.target.getType());
+
+    if (selectedConfig.value) {
+        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+        if (ctrl) {
+            selectedConfig.value.draggable = true;
+            console.log('-- 302 -> Shape should be draggable', selectedConfig.value.draggable);
+        }
+    }
     if (e.target) {
         if (e.target.getType() === 'Group') {
             e.target.opacity(0.5);
             console.log('-- 300 -> Group draggable: ', e.target.draggable());
+            console.log('--- 301 --> Selected config when group is dragged: ', selectedConfig.value)
         }
     }
 }
 
 const onDragend = (e: any) => {
+    if (selectedConfig.value) {
+        console.log('-- 330 -> Selected: ', selectedConfig.value);
+        selectedConfig.value.draggable = false;
+    }
     if (e.target) {
         console.log('-- 308 -> Target: ', e.target.getType());
         if (e.target.getType() === 'Group') {
@@ -852,7 +860,7 @@ const onDragend = (e: any) => {
             console.log('-- 311 -> Synchronise Image positions');
             const groupName = e.target.getParent().name();
             const imageName = e.target.name();
-            selectConfig(groupName, imageName);
+            canvaStore.selectConfig(groupName, imageName);
             syncPosition(e.target.x(), e.target.y());
         }
     }
@@ -1006,7 +1014,7 @@ onMounted(() => {
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('wheel', preventZoom);
         console.log('-- 999 -> Unmount now... Clean up & destory the wall');
-        canvaStore.wall = {};
+        canvaStore.resetWall();
         stageRef.value?.getStage().destroy();
     });
 });
@@ -1029,13 +1037,18 @@ const handleCommandBarMouseLeave = () => {
     hideImageGallery();
     hideBankImageGallery();
 }
+
+const debug = ref<boolean>(true);
 </script>
 <template>
 <div
     class="tw-mindwall-toolbar relative px-3 flex flex-wrap items-center gap-4 h-16 border-2"
     @mouseleave.prevent="handleCommandBarMouseLeave"
 >
-    <div class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
+    <div v-show="debug" class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
+        <div class="bg-black fixed w-[300px] h-[80vh] top-0 right-0 bottom-0 text-lg leading-8 overflow-auto">
+            <textarea :value="JSON.stringify(wall, null, 4)" class="text-black w-full h-full"></textarea>
+        </div>
         <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
             <div class="py-2 flex flex-col gap-2">
                 <span>x: {{ selectedConfig?.x }} | y: {{ selectedConfig?.y }}</span>
@@ -1054,6 +1067,7 @@ const handleCommandBarMouseLeave = () => {
                 </div>
             </div>
         </div>
+        <button class="w-6 h-6" @click="debug = false"><i class="fas fa-times"></i></button>
     </div>
     <Link
         :href="route('thematic.list')"
@@ -1113,6 +1127,12 @@ const handleCommandBarMouseLeave = () => {
             @click.prevent="addTextToWall()"
         >
             <i class="fas fa-plus-circle text-xl text-black"></i>
+        </button>
+        <button
+            class="btn btn-icon btn-xs btn-icon--flat bg-red-400 w-8 h-8 p-2"
+            @click.prevent="canvaStore.resetWall()"
+        >
+            <i class="fas fa-times text-xl text-black"></i>
         </button>
         <div class="flex items-center gap-2">
             <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
@@ -1253,7 +1273,8 @@ const handleCommandBarMouseLeave = () => {
                         :config="group"
                         @transformend="handleTransformEnd"
                         @contextmenu="handleGroupContextMenu"
-                        @dragstart="onDragstart"
+                        @dragstart="onGroupDragstart"
+                        @dragmove="onGroupDragMove"
                         @dragend="onDragend"
                     >
                         <template v-for="config, configName in group.items" :key="configName">
@@ -1261,7 +1282,8 @@ const handleCommandBarMouseLeave = () => {
                                 v-if="isTextConfig(config)"
                                 :config="config"
                                 @dblclick="enterEditMode"
-                                @click="handleTextMouseDown($event, String(groupName), String(configName))"
+                                @click="handleTextClick($event, String(groupName), String(configName))"
+                                @mousedown="handleTextMouseDown(String(groupName), String(configName))"
                                 @dragend="onDragend"
                                 @transform="handleTransform"
                                 @transformend="handleTransformEnd"
@@ -1269,7 +1291,7 @@ const handleCommandBarMouseLeave = () => {
                             <v-image
                                 v-if="isImageConfig(config)"
                                 :config="config"
-                                @mousedown="selectConfig(String(groupName), String(configName))"
+                                @mousedown="canvaStore.selectConfig(String(groupName), String(configName))"
                                 @dragend="onDragend"
                                 @transformend="handleTransformEnd"
                             />
