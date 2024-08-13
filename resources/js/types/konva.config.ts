@@ -4,10 +4,12 @@ export interface WallConfig {
     [group: string]: GroupConfig;
 }
 
+type ConfigType = 'group' | 'text' | 'image';
+
 export interface GroupConfig {
     id: string;
     name: string;
-    is: string;
+    is: ConfigType;
     scaleX?: number;
     scaleY?: number;
     x?: number;
@@ -25,7 +27,7 @@ export interface GroupConfig {
 export interface TextConfig  {
     id: string;
     name: string;
-    is: string;
+    is: ConfigType;
     text: string;
     rotation?: number;
     scaleX?: number;
@@ -47,7 +49,7 @@ export interface TextConfig  {
 export interface ImageConfig {
     id: string;
     name: string;
-    is: string;
+    is: ConfigType;
     width: number;
     height: number;
     rotation?: number;
