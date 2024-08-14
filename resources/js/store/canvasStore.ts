@@ -5,16 +5,26 @@ import { debounce } from "lodash";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
-import { ImageConfig, TextConfig, WallConfig } from "@/types/konva.config";
-import { loadImageFromURL } from "@/helpers/utils";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
+import { Transformer } from "konva/lib/shapes/Transformer";
+import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwShapeConfig, MwTextConfig, WallConfig } from "@/types/konva.config";
 
-export const useCanvasStore = defineStore('app', () => {
+export const useCanvasStore = defineStore('canvas', () => {
     // Todo: not working when using typescript
     const stageRef = ref<Stage | null>(null);
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
     const menu: Ref<ContextMenu | null> = ref(null);
-    const transformer = ref();
+    const transformer = ref<Transformer[]>([]);
+    const { isMwGroupConfig } = useCanvasConditions();
+
+    // Konva configs
+    const stageWidth = ref<number>(window.innerWidth);
+    const stageHeight = ref<number>(window.innerHeight - 32);
+
+    const center: { x: number, y: number } = {
+        x: stageWidth.value / 2,
+        y: stageHeight.value / 2,
+    };
 
     const resetZoomLevel: () => void = () => {
         console.log('==> Reset');
@@ -79,109 +89,47 @@ export const useCanvasStore = defineStore('app', () => {
     }, 50);
 
     const wall = ref<WallConfig>({});
-    const selectedGroupName = ref<string | null>(null);
     const selectedConfigName = ref<string | null>(null);
 
-    const selectedConfig = computed<TextConfig | ImageConfig | null>({
-        get: (): TextConfig | ImageConfig | null => {
-            if (selectedGroupName.value && selectedConfigName.value) {
-                return wall.value[selectedGroupName.value]?.items[selectedConfigName.value];
+    function findConfig(
+        config: MwLayerConfig | MwGroupConfig,
+        configName: string
+    ): MwTextConfig | MwImageConfig | MwGroupConfig | null {
+        // Check if the configName exists directly in the items
+        if (isMwGroupConfig(config)) {
+            if (config.items && config.items[configName]) {
+                return config.items[configName] as MwTextConfig | MwImageConfig | MwGroupConfig;
             }
-            return null;
-        },
-        set: (newConfig: Partial<TextConfig> | Partial<ImageConfig> | null) => {
-            if (selectedGroupName.value && selectedConfigName.value) {
-                const currentConfig = wall.value[selectedGroupName.value].items[selectedConfigName.value];
-                if (currentConfig) {
-                    wall.value[selectedGroupName.value].items[selectedConfigName.value] = {
-                        ...currentConfig,
-                        ...newConfig
-                    };
-                }
+        } else if (isMwTextConfig(config) || isMwImageConfig(config)) {
+            return config;
+        }
+
+        // Recursively search within nested groups
+        for (const item of Object.values(config.items || {})) {
+            if (item.is === 'group') {
+                const result = findConfig(item as MwGroupConfig, configName);
+                if (result) return result;
             }
         }
-    });
 
-    const selectedGroup = computed(() => {
-        if (selectedGroupName.value) {
-            return wall.value[selectedGroupName.value] || null;
+        return null;
+    }
+
+    const selectedConfig = computed<MwTextConfig | MwImageConfig | MwGroupConfig | null>((): MwTextConfig | MwImageConfig | MwGroupConfig | null => {
+        if (selectedConfigName.value) {
+            // Iterate through layers to find the config
+            for (const layer of Object.values(wall.value.layers || {})) {
+                const result = findConfig(layer, selectedConfigName.value);
+                if (result) return result;
+            }
         }
         return null;
-    });
+    })
 
-    const { isImageConfig, isTextConfig } = useCanvasConditions();
-
-    const serializeWall = async (): Promise<any> => {
-        // Initialize an empty object to store the serialized wall
-        const serializedWall: any = {};
-
-        // Loop through each group in the wall object
-        for (const groupKey of Object.keys(wall.value)) {
-            // Get the group from the wall object
-            const group = wall.value[groupKey];
-            // Create a shallow copy of the group
-            const serializedGroup = { ...group };
-
-            // Check if the group has items
-            if (group.items) {
-                serializedGroup.items = {};
-
-                for (const itemKey of Object.keys(group.items)) {
-                    // Get the item from the group
-                    const item = group.items[itemKey];
-                    const serializedItem: any = { ...item };
-
-                    // Check if the item is an image configuration and the image is an HTMLImageElement
-                    if (isImageConfig(item) && item.image instanceof HTMLImageElement) {
-                        // Convert the image to a Base64 string and store it in the serialized item
-                        console.log('=======------------> 2024: ', item.image.src);
-                        // serializedItem.image = await imageToBase64(item.image);
-                        serializedItem.image = item.image.src;
-                    }
-
-                    serializedGroup.items[itemKey] = serializedItem;
-                }
-            }
-
-            serializedWall[groupKey] = serializedGroup;
-        }
-
-        return serializedWall;
-    };
-
-    const deserializeWall = async (serializedWall: any): Promise<any> => {
-        const deserializedWall: any = {};
-
-        for (const groupKey of Object.keys(serializedWall)) {
-            const group = serializedWall[groupKey];
-            const deserializedGroup = { ...group };
-
-            if (group.items) {
-                deserializedGroup.items = {};
-
-                for (const itemKey of Object.keys(group.items)) {
-                    const item = group.items[itemKey];
-                    const deserializedItem = { ...item };
-
-                    if (item.is === 'image' && typeof item.image === 'string') {
-                        // deserializedItem.image = await base64ToImage(item.image);
-
-                        // Create an HTMLImageElement from the URL
-                        deserializedItem.image = await loadImageFromURL(item.image);
-                    }
-
-                    deserializedGroup.items[itemKey] = deserializedItem;
-                }
-            }
-
-            deserializedWall[groupKey] = deserializedGroup;
-        }
-
-        return deserializedWall;
-    };
+    const { isMwImageConfig, isMwTextConfig } = useCanvasConditions();
 
     const prettify = () => {
-        if (isTextConfig(selectedConfig.value)) {
+        if (isMwTextConfig(selectedConfig.value)) {
             const text = selectedConfig.value.text;
             // Replace multiple consecutive newline characters with a single newline
             selectedConfig.value.text = text.replace(/\n\s*\n/g, '\n').trim();
@@ -192,7 +140,7 @@ export const useCanvasStore = defineStore('app', () => {
         if (!selectedConfig.value?.x || !selectedConfig.value?.y || !stageRef.value) {
             return;
         }
-        if (isTextConfig(selectedConfig.value) || isImageConfig(selectedConfig.value)) {
+        if (isMwTextConfig(selectedConfig.value) || isMwImageConfig(selectedConfig.value)) {
             const stage = stageRef.value.getStage();
             // Calculate the center of the element
             const elementX = selectedConfig.value.x + (selectedConfig.value?.width ?? 0) / 2;
@@ -232,42 +180,66 @@ export const useCanvasStore = defineStore('app', () => {
         }
     }
 
-    const selectConfig = (groupName: string, configName: string) => {
-        selectedGroupName.value = groupName;
+    const selectConfig = (configName: string) => {
         selectedConfigName.value = configName;
     };
 
     const resetConfig = () => {
-        selectedGroupName.value = '';
-        selectedConfigName.value = '';
+        selectedConfigName.value = null;
     }
 
-    const backupShape = (): { groupName: string | null, configName: string | null } => {
+    const backupShape = (): { configName: string | null } => {
         return {
-            groupName: selectedGroupName.value ?? null,
             configName: selectedConfigName.value ?? null
         };
     }
 
-    const restoreShape = (groupName: string = '', configName: string = '') => {
-        if (groupName.trim() !== '' && configName.trim() !== '') {
-            selectedGroupName.value = groupName;
+    const restoreShape = (configName: string = '') => {
+        if (configName.trim() !== '') {
             selectedConfigName.value = configName;
         }
     }
 
     const resetWall = () => {
         console.log('-- 998 -> Reset wall');
-        wall.value = {
-
-        };
+        wall.value = {};
         console.log('====> ', wall.value)
     }
 
+    const updateTransformer = () => {
+        // here we need to manually attach or detach Transformer node
+        const transformerNode = transformer.value?.getNode();
+        if (stageRef.value) {
+            const stage = stageRef.value.getStage();
+            const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
+            // do nothing if selected node is already attached
+            if (transformerNode) {
+                if (selectedNode === transformerNode.node()) {
+                    return;
+                }
+
+                if (selectedNode) {
+                    // attach to another node
+                    transformerNode.nodes([selectedNode]);
+                } else {
+                    // remove transformer
+                    transformerNode.nodes([]);
+                }
+            }
+        }
+    }
+
+    const syncPosition = (x: number, y: number) => {
+        if (selectedConfig.value) {
+            selectedConfig.value.x = x;
+            selectedConfig.value.y = y;
+        }
+    }
+
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
-        menu, selectedConfig, selectedGroupName, selectedConfigName, wall, transformer,
-        serializeWall, deserializeWall, prettify, centerOnElement,
+        menu, selectedConfig, selectedConfigName, wall, transformer,
+        prettify, centerOnElement,
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
-        selectedGroup,
+        updateTransformer, syncPosition, center, stageWidth, stageHeight
     }
 });

@@ -1,15 +1,27 @@
 import { TextAlign } from "./widgetSetting.types";
 
 export interface WallConfig {
-    [group: string]: GroupConfig;
+    layers?: {
+        [item: string]: MwLayerConfig;
+    }
 }
 
-type ConfigType = 'group' | 'text' | 'image';
+export interface MwLayerConfig {
+    id: string,
+    name: string,
+    is: MwConfigType,
+    items?: {
+        [item: string]: MwGroupConfig | MwShapeConfig;
+    }
+}
 
-export interface GroupConfig {
+type MwConfigType = 'layer' | 'group' | MwShapeType;
+type MwShapeType = 'text' | 'image';
+
+export interface MwGroupConfig {
     id: string;
     name: string;
-    is: ConfigType;
+    is: MwConfigType;
     scaleX?: number;
     scaleY?: number;
     x?: number;
@@ -20,14 +32,16 @@ export interface GroupConfig {
     height?: number;
     drawBorder?: boolean;
     items: {
-        [item: string]: TextConfig | ImageConfig;
+        [item: string]: MwGroupConfig | MwShapeConfig;
     }
 }
 
-export interface TextConfig  {
+export type MwShapeConfig = MwTextConfig | MwImageConfig
+
+export interface MwTextConfig {
     id: string;
     name: string;
-    is: ConfigType;
+    is: MwConfigType;
     text: string;
     rotation?: number;
     scaleX?: number;
@@ -46,10 +60,10 @@ export interface TextConfig  {
     lineHeight?: number;
 }
 
-export interface ImageConfig {
+export interface MwImageConfig {
     id: string;
     name: string;
-    is: ConfigType;
+    is: MwConfigType;
     width: number;
     height: number;
     rotation?: number;

@@ -1,4 +1,4 @@
-import { TextAlign, WidgetSettingLoading } from "@/types/widgetSetting.types";
+import { TextAlign } from "@/types/widgetSetting.types";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useCanvasStore } from "./canvasStore";
@@ -9,7 +9,7 @@ import useFontProperty from "@/composable/useFontProperty";
 
 export const useCommandBarStore = defineStore('commandBar', () => {
     const canvasStore = useCanvasStore();
-    const { isTextConfig } = useCanvasConditions();
+    const { isMwTextConfig } = useCanvasConditions();
     const { fontSize, fontFamily, availableTextSize, textAlign,
         setFontSize, decreaseFontSize, increaseFontSize, setFontFamily,
         setTextAlign
@@ -18,7 +18,7 @@ export const useCommandBarStore = defineStore('commandBar', () => {
     const { availableTextAlign } = useFontProperty();
 
     const updateFontSize = (mode: '+' | '-' | null = null) => {
-        if (isTextConfig(canvasStore.selectedConfig)) {
+        if (isMwTextConfig(canvasStore.selectedConfig)) {
             if (mode === '+') {
                 increaseFontSize();
             } else if (mode === '-') {
@@ -29,13 +29,13 @@ export const useCommandBarStore = defineStore('commandBar', () => {
     }
 
     const updateFontFamily = () => {
-        if (isTextConfig(canvasStore.selectedConfig)) {
+        if (isMwTextConfig(canvasStore.selectedConfig)) {
             canvasStore.selectedConfig.fontFamily = fontFamily.value;
         }
     }
 
     const updateTextAlign = () => {
-        if (isTextConfig(canvasStore.selectedConfig)) {
+        if (isMwTextConfig(canvasStore.selectedConfig)) {
             const newAlign = textAlign.value as TextAlign;
             console.log('=====> New align set: ', newAlign)
             if (['left', 'right', 'center', 'justify'].includes(newAlign)) {

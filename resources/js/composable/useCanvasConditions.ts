@@ -1,19 +1,33 @@
-import { ImageConfig, TextConfig } from "@/types/konva.config";
+import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwTextConfig } from "@/types/konva.config";
 
 export function useCanvasConditions() {
-    const isTextConfig = (config: any): config is TextConfig => {
+    const isMwTextConfig = (config: any): config is MwTextConfig => {
         if (!config) {
             return false;
         }
-        return (config as TextConfig).is === 'text';
+        return (config as MwTextConfig).is === 'text';
     };
 
-    const isImageConfig = (config: any): config is ImageConfig => {
+    const isMwImageConfig = (config: any): config is MwImageConfig => {
         if (!config) {
             return false;
         }
-        return (config as ImageConfig).is === 'image';
+        return (config as MwImageConfig).is === 'image';
     };
 
-    return { isTextConfig, isImageConfig }
+    const isMwLayerConfig = (config: any): config is MwLayerConfig => {
+        if (!config) {
+            return false;
+        }
+        return (config as MwLayerConfig).is === 'layer';
+    };
+
+    const isMwGroupConfig = (config: any): config is MwGroupConfig => {
+        if (!config) {
+            return false;
+        }
+        return (config as MwGroupConfig).is === 'group';
+    };
+
+    return { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwLayerConfig }
 }
