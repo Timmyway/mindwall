@@ -2,7 +2,7 @@ import { defineStore, storeToRefs } from "pinia";
 import { useCanvasStore } from "./canvasStore";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { getNanoid, imageToBase64 } from "@/helpers/utils";
-import { MwImageConfig, MwTextConfig } from "@/types/konva.config";
+import { MwGroupConfig, MwImageConfig, MwTextConfig } from "@/types/konva.config";
 import useImageUtility from "@/composable/useImageUtility";
 import { useImageGalleryStore } from "./imageGalleryStore";
 import { useWidgetSettingStore } from "./widgetSettingStore";
@@ -19,12 +19,15 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
 
     const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png') => {
-        let groupName;
+        let groupName: string;
+
+        // Determine the group name
         if (selectedGroupName.value) {
             groupName = selectedGroupName.value;
         } else {
             groupName = addGroup();
         }
+
         const imageIdentifier = `${groupName}-image-${getNanoid()}`;
         const newMwImageConfig: MwImageConfig = {
             id: imageIdentifier,
@@ -42,13 +45,19 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             const im = new window.Image();
             im.src = src;
             im.onload = () => {
-                newMwImageConfig.image = im;
                 const { w, h } = calcOptimizedImageDimension(im);
                 newMwImageConfig.width = w;
                 newMwImageConfig.height = h;
+                newMwImageConfig.image = im;
 
-                wall[groupName].items[imageIdentifier] = newMwImageConfig;
+                // Ensure the layer exists before adding the image
+                if (wall.value.layers && wall.value.layers[groupName]) {
+                    wall.value.layers[groupName].items![imageIdentifier] = newMwImageConfig;
+                }
             }
+            im.onerror = () => {
+                console.error(`Failed to load image from URL: ${src}`);
+            };
         } else {
             // Handle loading an image from a File object
             const reader = new FileReader();
@@ -61,16 +70,23 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                     newMwImageConfig.height = h;
                     newMwImageConfig.image = im;
 
-                    // Resize the image before adding it to the wall
-                    const resizedImage = resizeImage(im, w, h); // Example max width and height
+                    // Resize the image if necessary
+                    const resizedImage = resizeImage(im, w, h); // Ensure this function is implemented
                     newMwImageConfig.image = resizedImage;
 
-                    wall[groupName].items[imageIdentifier] = newMwImageConfig;
+                    // Ensure the layer exists before adding the image
+                    if (wall.value.layers && wall.value.layers[groupName]) {
+                        wall.value.layers[groupName].items![imageIdentifier] = newMwImageConfig;
+                    }
                 }
+                im.onerror = () => {
+                    console.error('Failed to load image from file.');
+                };
             };
             reader.readAsDataURL(src);
         }
-        galleryStore.hideBankImageGallery();
+
+        galleryStore.hideBankImageGallery(); // Ensure galleryStore is properly imported and used
     };
 
     const removeConfig = (groupName: string, configName: string) => {
@@ -90,24 +106,27 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     const deleteShape = () => {
-        // Check if the selected config is available and is an MwImageConfig
+        // Check if the selected config is available
         if (selectedConfig.value) {
-            // Get the selected group and config name
-            const groupName = selectedGroupName.value;
             const configName = selectedConfigName.value;
 
-            if (groupName && configName) {
-                // Check if the group exists
-                if (wall.value[groupName] && wall.value[groupName].items[configName]) {
-                    // Delete the shape config from the items object
-                    delete wall.value[groupName].items[configName];
-                    console.log(`---- 99 -> '${configName}' shape has been removed from group '${groupName}'`);
+            if (configName) {
+                // Iterate through all layers to find the shape or group
+                for (const layerKey in wall.value.layers) {
+                    const layer = wall.value.layers[layerKey];
 
-                    // Check if the group is empty after deleting the shape
-                    if (Object.keys(wall.value[groupName].items).length === 0) {
-                        // If the group is empty, delete the group itself
-                        delete wall.value[groupName];
-                        console.log(`---- 99 -> Group '${groupName}' has been removed because it became empty.`);
+                    // Ensure that items is defined before accessing it
+                    if (layer.items && layer.items[configName]) {
+                        // Delete the shape or group config from the items object
+                        delete layer.items[configName];
+                        console.log(`'${configName}' shape or group has been removed from layer '${layerKey}'`);
+
+                        // Check if the layer's items are empty after deleting the shape or group
+                        if (Object.keys(layer.items).length === 0) {
+                            // Optionally handle the case where the layer is empty
+                            console.log(`Layer '${layerKey}' has no more items.`);
+                        }
+                        break; // Exit the loop once the shape or group is found and deleted
                     }
                 }
             }
@@ -115,19 +134,39 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     /* Add options */
-    const addLayer = () => {
-        const layerName = `group-${getNanoid()}`;
-        wall.value.layers[layerName] = {
+    const addLayer = (): string | null => {
+        if (!wall.value.layers) {
+            // Initialize layers if it doesn't exist
+            wall.value.layers = {};
+        }
+
+        const layerName = `layer-${getNanoid()}`;
+        console.log('==> Add new layer: ', layerName);
+
+        const newLayer: MwGroupConfig = {
             id: layerName,
             name: layerName,
             is: 'layer',
-        }
-    }
+            items: {}, // Initialize with an empty items object
+        };
 
-    const addGroup = (layerName: string) => {
+        wall.value.layers[layerName] = newLayer;
+
+        return layerName;
+    };
+
+    const addGroup = (layerName: string): string | null => {
+        // Check if the layer exists in the wall configuration
+        const layer = wall.value.layers?.[layerName];
+        if (!layer) {
+            console.error(`Layer "${layerName}" not found.`);
+            return null;
+        }
+
         const groupName = `group-${getNanoid()}`;
         console.log('==> Add new group: ', groupName);
-        const newGroup = {
+
+        const newGroup: MwGroupConfig = {
             id: groupName,
             name: groupName,
             is: 'group',
@@ -137,7 +176,10 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             draggable: true,
             items: {},
         };
-        wall.value.layers[layerName][groupName] = newGroup;
+
+        // Add the new group to the layer's items
+        layer.items![groupName] = newGroup;
+
         return groupName;
     };
 
@@ -198,24 +240,27 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     }
 
-    const addTextToWall = (text: string = 'Unleash your thoughts !', options = { defaultTextSize: 320 }) => {
-        // Create a new group
-        let textIdentifier: string;
+    const addTextToWall = (text: string = 'Unleash your thoughts !', options: { defaultTextSize: number } = { defaultTextSize: 320 }) => {
         const { defaultTextSize } = options;
+
+        // Determine group name
+        let groupName: string;
         if (selectedGroupName.value) {
-            textIdentifier = `${selectedGroupName.value}-text-${getNanoid()}`;
+            groupName = selectedGroupName.value;
         } else {
-            let newGroupName = addGroup();
-            selectedGroupName.value = newGroupName;
-            textIdentifier = `${newGroupName}-text-${getNanoid()}`;
+            groupName = addGroup(); // Ensure addGroup returns the group name
+            selectedGroupName.value = groupName;
         }
 
-        // Estimate the position of a new Text, place it near the parent if possible.
+        // Generate unique identifier for the text
+        const textIdentifier = `${groupName}-text-${getNanoid()}`;
+
+        // Estimate position for the new text
         let estimateX = canvasStore.center.x - 10;
-        let estimateY = canvasStore.center.y -50;
+        let estimateY = canvasStore.center.y - 50;
         if (selectedConfig.value) {
-            estimateX = selectedConfig.value.x ?? (canvasStore.center.x - 10);
-            estimateY = selectedConfig.value?.y ? (selectedConfig.value?.y - 50) : (center.y - 50);
+            estimateX = selectedConfig.value.x ?? canvasStore.center.x - 10;
+            estimateY = selectedConfig.value.y ?? canvasStore.center.y - 50;
         }
 
         const newMwTextConfig: MwTextConfig = {
@@ -238,7 +283,16 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             draggable: true,
         };
 
-        wall.value[selectedGroupName.value].items[textIdentifier] = newMwTextConfig;
+        // Ensure the layer exists and initialize items if needed
+        if (wall.value.layers && wall.value.layers[groupName]) {
+            const layer = wall.value.layers[groupName];
+            if (!layer.items) {
+                layer.items = {}; // Initialize items if undefined
+            }
+            layer.items[textIdentifier] = newMwTextConfig;
+        } else {
+            console.error(`Layer '${groupName}' does not exist.`);
+        }
     };
 
     const cloneGroup = (groupName: string): string | null => {
