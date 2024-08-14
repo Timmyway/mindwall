@@ -309,7 +309,7 @@ const addTextToWall = (text: string = 'Unleash your thoughts !', options = { def
         width: defaultTextSize,
         align: 'left',
         lineHeight: 1.7,
-        draggable: false,
+        draggable: true,
     };
 
     canvaStore.wall[selectedGroupName.value].items[textIdentifier] = newTextConfig;
@@ -357,7 +357,7 @@ const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/
         height: 100,
         x: selectedConfig.value?.x ?? 0,
         y: selectedConfig.value?.y ?? 0,
-        draggable: false
+        draggable: true
     };
 
     if (typeof src === 'string') {
@@ -452,12 +452,12 @@ const handleTextClick = (e: any, groupName: string, configName: string) => {
         // Check if selectedConfig.value.align is not undefined
         // Check if Ctrl key is pressed
         const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-        // if (ctrl) {
-        //     selectedConfig.value.draggable = true;
-        //     console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
-        // } else {
-        //     selectedConfig.value.draggable = false;
-        // }
+        if (ctrl) {
+            selectedConfig.value.draggable = true;
+            console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
+        } else {
+            selectedConfig.value.draggable = false;
+        }
     }
     updateTransformer();
 }
@@ -805,30 +805,10 @@ const textareaStyle = reactive<TextareaStyle>({
     zIndex: 0,
 });
 
-const onGroupDragMove = (e: any) => {
-    console.log('=====> Move: ', e.target.name())
-    const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-    if (ctrl) {
-        if (selectedConfig.value) {
-            selectedConfig.value.draggable = true;
-        }
-        if (stageRef.value) {
-            stageRef.value.getStage().batchDraw();
-        }
-        console.log('-- 303 -> Group is being dragged', selectedConfig.value?.draggable);
-    }
-}
 const onGroupDragstart = (e: any) => {
     console.log('-- 750 ->', selectedConfig.value?.is);
     console.log('-- 751 ->', e.target.getType());
 
-    if (selectedConfig.value) {
-        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-        if (ctrl) {
-            selectedConfig.value.draggable = true;
-            console.log('-- 302 -> Shape should be draggable', selectedConfig.value.draggable);
-        }
-    }
     if (e.target) {
         if (e.target.getType() === 'Group') {
             e.target.opacity(0.5);
@@ -839,16 +819,17 @@ const onGroupDragstart = (e: any) => {
 }
 
 const onDragend = (e: any) => {
-    if (selectedConfig.value) {
-        console.log('-- 330 -> Selected: ', selectedConfig.value);
-        selectedConfig.value.draggable = false;
-    }
     if (e.target) {
         console.log('-- 308 -> Target: ', e.target.getType());
         if (e.target.getType() === 'Group') {
             const targetName = e.target.name();
             console.log('-- 309 -> Group selected: ', targetName);
             e.target.opacity(1)
+
+            if (selectedConfig.value) {
+                console.log('-- 330 -> Selected: ', selectedConfig.value);
+                selectedConfig.value.draggable = false;
+            }
 
             canvaStore.wall[targetName].x = e.target.x();
             canvaStore.wall[targetName].y = e.target.y();
@@ -1274,7 +1255,6 @@ const debug = ref<boolean>(true);
                         @transformend="handleTransformEnd"
                         @contextmenu="handleGroupContextMenu"
                         @dragstart="onGroupDragstart"
-                        @dragmove="onGroupDragMove"
                         @dragend="onDragend"
                     >
                         <template v-for="config, configName in group.items" :key="configName">
