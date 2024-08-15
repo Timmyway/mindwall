@@ -1,82 +1,37 @@
-import { TextAlign } from "./widgetSetting.types";
+import { LayerConfig } from "konva/lib/Layer";
+import { GroupConfig } from "konva/lib/Group";
+import { TextConfig } from "konva/lib/shapes/Text";
+import { ImageConfig } from "konva/lib/shapes/Image";
 
 export interface WallConfig {
-    layers?: {
-        [item: string]: MwLayerConfig;
-    }
+    layers: MwLayerConfig[];
 }
 
-export interface MwLayerConfig {
-    id: string,
-    name: string,
-    is: MwConfigType,
-    items?: {
-        [item: string]: MwGroupConfig | MwShapeConfig;
-    }
+export interface MwLayerConfig extends LayerConfig {
+    is: 'layer',
+    items?: MwNode[];
 }
 
-type MwConfigType = 'layer' | 'group' | MwShapeType;
-type MwShapeType = 'text' | 'image';
+export type MwNode = MwGroupConfig | MwShapeConfig;
 
-export interface MwGroupConfig {
-    id: string;
-    name: string;
-    is: MwConfigType;
-    scaleX?: number;
-    scaleY?: number;
-    x?: number;
-    y?: number;
-    visible?: boolean;
-    draggable?: boolean;
-    width?: number;
-    height?: number;
-    drawBorder?: boolean;
-    items: {
-        [item: string]: MwGroupConfig | MwShapeConfig;
-    }
+export interface MwGroupConfig extends GroupConfig {
+    is: 'group';
+    items: MwNode[];
+    parent: string | null;
 }
 
-export type MwShapeConfig = MwTextConfig | MwImageConfig
+export type MwShapeConfig = MwTextConfig | MwImageConfig;
 
-export interface MwTextConfig {
-    id: string;
-    name: string;
-    is: MwConfigType;
-    text: string;
-    rotation?: number;
-    scaleX?: number;
-    scaleY?: number;
-    fontSize: number;
-    fontFamily: string;
-    fill: string;
-    x?: number;
-    y?: number;
-    visible?: boolean;
-    draggable?: boolean;
-    zIndex?: number;
-    width?: number;
-    height?: number;
-    align?: TextAlign;
-    lineHeight?: number;
+export interface MwTextConfig extends TextConfig {
+    is: 'text';
+    parent: string;
 }
 
-export interface MwImageConfig {
-    id: string;
-    name: string;
-    is: MwConfigType;
-    width: number;
-    height: number;
-    rotation?: number;
-    scaleX?: number;
-    scaleY?: number;
-    x?: number;
-    y?: number;
-    visible?: boolean,
-    image?: string | File | HTMLElement;
-    draggable?: boolean;
-    zIndex?: number
+export interface MwImageConfig extends ImageConfig {
+    is: 'image';
+    parent: string;
 }
 
 export interface TransformerConfig {
-
+    is: 'transformer';
 }

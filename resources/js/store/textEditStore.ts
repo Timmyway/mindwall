@@ -7,7 +7,7 @@ import { TextareaStyle } from "@/types/canvas.types";
 
 export const useTextEditStore = defineStore('textEdit', () => {
     const canvaStore = useCanvasStore();
-    const { stageRef, selectedConfig, transformer, selectedGroupName, selectedConfigName } = storeToRefs(canvaStore);
+    const { stageRef, selectedConfig, transformer, selectedConfigLayerIndex, selectedConfigName } = storeToRefs(canvaStore);
     const { isMwTextConfig } = useCanvasConditions();
 
     const editing = ref(false);
@@ -39,8 +39,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
             selectedConfig.value.visible = false;
         }
         // hide text node and transformer:
-        if (transformer.value) {
-            transformer.value.getNode().hide();
+        if (selectedConfigLayerIndex.value !== null) {
+            transformer.value[selectedConfigLayerIndex.value].getNode().hide();
         }
 
         // So position of textarea will be the sum of positions above:
@@ -100,7 +100,9 @@ export const useTextEditStore = defineStore('textEdit', () => {
 
         console.log('--> TEXTAREA STYLE: ', textareaStyle)
         if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
-            editedQuoteText.value = selectedConfig.value.text.trim();
+            if (selectedConfig.value?.text?.trim()) {
+                editedQuoteText.value = selectedConfig.value.text.trim();
+            }
         }
         backupLastEditedText();
         editing.value = true;
@@ -140,11 +142,11 @@ export const useTextEditStore = defineStore('textEdit', () => {
             } else {
                 console.log('-- 101 -> Exit mode - Other shape');
                 // Backup other shape (may be Image or other shape)
-                const { groupName, configName } = canvaStore.backupShape();
+                const { configName } = canvaStore.backupShape();
                 restoreLastEditedText();
                 restoreTextAndTransformer();
                 // Restore the backed up shape
-                canvaStore.restoreShape(groupName ?? '', configName ?? '');
+                canvaStore.restoreShape(configName ?? '');
 
                 editing.value = false; // Exit edit mode
             }
@@ -154,7 +156,6 @@ export const useTextEditStore = defineStore('textEdit', () => {
     const backupLastEditedText = () => {
         console.log('-- 80 -> Backup last edited text')
         if (selectedConfig.value && lastEditedText.value && isMwTextConfig(selectedConfig.value)) {
-            lastEditedText.value.group = selectedGroupName.value ?? '';
             lastEditedText.value.config = selectedConfigName.value ?? '';
         }
         console.log('-- 70 -> Last edited text backed up');
@@ -164,7 +165,6 @@ export const useTextEditStore = defineStore('textEdit', () => {
         console.log('-- 80 -> Restoring last backup')
         if (lastEditedText.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
             console.log('--> 89 -> Restoring backup from the same Text is not allowed')
-            selectedGroupName.value = lastEditedText.value.group;
             selectedConfigName.value = lastEditedText.value.config;
             lastEditedText.value = { group: '', config: '' };
         }
@@ -174,8 +174,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
         // Restore text node and transformer
         if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
             selectedConfig.value.visible = true;
-            if (transformer.value) {
-                transformer.value.getNode().show();
+            if (selectedConfigLayerIndex.value) {
+                transformer.value[selectedConfigLayerIndex.value].getNode().show();
             }
             editedQuoteText.value = '';
         }

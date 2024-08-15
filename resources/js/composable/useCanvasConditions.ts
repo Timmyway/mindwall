@@ -29,5 +29,9 @@ export function useCanvasConditions() {
         return (config as MwGroupConfig).is === 'group';
     };
 
-    return { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwLayerConfig }
+    const isShapeConfig = (config: any): boolean => {
+        return isMwTextConfig(config) || isMwImageConfig(config);
+    };
+
+    return { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwLayerConfig, isShapeConfig }
 }

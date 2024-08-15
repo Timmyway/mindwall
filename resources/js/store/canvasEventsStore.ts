@@ -4,7 +4,7 @@ import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { ref } from "vue";
 import { useTextEditStore } from "./textEditStore";
 import { useCommandBarStore } from "./commandBarStore";
-import { MwGroupConfig, MwShapeConfig } from "@/types/konva.config";
+import { MwGroupConfig, MwShapeConfig, MwTextConfig } from "@/types/konva.config";
 
 export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     var MIN_WIDTH = 20;
@@ -98,13 +98,13 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         if (isMwTextConfig(selectedConfig.value)) {
             // Check if selectedConfig.value.align is not undefined
             // Check if Ctrl key is pressed
-            const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-            if (ctrl) {
-                selectedConfig.value.draggable = true;
-                console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
-            } else {
-                selectedConfig.value.draggable = false;
-            }
+            // const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+            // if (ctrl) {
+            //     selectedConfig.value.draggable = true;
+            //     console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
+            // } else {
+            //     selectedConfig.value.draggable = false;
+            // }
         }
         canvasStore.updateTransformer();
     }
@@ -116,8 +116,8 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         // }
     }
 
-    const handleTextMouseDown = (config: MwShapeConfig | MwGroupConfig) => {
-        canvasStore.selectConfig(config);
+    const handleTextMouseDown = (configName: string, layerIndex: number) => {
+        canvasStore.selectConfig(configName, layerIndex);
         // Because each text have their own properties,
         // we need to synchronise with text toolbar values
         console.log('-- 11 -> Set fontsize & family');
@@ -165,10 +165,10 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                 console.log('-- 309 -> Group selected: ', targetName);
                 e.target.opacity(1)
 
-                if (selectedConfig.value) {
-                    console.log('-- 330 -> Selected: ', selectedConfig.value);
-                    selectedConfig.value.draggable = false;
-                }
+                // if (selectedConfig.value) {
+                //     console.log('-- 330 -> Selected: ', selectedConfig.value);
+                //     selectedConfig.value.draggable = false;
+                // }
 
                 canvasStore.wall[targetName].x = e.target.x();
                 canvasStore.wall[targetName].y = e.target.y();

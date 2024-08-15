@@ -23,17 +23,12 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
         return tempConfig;
     });
 
-    const stageConfig: {
-        width: number;
-        height: number;
-    } = {
+    const stageConfig = ref({
         width: stageWidth.value,
         height: stageHeight.value,
-    };
+    });
 
-    const groupConfig = {
-
-    }
+    const groupConfig = ref({});
 
     const thematicRectConfig = {
         x: canvasStore.center.x,
@@ -46,7 +41,7 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
         shadowBlur: 1,
     };
 
-    const mwTextConfig = ref({
+    const textConfig = ref({
         x: canvasStore.center.x + 20,
         y: canvasStore.center.y + 5,
         text: appStore.thematic?.name,
@@ -58,7 +53,7 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
         color: 'black',
     });
 
-    return { transformerConfig, mwTextConfig, thematicRectConfig,
+    return { transformerConfig, textConfig, thematicRectConfig,
         groupConfig, stageConfig,
     }
 });

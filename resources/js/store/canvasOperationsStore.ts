@@ -2,7 +2,7 @@ import { defineStore, storeToRefs } from "pinia";
 import { useCanvasStore } from "./canvasStore";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { getNanoid, imageToBase64 } from "@/helpers/utils";
-import { MwGroupConfig, MwImageConfig, MwTextConfig } from "@/types/konva.config";
+import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwTextConfig } from "@/types/konva.config";
 import useImageUtility from "@/composable/useImageUtility";
 import { useImageGalleryStore } from "./imageGalleryStore";
 import { useWidgetSettingStore } from "./widgetSettingStore";
@@ -14,9 +14,9 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const canvasStore = useCanvasStore();
     const galleryStore = useImageGalleryStore();
     const widgetStore = useWidgetSettingStore();
-    const { selectedConfigName, transformer, wall, selectedGroupName, selectedConfig } = storeToRefs(canvasStore);
+    const { selectedConfigName, transformer, wall, selectedConfig } = storeToRefs(canvasStore);
     const { calcOptimizedImageDimension, resizeImage } = useImageUtility();
-    const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
+    const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwLayerConfig } = useCanvasConditions();
 
     const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png') => {
         let groupName: string;
@@ -90,19 +90,19 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     const removeConfig = (groupName: string, configName: string) => {
-        if (wall[groupName] && wall[groupName].items[configName]) {
-        delete wall[groupName].items[configName];
-        } else {
-        console.log(`Config with name ${configName} not found in group ${groupName}.`);
-        }
+        // if (wall[groupName] && wall[groupName].items[configName]) {
+        // delete wall[groupName].items[configName];
+        // } else {
+        // console.log(`Config with name ${configName} not found in group ${groupName}.`);
+        // }
     };
 
     const removeText = (groupName: string, textId: string) => {
-        if (wall[groupName] && wall[groupName].items[textId]) {
-            delete wall[groupName].items[textId];
-        } else {
-        console.log(`Text with id ${textId} not found in group ${groupName}.`);
-        }
+        // if (wall[groupName] && wall[groupName].items[textId]) {
+        //     delete wall[groupName].items[textId];
+        // } else {
+        // console.log(`Text with id ${textId} not found in group ${groupName}.`);
+        // }
     };
 
     const deleteShape = () => {
@@ -134,25 +134,24 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     /* Add options */
-    const addLayer = (): string | null => {
+    const addLayer = (): string => {
         if (!wall.value.layers) {
             // Initialize layers if it doesn't exist
-            wall.value.layers = {};
+            wall.value.layers = [];
         }
 
-        const layerName = `layer-${getNanoid()}`;
-        console.log('==> Add new layer: ', layerName);
+        const layerId = `layer-${getNanoid()}`;
 
-        const newLayer: MwGroupConfig = {
-            id: layerName,
-            name: layerName,
+        const newLayer: MwLayerConfig = {
+            id: layerId,
+            name: layerId,
             is: 'layer',
-            items: {}, // Initialize with an empty items object
+            items: [], // Initialize with an empty items object
         };
 
-        wall.value.layers[layerName] = newLayer;
+        wall.value.layers.push(newLayer);
 
-        return layerName;
+        return layerId ?? '';
     };
 
     const addGroup = (layerName: string): string | null => {
@@ -240,20 +239,17 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     }
 
-    const addTextToWall = (text: string = 'Unleash your thoughts !', options: { defaultTextSize: number } = { defaultTextSize: 320 }) => {
+    const addTextToWall = (
+        text: string = 'Unleash your thoughts !',
+        options: { defaultTextSize: number } = { defaultTextSize: 320 }
+    ) => {
         const { defaultTextSize } = options;
 
-        // Determine group name
-        let groupName: string;
-        if (selectedGroupName.value) {
-            groupName = selectedGroupName.value;
-        } else {
-            groupName = addGroup(); // Ensure addGroup returns the group name
-            selectedGroupName.value = groupName;
-        }
+        // Ensure addLayer returns the layer ID
+        const parentLayerId = addLayer();
 
         // Generate unique identifier for the text
-        const textIdentifier = `${groupName}-text-${getNanoid()}`;
+        const textIdentifier = `text-${getNanoid()}`;
 
         // Estimate position for the new text
         let estimateX = canvasStore.center.x - 10;
@@ -266,6 +262,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         const newMwTextConfig: MwTextConfig = {
             id: textIdentifier,
             name: textIdentifier,
+            parent: parentLayerId,
             is: 'text',
             rotation: 0,
             x: estimateX,
@@ -283,15 +280,15 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             draggable: true,
         };
 
-        // Ensure the layer exists and initialize items if needed
-        if (wall.value.layers && wall.value.layers[groupName]) {
-            const layer = wall.value.layers[groupName];
-            if (!layer.items) {
-                layer.items = {}; // Initialize items if undefined
-            }
-            layer.items[textIdentifier] = newMwTextConfig;
+        // Find the layer where we need to add the text
+        const layer = wall.value.layers.find(layer => layer.id === parentLayerId);
+
+        if (layer) {
+            // Add the text config to the items of the parent layer
+            layer.items?.push(newMwTextConfig);
         } else {
-            console.error(`Layer '${groupName}' does not exist.`);
+            // Handle case where layer wasn't found
+            console.error(`Layer with ID ${parentLayerId} not found`);
         }
     };
 

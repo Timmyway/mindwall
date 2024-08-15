@@ -3,10 +3,11 @@ import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useCanvasEventsStore } from '@/store/canvasEventsStore';
 import { useCanvasStore } from '@/store/canvasStore';
 import { useTextEditStore } from '@/store/textEditStore';
-import { MwGroupConfig, MwShapeConfig } from '@/types/konva.config';
+import { MwShapeConfig } from '@/types/konva.config';
 
 const props = defineProps<{
-    config: MwGroupConfig | MwShapeConfig
+config: MwShapeConfig,
+    layerIndex: number,
 }>();
 
 const canvasStore = useCanvasStore();
@@ -15,7 +16,8 @@ const canvasEventsStore = useCanvasEventsStore();
 
 const { handleTextClick, handleTextMouseDown, onDragend, handleTransform, handleTransformEnd } = canvasEventsStore;
 
-const { isMwTextConfig, isMwImageConfig, isMwGroupConfig } = useCanvasConditions();
+const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
+console.log('------------------> JJJJJJJJJJJJJJ', props.layerIndex);
 </script>
 
 <template>
@@ -24,7 +26,7 @@ const { isMwTextConfig, isMwImageConfig, isMwGroupConfig } = useCanvasConditions
     :config="config"
     @dblclick="textEditStore.enterEditMode"
     @click="handleTextClick"
-    @mousedown="handleTextMouseDown(config)"
+    @mousedown="handleTextMouseDown(config.name ?? '', layerIndex)"
     @dragend="onDragend"
     @transform="handleTransform"
     @transformend="handleTransformEnd"
@@ -32,7 +34,7 @@ const { isMwTextConfig, isMwImageConfig, isMwGroupConfig } = useCanvasConditions
 <template v-if="isMwImageConfig(config)">
     <v-image
         :config="config"
-        @mousedown="canvasStore.selectConfig(config.name)"
+        @mousedown="canvasStore.selectConfig(config.name ?? '', layerIndex)"
         @dragend="onDragend"
         @transformend="handleTransformEnd"
     />

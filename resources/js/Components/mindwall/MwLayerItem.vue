@@ -5,7 +5,8 @@ import MwGroup from './MwGroup.vue';
 import MwShape from './MwShape.vue';
 
 const props = defineProps<{
-    config: MwGroupConfig | MwShapeConfig
+    config: MwGroupConfig | MwShapeConfig,
+    layerIndex: number,
 }>();
 
 const { isMwGroupConfig } = useCanvasConditions();
@@ -13,9 +14,9 @@ const { isMwGroupConfig } = useCanvasConditions();
 
 <template>
     <template v-if="isMwGroupConfig(config)">
-        <mw-group :config="config"></mw-group>
+        <mw-group :config="config" :layerIndex="layerIndex"></mw-group>
     </template>
     <template v-else>
-        <mw-shape :config="config"></mw-shape>
+        <mw-shape :config="config" :layerIndex="layerIndex"></mw-shape>
     </template>
 </template>

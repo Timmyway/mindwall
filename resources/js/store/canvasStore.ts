@@ -88,8 +88,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }, 50);
 
-    const wall = ref<WallConfig>({});
+    const wall = ref<WallConfig>({ layers: [] });
     const selectedConfigName = ref<string | null>(null);
+    const selectedConfigLayerIndex = ref<number | null>(null);
 
     function findConfig(
         config: MwLayerConfig | MwGroupConfig,
@@ -97,34 +98,35 @@ export const useCanvasStore = defineStore('canvas', () => {
     ): MwTextConfig | MwImageConfig | MwGroupConfig | null {
         // Check if the configName exists directly in the items
         if (isMwGroupConfig(config)) {
-            if (config.items && config.items[configName]) {
-                return config.items[configName] as MwTextConfig | MwImageConfig | MwGroupConfig;
+            const foundItem = config.items.find(item => item.id === configName);
+            if (foundItem) {
+                return foundItem as MwTextConfig | MwImageConfig | MwGroupConfig;
             }
-        } else if (isMwTextConfig(config) || isMwImageConfig(config)) {
-            return config;
         }
 
         // Recursively search within nested groups
-        for (const item of Object.values(config.items || {})) {
-            if (item.is === 'group') {
-                const result = findConfig(item as MwGroupConfig, configName);
+        for (const item of config.items || []) {
+            if (isMwGroupConfig(item)) {
+                const result = findConfig(item, configName);
                 if (result) return result;
+            } else if (item.id === configName) {
+                return item as MwTextConfig | MwImageConfig;
             }
         }
 
         return null;
     }
 
-    const selectedConfig = computed<MwTextConfig | MwImageConfig | MwGroupConfig | null>((): MwTextConfig | MwImageConfig | MwGroupConfig | null => {
+    const selectedConfig = computed<MwTextConfig | MwImageConfig | MwGroupConfig | null>(() => {
         if (selectedConfigName.value) {
             // Iterate through layers to find the config
-            for (const layer of Object.values(wall.value.layers || {})) {
+            for (const layer of wall.value.layers || []) {
                 const result = findConfig(layer, selectedConfigName.value);
                 if (result) return result;
             }
         }
         return null;
-    })
+    });
 
     const { isMwImageConfig, isMwTextConfig } = useCanvasConditions();
 
@@ -180,12 +182,15 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
-    const selectConfig = (configName: string) => {
+    const selectConfig = (configName: string, layerIndex: number) => {
+        console.log('-- 562 -> Select config name: ', configName);
+        console.log('-- 563 -> Select config from layer: ', layerIndex);
         selectedConfigName.value = configName;
+        selectedConfigLayerIndex.value = layerIndex;
     };
 
     const resetConfig = () => {
-        selectedConfigName.value = null;
+        selectedConfigName.value = '';
     }
 
     const backupShape = (): { configName: string | null } => {
@@ -200,34 +205,43 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
-    const resetWall = () => {
+    const resetWall = (): void => {
         console.log('-- 998 -> Reset wall');
-        wall.value = {};
+
+        // Use the WallConfig type to reset the wall
+        wall.value = { layers: [] } as WallConfig;
+
         console.log('====> ', wall.value)
     }
 
     const updateTransformer = () => {
-        // here we need to manually attach or detach Transformer node
-        const transformerNode = transformer.value?.getNode();
+        console.log('-- 463 -> Selected Layer Index: ', selectedConfigLayerIndex.value);
+        console.log('-- 464 -> Transformer: ', transformer.value);
+        console.log('-- 465 -> Selected config: ', selectedConfig.value);
+        if (selectedConfigLayerIndex.value === null) {
+            return;
+        }
+        const transformerInstance = transformer.value[selectedConfigLayerIndex.value];
+        const transformerNode = transformerInstance.getNode() as Transformer; // Cast to Transformer
+
         if (stageRef.value) {
             const stage = stageRef.value.getStage();
             const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
-            // do nothing if selected node is already attached
-            if (transformerNode) {
-                if (selectedNode === transformerNode.node()) {
-                    return;
-                }
 
-                if (selectedNode) {
-                    // attach to another node
-                    transformerNode.nodes([selectedNode]);
-                } else {
-                    // remove transformer
-                    transformerNode.nodes([]);
-                }
+            // Do nothing if the selected node is already attached
+            if (selectedNode && transformerNode.nodes()[0] === selectedNode) {
+                return;
+            }
+
+            if (selectedNode) {
+                // Attach the transformer to the selected node
+                transformerNode.nodes([selectedNode]);
+            } else {
+                // Remove the transformer if no node is selected
+                transformerNode.nodes([]);
             }
         }
-    }
+    };
 
     const syncPosition = (x: number, y: number) => {
         if (selectedConfig.value) {
@@ -238,8 +252,8 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
         menu, selectedConfig, selectedConfigName, wall, transformer,
-        prettify, centerOnElement,
+        prettify, centerOnElement, selectedConfigLayerIndex,
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
-        updateTransformer, syncPosition, center, stageWidth, stageHeight
+        updateTransformer, syncPosition, center, stageWidth, stageHeight,
     }
 });
