@@ -35,3 +35,8 @@ export interface MwImageConfig extends ImageConfig {
 export interface TransformerConfig {
     is: 'transformer';
 }
+
+export interface LayerInfo {
+    id: string;
+    index: number;
+}

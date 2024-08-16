@@ -89,9 +89,7 @@ const transformV = ref([]);
 
 
 <div class="bg-white tw-canva relative" v-if="appStore.isReady">
-    {{ textConfig }}
-    {{ groupConfig }}
-    Transformer: {{ JSON.stringify(transformer) }}
+    {{ canvaStore.selectedItems.map(item => item.name ) }}
     <mw-textarea></mw-textarea>
     <mw-toolbar></mw-toolbar>
     <v-stage
@@ -114,7 +112,7 @@ const transformV = ref([]);
                         </v-group>
                     </div>
                     <div v-for="(layerItemConfig, layerItemIndex) in layer?.items" :key="layerItemConfig.id">
-                        <mw-layer-item :config="layerItemConfig" :layer-index="layerIndex"></mw-layer-item>
+                        <mw-layer-item :config="layerItemConfig" :layer-info="{ id: layer.id ?? '', index: layerIndex }"></mw-layer-item>
                     </div>
                 </template>
             </v-layer>

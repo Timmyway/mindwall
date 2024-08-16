@@ -1,13 +1,14 @@
 import { defineStore } from "pinia";
 import { Ref, ref, computed, reactive } from 'vue';
 import useZoom from '../composable/useZoom';
-import { debounce } from "lodash";
+import { debounce, remove } from "lodash";
 import { KonvaEventObject } from "konva/lib/Node";
 import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { Transformer } from "konva/lib/shapes/Transformer";
-import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwShapeConfig, MwTextConfig, WallConfig } from "@/types/konva.config";
+import { LayerInfo, MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwShapeConfig, MwTextConfig, WallConfig } from "@/types/konva.config";
+import { useCanvasOperationsStore } from "./canvasOperationsStore";
 
 export const useCanvasStore = defineStore('canvas', () => {
     // Todo: not working when using typescript
@@ -16,6 +17,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const menu: Ref<ContextMenu | null> = ref(null);
     const transformer = ref<Transformer[]>([]);
     const { isMwGroupConfig } = useCanvasConditions();
+    const canvasOperations = useCanvasOperationsStore();
 
     // Konva configs
     const stageWidth = ref<number>(window.innerWidth);
@@ -24,6 +26,24 @@ export const useCanvasStore = defineStore('canvas', () => {
     const center: { x: number, y: number } = {
         x: stageWidth.value / 2,
         y: stageHeight.value / 2,
+    };
+
+    const selectedItems = ref<MwNode[]>([]);
+
+    const addSelectedItem = (item: MwNode | null) => {
+        if (item && !selectedItems.value.some(i => i.id === item.id)) {
+            selectedItems.value.push(item);
+        }
+    };
+
+    const removeSelectedItem = (item: MwNode | null) => {
+        if (item && selectedItems.value.some(i => i.id === item.id)) {
+            selectedItems.value = selectedItems.value.filter(i => i.id !== item.id);
+        }
+    };
+
+    const clearSelectedItems = () => {
+        selectedItems.value = [];
     };
 
     const resetZoomLevel: () => void = () => {
@@ -90,7 +110,7 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const wall = ref<WallConfig>({ layers: [] });
     const selectedConfigName = ref<string | null>(null);
-    const selectedConfigLayerIndex = ref<number | null>(null);
+    const selectedLayerInfo = ref<LayerInfo | null>(null);
 
     function findConfig(
         config: MwLayerConfig | MwGroupConfig,
@@ -182,14 +202,15 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
-    const selectConfig = (configName: string, layerIndex: number) => {
+    const selectConfig = (configName: string, layerInfo: LayerInfo) => {
         console.log('-- 562 -> Select config name: ', configName);
-        console.log('-- 563 -> Select config from layer: ', layerIndex);
+        console.log('-- 563 -> Select config from layer: ', layerInfo);
         selectedConfigName.value = configName;
-        selectedConfigLayerIndex.value = layerIndex;
+        selectedLayerInfo.value = layerInfo;
     };
 
     const resetConfig = () => {
+        clearSelectedItems();
         selectedConfigName.value = '';
     }
 
@@ -210,50 +231,66 @@ export const useCanvasStore = defineStore('canvas', () => {
 
         // Use the WallConfig type to reset the wall
         wall.value = { layers: [] } as WallConfig;
+        canvasOperations.addLayer();
 
         console.log('====> ', wall.value)
     }
 
     const updateTransformer = () => {
-        console.log('-- 463 -> Selected Layer Index: ', selectedConfigLayerIndex.value);
-        console.log('-- 464 -> Transformer: ', transformer.value);
-        console.log('-- 465 -> Selected config: ', selectedConfig.value);
-        if (selectedConfigLayerIndex.value === null) {
+        if (!selectedLayerInfo.value) {
+            console.log('-- 464 -> Transformer: ', transformer.value);
+            console.log('-- 465 -> Selected config: ', selectedConfig.value);
             return;
         }
-        const transformerInstance = transformer.value[selectedConfigLayerIndex.value];
-        const transformerNode = transformerInstance.getNode() as Transformer; // Cast to Transformer
 
-        if (stageRef.value) {
-            const stage = stageRef.value.getStage();
-            const selectedNode = stage.findOne('.' + selectedConfig.value?.name);
+        const transformerInstance = transformer.value[selectedLayerInfo.value.index];
+        const transformerNode = transformerInstance.getNode() as Transformer;
 
-            // Do nothing if the selected node is already attached
-            if (selectedNode && transformerNode.nodes()[0] === selectedNode) {
-                return;
-            }
+        if (!stageRef.value) {
+            console.error('Stage reference is not available.');
+            return;
+        }
 
-            if (selectedNode) {
-                // Attach the transformer to the selected node
-                transformerNode.nodes([selectedNode]);
-            } else {
-                // Remove the transformer if no node is selected
-                transformerNode.nodes([]);
-            }
+        const stage = stageRef.value.getStage();
+
+
+        // Handle multiple selected items
+        const selectedNodes = selectedItems.value.map(item => stage.findOne(`#${item.name}`)).filter(Boolean);
+
+        if (selectedNodes.length === 0) {
+            console.log('No nodes selected or nodes not found.');
+            transformerNode.nodes([]);
+            return;
+        }
+
+        // Check if the transformer is already attached to the selected nodes
+        const currentNodes = transformerNode.nodes();
+        const isAlreadyAttached = selectedNodes.every(node => currentNodes.includes(node));
+
+        if (isAlreadyAttached) {
+            // Transformer is already attached to the selected nodes, no action needed
+            return;
+        }
+
+
+        // Attach the transformer to the selected nodes
+        transformerNode.nodes(selectedNodes);
+        console.log('Transformer attached to nodes:', selectedNodes.map(node => node.name()));
+    };
+
+    const syncPosition = (itemId: string, x: number, y: number) => {
+        const item = selectedItems.value.find(i => i.id === itemId);
+        if (item) {
+            item.x = x;
+            item.y = y;
         }
     };
 
-    const syncPosition = (x: number, y: number) => {
-        if (selectedConfig.value) {
-            selectedConfig.value.x = x;
-            selectedConfig.value.y = y;
-        }
-    }
-
     return { stageRef, zoomLevel, setZoomLevel, handleWheel, resetZoomLevel,
         menu, selectedConfig, selectedConfigName, wall, transformer,
-        prettify, centerOnElement, selectedConfigLayerIndex,
+        prettify, centerOnElement, selectedLayerInfo,
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
+        addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
     }
 });

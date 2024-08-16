@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
-import { MwGroupConfig, MwShapeConfig } from '@/types/konva.config';
+import { LayerInfo, MwGroupConfig, MwShapeConfig } from '@/types/konva.config';
 import MwGroup from './MwGroup.vue';
 import MwShape from './MwShape.vue';
 
 const props = defineProps<{
     config: MwGroupConfig | MwShapeConfig,
-    layerIndex: number,
+    layerInfo: LayerInfo,
 }>();
 
 const { isMwGroupConfig } = useCanvasConditions();
@@ -14,9 +14,9 @@ const { isMwGroupConfig } = useCanvasConditions();
 
 <template>
     <template v-if="isMwGroupConfig(config)">
-        <mw-group :config="config" :layerIndex="layerIndex"></mw-group>
+        <mw-group :config="config" :layer-info="layerInfo"></mw-group>
     </template>
     <template v-else>
-        <mw-shape :config="config" :layerIndex="layerIndex"></mw-shape>
+        <mw-shape :config="config" :layer-info="layerInfo"></mw-shape>
     </template>
 </template>

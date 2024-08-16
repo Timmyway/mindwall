@@ -4,7 +4,8 @@ import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { ref } from "vue";
 import { useTextEditStore } from "./textEditStore";
 import { useCommandBarStore } from "./commandBarStore";
-import { MwGroupConfig, MwShapeConfig, MwTextConfig } from "@/types/konva.config";
+import { LayerInfo, MwGroupConfig, MwNode, MwShapeConfig, MwTextConfig } from "@/types/konva.config";
+import { TextAlign } from "@/types/widgetSetting.types";
 
 export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     var MIN_WIDTH = 20;
@@ -13,7 +14,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const commandBarStore = useCommandBarStore();
     const editTextStore = useTextEditStore();
 
-    const { isMwTextConfig } = useCanvasConditions();
+    const { isMwTextConfig, isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
     // Store refs
     const { stageRef, selectedConfig } = storeToRefs(canvasStore);
     const { editing, lastEditedText } = storeToRefs(editTextStore);
@@ -76,7 +77,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
             return;
         }
 
-        canvasStore.updateTransformer();
+        // canvasStore.updateTransformer();
     }
 
     const handleGroupContextMenu = (e: any) => {
@@ -94,19 +95,26 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         }
     }
 
-    const handleTextClick = (e: any) => {
-        if (isMwTextConfig(selectedConfig.value)) {
-            // Check if selectedConfig.value.align is not undefined
-            // Check if Ctrl key is pressed
-            // const ctrl = e.evt.ctrlKey || e.evt.metaKey;
-            // if (ctrl) {
-            //     selectedConfig.value.draggable = true;
-            //     console.log('-- 15 -> Text should be draggable', selectedConfig.value.draggable);
-            // } else {
-            //     selectedConfig.value.draggable = false;
-            // }
-        }
-        canvasStore.updateTransformer();
+    const handleTextClick = (e: any, clickedItem: MwNode) => {
+        // const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+
+        // if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
+        //     if (ctrl) {
+        //         if (canvasStore.selectedItems.find(item => item.id === clickedItem.id)) {
+        //             // If item is already selected, remove it
+        //             canvasStore.removeSelectedItem(clickedItem);
+        //         } else {
+        //             // Otherwise, add it to the selection
+        //             canvasStore.addSelectedItem(clickedItem);
+        //         }
+        //     } else {
+        //         // If Ctrl is not held, clear previous selections and select only the clicked item
+        //         canvasStore.clearSelectedItems();
+        //         canvasStore.addSelectedItem(clickedItem);
+        //     }
+        // }
+        // console.log(JSON.stringify(canvasStore.selectedItems));
+        // canvasStore.updateTransformer();
     }
 
     const handleTextBlur = () => {
@@ -116,17 +124,45 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         // }
     }
 
-    const handleTextMouseDown = (configName: string, layerIndex: number) => {
-        canvasStore.selectConfig(configName, layerIndex);
+    const handleTextMouseDown = (e: any, configName: string, layerInfo: LayerInfo) => {
+        canvasStore.selectConfig(configName, layerInfo);
+
+        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+
+        if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
+            if (ctrl) {
+                if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
+                    // If item is already selected, remove it
+                    canvasStore.removeSelectedItem(canvasStore.selectedConfig);
+                } else {
+                    // Otherwise, add it to the selection
+                    canvasStore.addSelectedItem(canvasStore.selectedConfig);
+                }
+            } else {
+                // If Ctrl is not held, clear previous selections and select only the clicked item
+                if (!canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
+                    canvasStore.clearSelectedItems();
+                    canvasStore.addSelectedItem(canvasStore.selectedConfig);
+                }
+            }
+        }
+        console.log(JSON.stringify(canvasStore.selectedItems));
+        canvasStore.updateTransformer();
         // Because each text have their own properties,
         // we need to synchronise with text toolbar values
         console.log('-- 11 -> Set fontsize & family');
         if (isMwTextConfig(selectedConfig.value)) {
-            commandBarStore.setFontSize(selectedConfig.value.fontSize);
-            commandBarStore.setFontFamily(selectedConfig.value.fontFamily);
+            console.log('======================> Selected config: ', selectedConfig.value)
+            if (selectedConfig.value?.fontSize) {
+                commandBarStore.setFontSize(selectedConfig.value.fontSize);
+            }
+            if (selectedConfig.value?.fontFamily) {
+                commandBarStore.setFontFamily(selectedConfig.value.fontFamily);
+            }
             if (typeof selectedConfig.value.align !== 'undefined') {
                 console.log('-- 12 -> Update alignement: ', selectedConfig.value.align)
-                commandBarStore.setTextAlign(selectedConfig.value.align);
+                const align = selectedConfig.value.align as TextAlign; // Type assertion
+                commandBarStore.setTextAlign(align);
             } else {
                 commandBarStore.setTextAlign('left');
             }
@@ -157,34 +193,52 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         }
     }
 
+    const updateWallPositionRecursively = (targetName: string, x: number, y: number, items: MwNode[]): boolean => {
+        for (const item of items) {
+            if (item.id === targetName) {
+                item.x = x;
+                item.y = y;
+                return true;
+            }
+            if (item.is === 'group') {
+                const group = item as MwGroupConfig;
+                if (updateWallPositionRecursively(targetName, x, y, group.items)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     const onDragend = (e: any) => {
         if (e.target) {
             console.log('-- 308 -> Target: ', e.target.getType());
+
+            const targetName = e.target.name();
+            const x = e.target.x();
+            const y = e.target.y();
+
+            // Update position of the group in the wall object
+            for (const layer of canvasStore.wall.layers) {
+                if (updateWallPositionRecursively(targetName, x, y, layer.items ?? [])) {
+                    break;
+                }
+            }
+
             if (e.target.getType() === 'Group') {
-                const targetName = e.target.name();
                 console.log('-- 309 -> Group selected: ', targetName);
-                e.target.opacity(1)
-
-                // if (selectedConfig.value) {
-                //     console.log('-- 330 -> Selected: ', selectedConfig.value);
-                //     selectedConfig.value.draggable = false;
-                // }
-
-                canvasStore.wall[targetName].x = e.target.x();
-                canvasStore.wall[targetName].y = e.target.y();
+                e.target.opacity(1);
             } else if (isMwTextConfig(selectedConfig.value)) {
-                console.log('-- 310 -> Synchronise Text positions');
-                canvasStore.syncPosition(e.target.x(), e.target.y());
                 handleTextBlur();
             } else if (e.target.constructor.name === '_Image') {
-                console.log('-- 311 -> Synchronise Image positions');
+                console.log('-- 311 -> Synchronize Image positions');
                 const groupName = e.target.getParent().name();
                 const imageName = e.target.name();
                 canvasStore.selectConfig(groupName, imageName);
-                canvasStore.syncPosition(e.target.x(), e.target.y());
+                canvasStore.syncPosition(x, y);
             }
         }
-    }
+    };
 
     return { handleStageMouseDown, handleTransformEnd, handleGroupContextMenu, handleTransform,
         onGroupDragstart, onDragend, handleTextBlur, handleTextClick, handleTextMouseDown

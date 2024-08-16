@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useCanvasStore } from "./canvasStore";
 import canvasApi from "@/api/canvasApi";
-import { safeJsonParse } from "@/helpers/utils";
+import { base64ToImage, imageToBase64, safeJsonParse } from "@/helpers/utils";
 import { Engine, Language, Thematic } from "@/types/thematic.types";
 import { loadImageFromURL } from "@/helpers/utils";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
@@ -59,9 +59,9 @@ export const useAppStore = defineStore('application', () => {
         const serializedWall: any = {};
 
         // Loop through each group in the wall object
-        for (const groupKey of Object.keys(canvasStore.wall.value)) {
+        for (const groupKey of Object.keys(canvasStore.wall)) {
             // Get the group from the wall object
-            const group = canvasStore.wall.value[groupKey];
+            const group = canvasStore.wall[groupKey];
             // Create a shallow copy of the group
             const serializedGroup = { ...group };
 
@@ -77,13 +77,23 @@ export const useAppStore = defineStore('application', () => {
                     // Check if the item is an image configuration and the image is an HTMLImageElement
                     if (isMwImageConfig(item) && item.image instanceof HTMLImageElement) {
                         // Convert the image to a Base64 string and store it in the serialized item
-                        console.log('=======------------> 2024: ', item.image.src);
-                        // serializedItem.image = await imageToBase64(item.image);
-                        serializedItem.image = item.image.src;
+                        serializedItem.image = await imageToBase64(item.image);
+                    } else {
+                        serializedItem.image = item.image;
                     }
 
                     serializedGroup.items[itemKey] = serializedItem;
                 }
+            }
+
+            // Check if the group has layers
+            if (group.layers) {
+                serializedGroup.layers = group.layers.map(layer => ({
+                    ...layer,
+                    items: layer.items ? Object.fromEntries(
+                        Object.entries(layer.items).map(([key, value]) => [key, { ...value }])
+                    ) : {}
+                }));
             }
 
             serializedWall[groupKey] = serializedGroup;
@@ -104,17 +114,26 @@ export const useAppStore = defineStore('application', () => {
 
                 for (const itemKey of Object.keys(group.items)) {
                     const item = group.items[itemKey];
-                    const deserializedItem = { ...item };
+                    const deserializedItem: any = { ...item };
 
                     if (item.is === 'image' && typeof item.image === 'string') {
-                        // deserializedItem.image = await base64ToImage(item.image);
-
-                        // Create an HTMLImageElement from the URL
-                        deserializedItem.image = await loadImageFromURL(item.image);
+                        // Convert base64 to image
+                        deserializedItem.image = await base64ToImage(item.image);
+                    } else {
+                        deserializedItem.image = item.image;
                     }
 
                     deserializedGroup.items[itemKey] = deserializedItem;
                 }
+            }
+
+            if (group.layers) {
+                deserializedGroup.layers = group.layers.map((layer: any) => ({
+                    ...layer,
+                    items: layer.items ? Object.fromEntries(
+                        Object.entries(layer.items).map(([key, value]) => [key, { ...value }])
+                    ) : {}
+                }));
             }
 
             deserializedWall[groupKey] = deserializedGroup;

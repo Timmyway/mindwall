@@ -7,7 +7,7 @@ import { TextareaStyle } from "@/types/canvas.types";
 
 export const useTextEditStore = defineStore('textEdit', () => {
     const canvaStore = useCanvasStore();
-    const { stageRef, selectedConfig, transformer, selectedConfigLayerIndex, selectedConfigName } = storeToRefs(canvaStore);
+    const { stageRef, selectedConfig, transformer, selectedLayerInfo, selectedConfigName } = storeToRefs(canvaStore);
     const { isMwTextConfig } = useCanvasConditions();
 
     const editing = ref(false);
@@ -39,8 +39,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
             selectedConfig.value.visible = false;
         }
         // hide text node and transformer:
-        if (selectedConfigLayerIndex.value !== null) {
-            transformer.value[selectedConfigLayerIndex.value].getNode().hide();
+        if (selectedLayerInfo.value) {
+            transformer.value[selectedLayerInfo.value.index].getNode().hide();
         }
 
         // So position of textarea will be the sum of positions above:
@@ -174,8 +174,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
         // Restore text node and transformer
         if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
             selectedConfig.value.visible = true;
-            if (selectedConfigLayerIndex.value) {
-                transformer.value[selectedConfigLayerIndex.value].getNode().show();
+            if (selectedLayerInfo.value) {
+                transformer.value[selectedLayerInfo.value.index].getNode().show();
             }
             editedQuoteText.value = '';
         }
