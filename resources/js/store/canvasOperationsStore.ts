@@ -108,26 +108,60 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const deleteShape = () => {
         // Check if the selected config is available
         if (canvasStore.selectedConfig) {
-            const configName = selectedConfigName.value;
+            const configName = canvasStore.selectedConfigName;
 
             if (configName) {
-                // Iterate through all layers to find the shape or group
-                for (const layerKey in canvasStore.wall.layers) {
-                    const layer = canvasStore.wall.layers[layerKey];
+                // Create a stack to handle layers and groups
+                const stack: (MwLayerConfig|MwNode)[] = [...canvasStore.wall.layers];
+                let found = false;
 
-                    // Ensure that items is defined before accessing it
-                    if (layer.items && layer.items[configName]) {
-                        // Delete the shape or group config from the items object
-                        delete layer.items[configName];
-                        console.log(`'${configName}' shape or group has been removed from layer '${layerKey}'`);
+                while (stack.length > 0) {
+                    const currentLayer = stack.pop();
 
-                        // Check if the layer's items are empty after deleting the shape or group
-                        if (Object.keys(layer.items).length === 0) {
-                            // Optionally handle the case where the layer is empty
-                            console.log(`Layer '${layerKey}' has no more items.`);
+                    // Ensure that currentLayer is of the expected type
+                    if (currentLayer && currentLayer.items) {
+                        // Check if the item exists in the current layer's items
+                        const itemIndex = currentLayer.items.findIndex((item: MwNode) => item.id === configName);
+                        if (itemIndex !== -1) {
+                            const itemToDelete = currentLayer.items[itemIndex];
+
+                            // If the found item is a group, delete its items first
+                            if (isMwGroupConfig(itemToDelete)) {
+                                // Add all nested groups and their items to the stack
+                                const nestedItems = itemToDelete.items;
+                                currentLayer.items.splice(itemIndex, 1); // Remove the group itself
+                                stack.push(...nestedItems); // Push nested items to the stack for deletion
+                                console.log(`Group '${itemToDelete.id}' and all its items have been removed from layer '${currentLayer.id}'`);
+                            } else {
+                                // Delete the shape or group config from the items array
+                                currentLayer.items.splice(itemIndex, 1); // Remove the item
+                                console.log(`'${configName}' shape or group has been removed from layer '${currentLayer.id}'`);
+                            }
+
+                            found = true;
+
+                            // Check if the layer's items are empty after deleting the shape or group
+                            if (currentLayer.items.length === 0) {
+                                console.log(`Layer '${currentLayer.id}' has no more items.`);
+                            }
+
+                            // Exit the loop after deletion
+                            break;
                         }
-                        break; // Exit the loop once the shape or group is found and deleted
+
+                        // Push nested groups onto the stack for further inspection
+                        const nestedGroups = currentLayer.items.filter((item: MwNode) => isMwGroupConfig(item)) as MwGroupConfig[];
+                        stack.push(...nestedGroups);
                     }
+
+                    // Exit the loop if the shape or group was found and deleted
+                    if (found) {
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    console.log(`'${configName}' shape or group not found.`);
                 }
             }
         }
@@ -229,13 +263,15 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             } else {
                 // We add to the selected item's layer
                 parentId = canvasStore.selectedLayerInfo.id;
-                console.log('-- 540 -> add to selected layer')
+                console.log('-- 541 -> add to selected layer')
             }
         } else {
             // We add to a group
-            console.log('-- 540 -> add to selected group', canvasStore.selectedConfig)
+            console.log('-- 542 -> add to selected group', canvasStore.selectedConfig)
             parentId = canvasStore.selectedConfig.id ?? '';
         }
+
+        console.log('------------> PID: ', parentId)
 
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;
@@ -271,8 +307,9 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
         // Find the layer or group where we need to add the text
         const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
-            findParentRecursively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+            findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
+        console.log('==================> ppppppppp', parent)
         if (parent && 'items' in parent) {
             // Ensure items is defined before pushing
             if (!parent.items) {
@@ -285,20 +322,95 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     };
 
-    const findParentRecursively = (parentId: string, items: MwNode[]): MwGroupConfig | undefined => {
-        for (const item of items) {
+    const findParentIteratively = (parentId: string, items: MwNode[]): MwGroupConfig | undefined => {
+        const stack: MwNode[] = [...items]; // Initialize the stack with the root items
+
+        while (stack.length > 0) {
+            const item = stack.pop()!; // Get the last item from the stack
+
             if (item.id === parentId && item.is === 'group') {
                 return item as MwGroupConfig;
             }
+
+            // If the item is a group, push its children onto the stack
             if (item.is === 'group') {
                 const group = item as MwGroupConfig;
-                const found = findParentRecursively(parentId, group.items);
-                if (found) {
-                    return found;
+                if (group.items) {
+                    stack.push(...group.items);
                 }
             }
         }
-        return undefined;
+
+        return undefined; // If no parent found, return undefined
+    };
+
+    const groupSelectedItems = (parentId: string = ''): string => {
+        // Check if there are selected items to group
+        if (canvasStore.selectedItems.length === 0) {
+            console.error('No items selected to group');
+            return ''; // Return an empty string or handle as needed
+        }
+
+        const groupId = `group-${getNanoid()}`;
+
+        // Create a new group configuration
+        const newGroup: MwGroupConfig = {
+            id: groupId,
+            name: groupId, // Use a meaningful name if needed
+            is: 'group',
+            scaleX: 1,
+            scaleY: 1,
+            visible: true,
+            draggable: true,
+            items: [], // Start with an empty items array
+            parent: parentId || null,
+        };
+
+        // Iterate over selected items to move them to the new group
+        for (const selectedItem of canvasStore.selectedItems) {
+            // Find the current layer or group of the selected item
+            const parentLayer = canvasStore.wall.layers.find(layer =>
+                layer.items?.some(item => item.id === selectedItem.id)
+            );
+
+            if (parentLayer && parentLayer.items) {
+                // Update the parent of the selected item to the new group
+                selectedItem.parent = groupId;
+
+                // Add the selected item to the new group's items
+                newGroup.items.push(selectedItem);
+
+                // Remove the selected item from its original parent
+                const itemIndex = parentLayer.items.findIndex(item => item.id === selectedItem.id);
+                if (itemIndex !== -1) {
+                    parentLayer.items.splice(itemIndex, 1);
+                }
+            }
+        }
+
+        // Find the parent layer or group where the new group should be added
+        const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
+            findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+
+        if (parent && 'items' in parent) {
+            // Ensure items is defined before pushing
+            if (!parent.items) {
+                parent.items = []; // Initialize items if it's undefined
+            }
+            parent.items.push(newGroup); // Add the new group to the parent
+        } else if (!parentId && canvasStore.wall.layers[0]?.id) {
+            // Add to the first layer if no parent is specified
+            if (canvasStore.wall.layers[0]?.items) {
+                canvasStore.wall.layers[0].items.push(newGroup);
+            }
+        } else {
+            console.error(`Parent with ID ${parentId} not found`);
+        }
+
+        // Clear selected items after grouping
+        canvasStore.clearSelectedItems();
+
+        return groupId; // Return the ID of the new group
     };
 
     const addGroup = (parentId: string = ''): string => {
@@ -470,6 +582,6 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     return { addLayer, addGroup, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
-        bringToTop, bringToBack,
+        bringToTop, bringToBack, groupSelectedItems,
     }
 });

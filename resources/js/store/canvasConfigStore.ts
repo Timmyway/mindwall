@@ -7,16 +7,17 @@ import { useAppStore } from "./appStore";
 export const useCanvasConfig = defineStore('canvasConfig', () => {
     const canvasStore = useCanvasStore();
     const appStore = useAppStore();
-    const { selectedConfig, stageWidth, stageHeight } = storeToRefs(canvasStore);
-    const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
+    const { isMwTextConfig, isMwImageConfig, isMwGroupConfig } = useCanvasConditions();
 
     const transformerConfig = computed(() => {
         const tempConfig = { enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'] };
 
-        if (selectedConfig.value) {
-            if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
+        if (canvasStore.selectedConfig) {
+            if (canvasStore.selectedConfig && isMwTextConfig(canvasStore.selectedConfig)) {
             tempConfig.enabledAnchors = ['middle-left', 'middle-right'];
-            } else if (isMwImageConfig(selectedConfig.value)) {
+            } else if (isMwGroupConfig(canvasStore.selectedConfig)) {
+                tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];
+            } else if (isMwImageConfig(canvasStore.selectedConfig)) {
                 tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];
             }
         }
@@ -24,8 +25,8 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
     });
 
     const stageConfig = ref({
-        width: stageWidth.value,
-        height: stageHeight.value,
+        width: canvasStore.stageWidth,
+        height: canvasStore.stageHeight,
     });
 
     const groupConfig = ref({});

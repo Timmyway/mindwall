@@ -53,15 +53,16 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
             if (editing.value) {
                 editTextStore.exitEditMode();
             }
-            canvasStore.resetConfig();
+            canvasStore.resetConfig({ layerInfo: false });
             canvasStore.updateTransformer();
+            console.log('-- 60 -> Config reseted because staged was clicked');
             return;
         } else {
             console.log('CLicked element ==> ', e.target.name());
-            console.log('-- 60 -> Editing value: ', editing.value);
-            console.log('-- 61 -> Selected config name: ', selectedConfig.value?.name);
-            console.log('-- 62 -> Last edited config: ', lastEditedText.value.config);
-            console.log(`-- 63 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
+            console.log('-- 61 -> Editing value: ', editing.value);
+            console.log('-- 62 -> Selected config name: ', selectedConfig.value?.name);
+            console.log('-- 63 -> Last edited config: ', lastEditedText.value.config);
+            console.log(`-- 64 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
             // if (editing.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
             //     console.log('-- 65 -> Should exit...')
             //     exitEditMode();
@@ -96,7 +97,6 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleTextClick = (e: any, clickedItem: MwNode) => {
-        // const ctrl = e.evt.ctrlKey || e.evt.metaKey;
 
         // if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
         //     if (ctrl) {
@@ -131,6 +131,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
 
         if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
             if (ctrl) {
+                canvasStore.ctrlPressed = true;
                 if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
                     // If item is already selected, remove it
                     canvasStore.removeSelectedItem(canvasStore.selectedConfig);
@@ -139,6 +140,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                     canvasStore.addSelectedItem(canvasStore.selectedConfig);
                 }
             } else {
+                canvasStore.ctrlPressed = false;
                 // If Ctrl is not held, clear previous selections and select only the clicked item
                 if (!canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
                     canvasStore.clearSelectedItems();
@@ -193,21 +195,27 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         }
     }
 
-    const updateWallPositionRecursively = (targetName: string, x: number, y: number, items: MwNode[]): boolean => {
-        for (const item of items) {
-            if (item.id === targetName) {
+    const updateWallPositionIteratively = (targetName: string, x: number, y: number, items: MwNode[]): boolean => {
+        const stack: MwNode[] = [...items]; // Create a stack initialized with the top-level items
+
+        while (stack.length > 0) {
+            const item = stack.pop();
+
+            // Check if the item is defined and matches the target name
+            if (item && item.id === targetName) {
                 item.x = x;
                 item.y = y;
-                return true;
+                return true; // Target found and position updated
             }
-            if (item.is === 'group') {
+
+            // If the item is a group, add its items to the stack for further processing
+            if (item?.is === 'group') {
                 const group = item as MwGroupConfig;
-                if (updateWallPositionRecursively(targetName, x, y, group.items)) {
-                    return true;
-                }
+                stack.push(...(group.items ?? [])); // Add the group's items, ensuring it's defined
             }
         }
-        return false;
+
+        return false; // Target not found in the entire hierarchy
     };
 
     const onDragend = (e: any) => {
@@ -220,7 +228,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
 
             // Update position of the group in the wall object
             for (const layer of canvasStore.wall.layers) {
-                if (updateWallPositionRecursively(targetName, x, y, layer.items ?? [])) {
+                if (updateWallPositionIteratively(targetName, x, y, layer.items ?? [])) {
                     break;
                 }
             }
@@ -234,8 +242,8 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                 console.log('-- 311 -> Synchronize Image positions');
                 const groupName = e.target.getParent().name();
                 const imageName = e.target.name();
-                canvasStore.selectConfig(groupName, imageName);
-                canvasStore.syncPosition(x, y);
+                canvasStore.selectConfig(groupName, imageName, e.evt.ctrl);
+                canvasStore.syncPosition(targetName, x, y);
             }
         }
     };

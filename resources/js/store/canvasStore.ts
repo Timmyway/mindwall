@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { Ref, ref, computed, reactive } from 'vue';
 import useZoom from '../composable/useZoom';
 import { debounce, remove } from "lodash";
-import { KonvaEventObject } from "konva/lib/Node";
+import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
 import { Stage } from "konva/lib/Stage";
 import ContextMenu from "primevue/contextmenu";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
@@ -18,6 +18,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const transformer = ref<Transformer[]>([]);
     const { isMwGroupConfig } = useCanvasConditions();
     const canvasOperations = useCanvasOperationsStore();
+    const ctrlPressed = ref<boolean>(false);
 
     // Konva configs
     const stageWidth = ref<number>(window.innerWidth);
@@ -113,39 +114,73 @@ export const useCanvasStore = defineStore('canvas', () => {
     const selectedLayerInfo = ref<LayerInfo | null>(null);
 
     function findConfig(
-        config: MwLayerConfig | MwGroupConfig,
+        config: MwLayerConfig | MwGroupConfig, // Accept both Layer and Group configs
         configName: string
     ): MwTextConfig | MwImageConfig | MwGroupConfig | null {
-        // Check if the configName exists directly in the items
-        if (isMwGroupConfig(config)) {
-            const foundItem = config.items.find(item => item.id === configName);
-            if (foundItem) {
-                return foundItem as MwTextConfig | MwImageConfig | MwGroupConfig;
+        const stack: (MwLayerConfig | MwGroupConfig)[] = [config]; // Initialize stack with the top-level config
+
+        while (stack.length > 0) {
+            const currentConfig = stack.pop(); // Get the current configuration from the stack
+
+            // Check if the currentConfig is defined
+            if (currentConfig) {
+                // Iterate through items to find the configuration
+                for (const item of currentConfig.items ?? []) {
+                    // Check if the item matches the configuration name
+                    if (item.id === configName) {
+                        // Type guard to ensure we return the correct type
+                        if (isMwTextConfig(item) || isMwImageConfig(item) || isMwGroupConfig(item)) {
+                            return item; // Return the found item
+                        }
+                    }
+
+                    // If the item is a group, add it to the stack for further exploration
+                    if (isMwGroupConfig(item)) {
+                        stack.push(item); // Push the group onto the stack
+                    }
+                }
             }
         }
 
-        // Recursively search within nested groups
-        for (const item of config.items || []) {
-            if (isMwGroupConfig(item)) {
-                const result = findConfig(item, configName);
-                if (result) return result;
-            } else if (item.id === configName) {
-                return item as MwTextConfig | MwImageConfig;
-            }
-        }
-
-        return null;
+        return null; // Return null if not found at any level
     }
 
     const selectedConfig = computed<MwTextConfig | MwImageConfig | MwGroupConfig | null>(() => {
-        if (selectedConfigName.value) {
-            // Iterate through layers to find the config
-            for (const layer of wall.value.layers || []) {
-                const result = findConfig(layer, selectedConfigName.value);
-                if (result) return result;
+        if (selectedConfigName.value && wall.value.layers) {
+            for (const layer of wall.value.layers) {
+                console.log('==============> SELECTED CONFIG NAME: ', selectedConfigName.value);
+                const foundConfig = findConfig(layer, selectedConfigName.value);
+                console.log('-- 82 -> FOUND CONFIG NAME: ', foundConfig?.name);
+
+                if (foundConfig) {
+                    // Check if the found config is part of a group
+                    if (foundConfig.parent) {
+                        const groupConfig = findConfig(layer, foundConfig.parent);
+
+                        if (groupConfig && groupConfig.is === 'group') {
+                            if (ctrlPressed.value) {
+                                // If Ctrl is pressed, find the item inside the group and select it
+                                const selectedItem = groupConfig.items.find(item => item.id === selectedConfigName.value);
+                                if (selectedItem) {
+                                    clearSelectedItems();
+                                    addSelectedItem(selectedItem);
+                                    return selectedItem as MwTextConfig | MwImageConfig; // Return the selected item
+                                }
+                            } else {
+                                // If Ctrl is not pressed, select the entire group
+                                clearSelectedItems();
+                                groupConfig.items.forEach((item: MwNode) => {
+                                    addSelectedItem(item);
+                                });
+                                return groupConfig as MwGroupConfig; // Return the group configuration
+                            }
+                        }
+                    }
+                    return foundConfig as MwTextConfig | MwImageConfig; // Return the item itself
+                }
             }
         }
-        return null;
+        return null; // Return null if no config is found
     });
 
     const { isMwImageConfig, isMwTextConfig } = useCanvasConditions();
@@ -205,14 +240,33 @@ export const useCanvasStore = defineStore('canvas', () => {
     const selectConfig = (configName: string, layerInfo: LayerInfo) => {
         console.log('-- 562 -> Select config name: ', configName);
         console.log('-- 563 -> Select config from layer: ', layerInfo);
+        console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
         selectedConfigName.value = configName;
         selectedLayerInfo.value = layerInfo;
     };
 
-    const resetConfig = () => {
-        clearSelectedItems();
-        selectedConfigName.value = '';
-    }
+    const resetConfig = (options: { layerInfo?: boolean; configName?: boolean; selectedItems?: boolean } = {}) => {
+        const { layerInfo = true, configName = true, selectedItems = true } = options;
+
+        if (selectedItems) {
+            clearSelectedItems();
+            console.log('-- 77 -> Items cleared')
+        }
+
+        if (configName) {
+            selectedConfigName.value = '';
+            console.log('-- 78 -> Config name cleared')
+        }
+
+        if (layerInfo) {
+            selectedLayerInfo.value = null;
+            console.log('-- 79 -> Layer info cleared')
+        }
+
+        console.log('======================= SGN > Selected config name: ', selectedConfigName.value)
+    };
+
+
 
     const backupShape = (): { configName: string | null } => {
         return {
@@ -229,11 +283,12 @@ export const useCanvasStore = defineStore('canvas', () => {
     const resetWall = (): void => {
         console.log('-- 998 -> Reset wall');
 
+        resetConfig();
         // Use the WallConfig type to reset the wall
         wall.value = { layers: [] } as WallConfig;
         canvasOperations.addLayer();
 
-        console.log('====> ', wall.value)
+        console.log('====> Wall value after reset: ', wall.value)
     }
 
     const updateTransformer = () => {
@@ -253,10 +308,12 @@ export const useCanvasStore = defineStore('canvas', () => {
 
         const stage = stageRef.value.getStage();
 
-
         // Handle multiple selected items
-        const selectedNodes = selectedItems.value.map(item => stage.findOne(`#${item.name}`)).filter(Boolean);
+        const selectedNodes = selectedItems.value
+            .map(item => stage.findOne(`#${item.name}`)) // Find nodes by ID
+            .filter((node): node is Node => node !== undefined); // Type guard to filter out undefined nodes
 
+        console.log('-- 466 -> Selected nodes: ', selectedNodes);
         if (selectedNodes.length === 0) {
             console.log('No nodes selected or nodes not found.');
             transformerNode.nodes([]);
@@ -292,5 +349,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
         addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
+        ctrlPressed,
     }
 });

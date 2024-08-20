@@ -25,12 +25,10 @@ const appStore = useAppStore();
 const widgetStore = useWidgetSettingStore();
 const textEditStore = useTextEditStore();
 
-const { isGalleryVisible, isBankGalleryVisible } = storeToRefs(galleryStore);
 const { isMwTextConfig } = useCanvasConditions();
 
 const debug = ref<boolean>(true);
 const canvasStore = useCanvasStore();
-const { wall, stageRef, selectedConfig } = storeToRefs(canvasStore);
 
 const handleCommandBarMouseLeave = () => {
     galleryStore.hideImageGallery();
@@ -40,8 +38,8 @@ const handleCommandBarMouseLeave = () => {
 const { paletteColor } = usePaletteColor();
 
 const changeColor = (color: string) => {
-    if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
-        selectedConfig.value.fill = color;
+    if (canvasStore.selectedConfig && isMwTextConfig(canvasStore.selectedConfig)) {
+        canvasStore.selectedConfig.fill = color;
     }
     hidePanel('palette');
 }
@@ -57,21 +55,21 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
 >
     <div v-show="debug" class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
         <div class="bg-black fixed w-[300px] h-[80vh] top-0 right-0 bottom-0 text-lg leading-8 overflow-auto">
-            <textarea :value="JSON.stringify(wall, null, 4)" class="text-black w-full h-full"></textarea>
+            <textarea :value="JSON.stringify(canvasStore.wall, null, 4)" class="text-black w-full h-full"></textarea>
         </div>
         <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
             <div class="py-2 flex flex-col gap-2">
-                <span>x: {{ selectedConfig?.x }} | y: {{ selectedConfig?.y }}</span>
-                <span>StageX{{ stageRef?.getStage()?.x() }} | StageY: {{ stageRef?.getStage()?.y() }}</span>
+                <span>Name: {{ canvasStore.selectedConfig?.name }} | x: {{ canvasStore.selectedConfig?.x }} | y: {{ canvasStore.selectedConfig?.y }}</span>
+                <span>StageX{{ canvasStore.stageRef?.getStage()?.x() }} | StageY: {{ canvasStore.stageRef?.getStage()?.y() }}</span>
             </div>
-            <div v-for="confValue,confName in selectedConfig" class="p-1 border border-gray-200 py-1">
+            <div v-for="confValue,confName in canvasStore.selectedConfig" class="p-1 border border-gray-200 py-1">
                 <div class="h-12">
                     {{ confName }} => {{ confValue }}
                 </div>
             </div>
         </div>
         <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
-            <div v-for="g in wall">
+            <div v-for="g in canvasStore.wall">
                 <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
                     {{ sName }} => {{ sValue }}
                 </div>
@@ -91,7 +89,7 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                 <i class="fas fa-images text-2xl"></i>
             </button>
             <div
-                v-show="isGalleryVisible"
+                v-show="galleryStore.isGalleryVisible"
                 class="absolute top-full left-0 bg-white z-20 p-2"
                 @mouseleave.prevent="galleryStore.hideImageGallery"
             >
@@ -110,7 +108,7 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                 <i class="fas fa-images text-2xl text-black"></i>
             </button>
             <div
-                v-show="isBankGalleryVisible"
+                v-show="galleryStore.isBankGalleryVisible"
                 class="absolute top-full left-0 transform z-20 w-full h-[80vh]"
                 @mouseleave.prevent="galleryStore.hideBankImageGallery"
             >
@@ -210,7 +208,7 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
         </button>
         -->
 
-        <div v-show="isMwTextConfig(selectedConfig)" class="flex items-center gap-2">
+        <div v-show="isMwTextConfig(canvasStore.selectedConfig)" class="flex items-center gap-2">
             <!-- SETTING: color palette -->
             <div class="flex items-center">
                 <button class="btn btn-icon btn-xs btn-icon--flat btn-icon--xs"
@@ -226,7 +224,7 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                 ></tw-menubar-palette-color>
             </div>
             <!-- SETTING: text size -->
-            <div class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+            <div v-show="isMwTextConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
                 <tw-action-text></tw-action-text>
             </div>
         </div>
@@ -244,9 +242,9 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
     <div class="mindwall-debug flex items-center gap-2 max-w-[100px] overflow-x-auto">
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Editing: {{ textEditStore.editing }}</div>
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Ready: {{ appStore.isReady }}</div>
-        <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ selectedConfig?.draggable }})</div>
+        <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ canvasStore.selectedConfig?.draggable }})</div>
     </div>
-    <i :class="['fas', selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
+    <i :class="['fas', canvasStore.selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
     <h2 class="text-3xl capitalize font-black ml-auto mr-5">{{ widgetStore.usedEngine?.name }}</h2>
 </div>
 </template>
