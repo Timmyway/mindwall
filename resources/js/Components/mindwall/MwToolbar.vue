@@ -8,6 +8,7 @@ import { useCanvasStore } from '@/store/canvasStore';
 import { useImageGalleryStore } from '@/store/imageGalleryStore';
 import { useTextEditStore } from '@/store/textEditStore';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
+import { useAudioStore } from '@/store/audioStore';
 import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 import TwImageGallery from '../media/TwImageGallery.vue';
@@ -24,6 +25,7 @@ const operationStore = useCanvasOperationsStore();
 const appStore = useAppStore();
 const widgetStore = useWidgetSettingStore();
 const textEditStore = useTextEditStore();
+const audioStore = useAudioStore();
 
 const { isGalleryVisible, isBankGalleryVisible } = storeToRefs(galleryStore);
 const { isMwTextConfig } = useCanvasConditions();
@@ -48,6 +50,14 @@ const changeColor = (color: string) => {
 
 /* RELATED TO ACTION PANEL */
 const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
+
+const handleChangeLanguage = () => {
+    const language = appStore.languages.find(lang => widgetStore.usedLanguage === lang.name);
+    if (language) {
+        console.log('-- 850 -> Handle change language...', language.code);
+        audioStore.setVoiceLanguage(language.code);
+    }
+}
 </script>
 
 <template>
@@ -176,6 +186,7 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                 option-value="name"
                 placeholder="Language"
                 class="w-full max-[120px]"
+                @change="handleChangeLanguage"
             ></Dropdown>
             <div class="flex items-center gap-4 w-[150px]">
                 <button
@@ -193,11 +204,11 @@ const { viewPanel, showPanel, hidePanel, togglePanel } = useActionPanel();
                     <i class="fas fa-robot text-orange-600 text-xl"></i>
                 </button>
                 <button
-                    v-show="!widgetStore.isLoading.aiGenerateText"
+                    v-show="isMwTextConfig(selectedConfig) && !audioStore.isReading"
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                    @click.prevent="aiImageExplain('hot')"
+                    @click.prevent="audioStore.readText()"
                 >
-                    <i class="fas fa-camera text-black"></i>
+                    <i class="fas fa-volume-up text-black"></i>
                 </button>
             </div>
         </div>

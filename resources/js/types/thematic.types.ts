@@ -30,5 +30,6 @@ export interface Engine {
 export interface Language {
     id: number;
     name: string;
+    code?: string;
     flag?: string;
 }
