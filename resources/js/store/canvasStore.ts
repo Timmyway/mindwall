@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { Ref, ref, computed, reactive } from 'vue';
+import { Ref, ref, computed, reactive, nextTick } from 'vue';
 import useZoom from '../composable/useZoom';
 import { debounce, remove } from "lodash";
 import { KonvaEventObject, Node, NodeConfig } from "konva/lib/Node";
@@ -9,6 +9,7 @@ import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { Transformer } from "konva/lib/shapes/Transformer";
 import { LayerInfo, MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwShapeConfig, MwTextConfig, WallConfig } from "@/types/konva.config";
 import { useCanvasOperationsStore } from "./canvasOperationsStore";
+import { LayerConfig } from "konva/lib/Layer";
 
 export const useCanvasStore = defineStore('canvas', () => {
     // Todo: not working when using typescript
@@ -33,12 +34,14 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const addSelectedItem = (item: MwNode | null) => {
         if (item && !selectedItems.value.some(i => i.id === item.id)) {
+            console.log('-- 487 -> Add selected item: ', item);
             selectedItems.value.push(item);
         }
     };
 
     const removeSelectedItem = (item: MwNode | null) => {
         if (item && selectedItems.value.some(i => i.id === item.id)) {
+            console.log('-- 488 -> Remove selected item: ', item);
             selectedItems.value = selectedItems.value.filter(i => i.id !== item.id);
         }
     };
@@ -48,7 +51,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     };
 
     const resetZoomLevel: () => void = () => {
-        console.log('==> Reset');
         // Check if the Stage ref is available
         if (stageRef.value) {
             // Reset scale, position and zoom level
@@ -64,28 +66,23 @@ export const useCanvasStore = defineStore('canvas', () => {
     const setZoomLevel: (mode?: '+' | '-') => void = (mode = '+') => {
         // Check if the Stage ref is available
         if (stageRef.value) {
-            console.log('=====> StageRef value: ', stageRef.value)
             // Get the current zoom level
             const currentZoom = zoomLevel.value;
 
             // Two mode are supported: + and -
             if (mode === '-') {
-                console.log('Zoom --')
                 if ((zoomLevel.value < maxScale) && (zoomLevel.value > minScale)) {
                     zoomLevel.value = currentZoom - scaleBy;
                     // Update the scale
-                    console.log('====> Current zoom', currentZoom);
                     stageRef.value.getStage().scale({ x: zoomLevel.value / 100, y: zoomLevel.value / 100 });
 
                     // Redraw the Stage
                     stageRef.value.getStage().batchDraw();
                 }
             } else {
-                console.log('Zoom ++')
                 if (zoomLevel.value > minScale && (zoomLevel.value < maxScale)) {
                     zoomLevel.value = currentZoom + scaleBy;
                     // Update the scale
-                    console.log('====> Current zoom', currentZoom);
                     stageRef.value.getStage().scale({ x: zoomLevel.value / 100, y: zoomLevel.value / 100 });
 
                     // Redraw the Stage
@@ -145,43 +142,100 @@ export const useCanvasStore = defineStore('canvas', () => {
         return null; // Return null if not found at any level
     }
 
-    const selectedConfig = computed<MwTextConfig | MwImageConfig | MwGroupConfig | null>(() => {
-        if (selectedConfigName.value && wall.value.layers) {
+    const selectedConfig = ref<MwTextConfig | MwImageConfig | MwGroupConfig | null>(null);
+
+    const findParentGroup = (config: MwNode) => {
+        if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
-                console.log('==============> SELECTED CONFIG NAME: ', selectedConfigName.value);
-                const foundConfig = findConfig(layer, selectedConfigName.value);
-                console.log('-- 82 -> FOUND CONFIG NAME: ', foundConfig?.name);
+                if (config.parent) {
+                    const parentConfig = findConfig(layer, config.parent);
+                    if (parentConfig?.is === 'group') {
+                        return parentConfig;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    const getSelectedConfig = (config: MwNode): MwNode | null => {
+        if (config?.name && wall.value.layers) {
+            for (const layer of wall.value.layers) {
+                const foundConfig = findConfig(layer, config.name);
 
                 if (foundConfig) {
                     // Check if the found config is part of a group
+                    console.log('============> FOUND config: ', foundConfig)
                     if (foundConfig.parent) {
                         const groupConfig = findConfig(layer, foundConfig.parent);
 
-                        if (groupConfig && groupConfig.is === 'group') {
+                        if (isMwGroupConfig(groupConfig)) {
+                            console.log('============> Element has a group as parent')
                             if (ctrlPressed.value) {
                                 // If Ctrl is pressed, find the item inside the group and select it
-                                const selectedItem = groupConfig.items.find(item => item.id === selectedConfigName.value);
+                                const selectedItem = groupConfig.items.find(item => item.id === config.name);
                                 if (selectedItem) {
+                                    console.log('--------> Selected item: ', selectedItem);
                                     clearSelectedItems();
                                     addSelectedItem(selectedItem);
-                                    return selectedItem as MwTextConfig | MwImageConfig; // Return the selected item
+                                    selectedConfig.value = selectedItem as MwTextConfig | MwImageConfig; // Return the selected item
                                 }
                             } else {
                                 // If Ctrl is not pressed, select the entire group
                                 clearSelectedItems();
+                                console.log('===========> FOUND elements in group: ', groupConfig.items)
                                 groupConfig.items.forEach((item: MwNode) => {
                                     addSelectedItem(item);
+                                    console.log('--------------> Group item: ', item.value)
                                 });
-                                return groupConfig as MwGroupConfig; // Return the group configuration
+                                selectedConfig.value = groupConfig as MwGroupConfig; // Return the group configuration
                             }
                         }
                     }
-                    return foundConfig as MwTextConfig | MwImageConfig; // Return the item itself
+                    selectedConfig.value = foundConfig as MwTextConfig | MwImageConfig; // Return the item itself
                 }
             }
         }
         return null; // Return null if no config is found
-    });
+    }
+
+    const setSelectedConfig = (newConfig: Partial<MwTextConfig> | Partial<MwImageConfig> | Partial<MwGroupConfig> | null) => {
+        // if (selectedConfig.value?.name && wall.value.layers && newConfig) {
+        //     for (const layer of wall.value.layers) {
+        //         const foundConfig = findConfig(layer, selectedConfig.value?.name);
+
+        //         if (foundConfig) {
+        //             // Check if the found config is part of a group
+        //             if (foundConfig.parent) {
+        //                 const groupConfig = findConfig(layer, foundConfig.parent);
+
+        //                 if (isMwGroupConfig(groupConfig)) {
+        //                     if (ctrlPressed.value) {
+        //                         // If Ctrl is pressed, update the selected item inside the group
+        //                         const selectedItem = groupConfig.items.find(item => item.id === selectedConfig.value?.name);
+        //                         if (selectedItem) {
+        //                             Object.assign(selectedItem, newConfig);
+        //                             console.log('--------> Updated selected item: ', selectedItem);
+        //                         }
+        //                     } else {
+        //                         // If Ctrl is not pressed, update the entire group
+        //                         Object.assign(groupConfig, newConfig);
+        //                         console.log('--------> Updated group config: ', groupConfig);
+        //                     }
+        //                 }
+        //             } else {
+        //                 // Update the config if it's not part of a group
+        //                 Object.assign(foundConfig, newConfig);
+        //                 console.log('--------> Updated config: ', foundConfig);
+        //             }
+        //             break;
+        //         }
+        //     }
+        // }
+        if (selectedConfig.value) {
+            Object.assign(selectedConfig.value, newConfig);
+        }
+    }
 
     const { isMwImageConfig, isMwTextConfig } = useCanvasConditions();
 
@@ -189,7 +243,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         if (isMwTextConfig(selectedConfig.value)) {
             const text = selectedConfig.value.text;
             // Replace multiple consecutive newline characters with a single newline
-            selectedConfig.value.text = text.replace(/\n\s*\n/g, '\n').trim();
+            setSelectedConfig({ text: text.replace(/\n\s*\n/g, '\n').trim() });
         }
     }
 
@@ -206,16 +260,16 @@ export const useCanvasStore = defineStore('canvas', () => {
             // Get the current scale of the stage
             const scaleX = stage.scaleX();
             const scaleY = stage.scaleY();
-            console.log('===> Stage scale x/y: ', scaleX, scaleY);
-            console.log('===> Stage w/h: ', stage.width(), stage.height());
-            console.log('===> Element x/y: ', elementX, elementY);
+            // console.log('===> Stage scale x/y: ', scaleX, scaleY);
+            // console.log('===> Stage w/h: ', stage.width(), stage.height());
+            // console.log('===> Element x/y: ', elementX, elementY);
 
             // Calculate the new position of the stage to center the element
             let newX = stage.width() / 2 - (elementX * scaleX);
             let newY = stage.height() / 2 - (elementY * scaleY);
 
-            console.log('===> Center on element: ', newX, newY);
-            console.log('====> Selected element: ', selectedConfig.value);
+            // console.log('===> Center on element: ', newX, newY);
+            // console.log('====> Selected element: ', selectedConfig.value);
 
             // Set the new position of the stage
             stageRef.value.getStage().scale({ x: 1, y: 1 });
@@ -237,11 +291,14 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     }
 
-    const selectConfig = (configName: string, layerInfo: LayerInfo) => {
-        console.log('-- 562 -> Select config name: ', configName);
-        console.log('-- 563 -> Select config from layer: ', layerInfo);
-        console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
-        selectedConfigName.value = configName;
+    const selectConfig = (config: MwNode | null, layerInfo: LayerInfo) => {
+        // console.log('-- 562 -> Select config name: ', configName);
+        // console.log('-- 563 -> Select config from layer: ', layerInfo);
+        // console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
+        // selectedConfigName.value = config?.name;
+        getSelectedConfig(config);
+        // console.log('-- 9999 -> Current config: ', currentConfig);
+        // selectedConfig.value = config;
         selectedLayerInfo.value = layerInfo;
     };
 
@@ -250,20 +307,21 @@ export const useCanvasStore = defineStore('canvas', () => {
 
         if (selectedItems) {
             clearSelectedItems();
-            console.log('-- 77 -> Items cleared')
+            // console.log('-- 77 -> Items cleared')
         }
 
         if (configName) {
             selectedConfigName.value = '';
-            console.log('-- 78 -> Config name cleared')
+            selectedConfig.value = null;
+            // console.log('-- 78 -> Config name cleared')
         }
 
         if (layerInfo) {
             selectedLayerInfo.value = null;
-            console.log('-- 79 -> Layer info cleared')
+            // console.log('-- 79 -> Layer info cleared')
         }
 
-        console.log('======================= SGN > Selected config name: ', selectedConfigName.value)
+        // console.log('-- 80 -> Selected config name: ', selectedConfigName.value)
     };
 
 
@@ -281,20 +339,20 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
 
     const resetWall = (): void => {
-        console.log('-- 998 -> Reset wall');
+        // console.log('-- 998 -> Reset wall');
 
         resetConfig();
         // Use the WallConfig type to reset the wall
         wall.value = { layers: [] } as WallConfig;
         canvasOperations.addLayer();
 
-        console.log('====> Wall value after reset: ', wall.value)
+        // console.log('====> Wall value after reset: ', wall.value)
     }
 
     const updateTransformer = () => {
         if (!selectedLayerInfo.value) {
-            console.log('-- 464 -> Transformer: ', transformer.value);
-            console.log('-- 465 -> Selected config: ', selectedConfig.value);
+            // console.log('-- 464 -> Transformer: ', transformer.value);
+            // console.log('-- 465 -> Selected config: ', selectedConfig.value);
             return;
         }
 
@@ -302,7 +360,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         const transformerNode = transformerInstance.getNode() as Transformer;
 
         if (!stageRef.value) {
-            console.error('Stage reference is not available.');
+            // console.error('Stage reference is not available.');
             return;
         }
 
@@ -313,9 +371,9 @@ export const useCanvasStore = defineStore('canvas', () => {
             .map(item => stage.findOne(`#${item.name}`)) // Find nodes by ID
             .filter((node): node is Node => node !== undefined); // Type guard to filter out undefined nodes
 
-        console.log('-- 466 -> Selected nodes: ', selectedNodes);
+        // console.log('-- 466 -> Selected nodes: ', selectedNodes);
         if (selectedNodes.length === 0) {
-            console.log('No nodes selected or nodes not found.');
+            // console.log('No nodes selected or nodes not found.');
             transformerNode.nodes([]);
             return;
         }
@@ -332,7 +390,7 @@ export const useCanvasStore = defineStore('canvas', () => {
 
         // Attach the transformer to the selected nodes
         transformerNode.nodes(selectedNodes);
-        console.log('Transformer attached to nodes:', selectedNodes.map(node => node.name()));
+        // console.log('Transformer attached to nodes:', selectedNodes.map(node => node.name()));
     };
 
     const syncPosition = (itemId: string, x: number, y: number) => {
@@ -349,6 +407,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
         addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
-        ctrlPressed,
+        ctrlPressed, setSelectedConfig, findParentGroup,
     }
 });

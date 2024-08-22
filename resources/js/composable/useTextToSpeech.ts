@@ -38,6 +38,8 @@ export function useTextToSpeech(lang = 'en') {
     const speak = () => {
         if (!speechSynthesis || !selectedVoice.value || !textToSpeak.value) return;
         isReading.value = true;
+        console.log(`-- 667 -> Going to speak in "${voiceLanguage.value }"`);
+        console.log(`-- 668 -> Read text: "${textToSpeak.value }"`);
 
         const utterance = new SpeechSynthesisUtterance(textToSpeak.value);
         utterance.voice = selectedVoice.value;
@@ -58,6 +60,7 @@ export function useTextToSpeech(lang = 'en') {
         };
 
         speechSynthesis.value.speak(utterance);
+        console.log('-------------> After speaking...')
         isReading.value = false;
     };
 

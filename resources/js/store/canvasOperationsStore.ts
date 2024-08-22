@@ -18,75 +18,109 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const { calcOptimizedImageDimension, resizeImage } = useImageUtility();
     const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwLayerConfig } = useCanvasConditions();
 
-    const addImageToWall = (src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png') => {
-        let groupName: string;
-
-        // Determine the group name
-        if (selectedGroupName.value) {
-            groupName = selectedGroupName.value;
+    const addImageToWall = (
+        src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png'
+    ) => {
+        // Determine parent ID based on selectedLayerInfo or selectedConfig
+        let parentId = '';
+        let selectedConfigGroup = null;
+        if (canvasStore.selectedConfig) {
+            selectedConfigGroup = canvasStore.findParentGroup(canvasStore.selectedConfig);
+        }
+        console.log('==============> Selected config group: ', selectedConfigGroup)
+        if (!isMwGroupConfig(selectedConfigGroup)) {
+            if (!canvasStore.selectedLayerInfo) {
+                // Add to the first layer if no layer is selected
+                console.log('-- 540 -> Add to the first layer');
+                if (canvasStore.wall.layers[0]?.id) {
+                    parentId = canvasStore.wall.layers[0].id;
+                }
+            } else {
+                // Add to the selected item's layer
+                parentId = canvasStore.selectedLayerInfo.id;
+                console.log('-- 541 -> Add to selected layer');
+            }
         } else {
-            groupName = addGroup();
+            // Add to the selected group
+            console.log('-- 542 -> Add to selected group', selectedConfigGroup);
+            parentId = selectedConfigGroup.id ?? '';
         }
 
-        const imageIdentifier = `${groupName}-image-${getNanoid()}`;
+        console.log('-- 543 -> PID: ', parentId);
+
+        // Generate unique identifier for the image
+        const imageIdentifier = `image-${getNanoid()}`;
+
+        // Estimate position for the new image
+        let estimateX = canvasStore.center.x - 50;
+        let estimateY = canvasStore.center.y - 50;
+        if (canvasStore.selectedConfig) {
+            estimateX = canvasStore.selectedConfig.x ?? canvasStore.center.x - 50;
+            estimateY = canvasStore.selectedConfig.y ?? canvasStore.center.y - 50;
+        }
+
         const newMwImageConfig: MwImageConfig = {
             id: imageIdentifier,
             name: imageIdentifier,
+            parent: parentId,
             is: 'image',
+            x: estimateX,
+            y: estimateY,
             width: 100,
             height: 100,
-            x: canvasStore.selectedConfig?.x ?? 0,
-            y: canvasStore.selectedConfig?.y ?? 0,
-            draggable: true
+            draggable: true,
         };
 
-        if (typeof src === 'string') {
-            // Handle loading an image from a URL
-            const im = new window.Image();
-            im.src = src;
-            im.onload = () => {
-                const { w, h } = calcOptimizedImageDimension(im);
-                newMwImageConfig.width = w;
-                newMwImageConfig.height = h;
-                newMwImageConfig.image = im;
+        // Find the layer or group where we need to add the image
+        const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
+            findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
-                // Ensure the layer exists before adding the image
-                if (canvasStore.wall.layers && canvasStore.wall.layers[groupName]) {
-                    canvasStore.wall.layers[groupName].items![imageIdentifier] = newMwImageConfig;
-                }
+        console.log('-- 547 -> Parent: ', parent);
+        if (parent && 'items' in parent) {
+            // Ensure items is defined before pushing
+            if (!parent.items) {
+                parent.items = []; // Initialize items if it's undefined
             }
-            im.onerror = () => {
-                console.error(`Failed to load image from URL: ${src}`);
-            };
-        } else {
-            // Handle loading an image from a File object
-            const reader = new FileReader();
-            reader.onload = (event) => {
+
+            // Handle image loading
+            if (typeof src === 'string') {
                 const im = new window.Image();
-                im.src = event.target?.result as string;
+                im.src = src;
                 im.onload = () => {
                     const { w, h } = calcOptimizedImageDimension(im);
                     newMwImageConfig.width = w;
                     newMwImageConfig.height = h;
                     newMwImageConfig.image = im;
 
-                    // Resize the image if necessary
-                    const resizedImage = resizeImage(im, w, h); // Ensure this function is implemented
-                    newMwImageConfig.image = resizedImage;
-
-                    // Ensure the layer exists before adding the image
-                    if (canvasStore.wall.layers && canvasStore.wall.layers[groupName]) {
-                        canvasStore.wall.layers[groupName].items![imageIdentifier] = newMwImageConfig;
-                    }
-                }
-                im.onerror = () => {
-                    console.error('Failed to load image from file.');
+                    parent.items.push(newMwImageConfig);
                 };
-            };
-            reader.readAsDataURL(src);
+                im.onerror = () => {
+                    console.error(`Failed to load image from URL: ${src}`);
+                };
+            } else {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const im = new window.Image();
+                    im.src = event.target?.result as string;
+                    im.onload = () => {
+                        const { w, h } = calcOptimizedImageDimension(im);
+                        newMwImageConfig.width = w;
+                        newMwImageConfig.height = h;
+                        newMwImageConfig.image = im;
+
+                        parent.items.push(newMwImageConfig);
+                    };
+                    im.onerror = () => {
+                        console.error('Failed to load image from file.');
+                    };
+                };
+                reader.readAsDataURL(src);
+            }
+        } else {
+            console.error(`Parent with ID ${parentId} not found`);
         }
 
-        galleryStore.hideBankImageGallery(); // Ensure galleryStore is properly imported and used
+        galleryStore.hideBankImageGallery();
     };
 
     const removeConfig = (groupName: string, configName: string) => {
@@ -217,8 +251,8 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                     return;
                 }
             }
-            console.log('===> Detail: ');
             if (thematicName) {
+                console.log('-- 570 -> Thematic found: ', thematicName);
                 // Back up the initial group to which the generated text belongs
                 const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
                 // const generatedText = await parseTextFromMarkDown(response.data.generatedText);
@@ -227,6 +261,8 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 addTextToWall(generatedText);
                 widgetStore.isLoading.aiGenerateText = false;
             } else {
+                console.warn('-- 570 -> No thematic found');
+                console.warn('-- 571 -> Config: ', canvasStore.selectedConfig);
                 widgetStore.isLoading.aiGenerateText = false;
             }
         } catch (error) {
@@ -271,7 +307,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             parentId = canvasStore.selectedConfig.id ?? '';
         }
 
-        console.log('------------> PID: ', parentId)
+        console.log('-- 543 -> PID: ', parentId)
 
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;
@@ -309,7 +345,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
             findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
-        console.log('==================> ppppppppp', parent)
+        console.log('-- 547 -> Parent: ', parent)
         if (parent && 'items' in parent) {
             // Ensure items is defined before pushing
             if (!parent.items) {

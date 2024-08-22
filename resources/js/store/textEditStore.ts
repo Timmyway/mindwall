@@ -33,11 +33,13 @@ export const useTextEditStore = defineStore('textEdit', () => {
     });
 
     const enterEditMode = (e: Event) => {
+        if (!isMwTextConfig(selectedConfig.value)) {
+            console.log('-- 966 -> Abord editing...', selectedConfig.value?.is)
+            return;
+        }
         const textNode = e.target as Text | null;
 
-        if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
-            selectedConfig.value.visible = false;
-        }
+        canvaStore.setSelectedConfig({ visible: false });
         // hide text node and transformer:
         if (selectedLayerInfo.value) {
             transformer.value[selectedLayerInfo.value.index].getNode().hide();
@@ -112,7 +114,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
         if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
             // selectedConfig.value.fontSize = 20;
             // selectedConfig.value.fontFamily = 'Monospace';
-            selectedConfig.value.rotation = 0;
+            canvaStore.setSelectedConfig({ rotation: 0 });
         }
         if (e.key === 'Enter') {
             console.log('-- 270 -> Enter key pressed from edit textarea');
@@ -135,7 +137,9 @@ export const useTextEditStore = defineStore('textEdit', () => {
         if (selectedConfig.value) {
             if (isMwTextConfig(selectedConfig.value)) {
                 console.log('-- 100 -> Exit mode - is Text');
-                selectedConfig.value.text = editedQuoteText.value.trim();
+                console.log('--------------> Bef: ', editedQuoteText.value.trim());
+                canvaStore.setSelectedConfig({ text: editedQuoteText.value.trim() });
+                console.log('--------------> Aft: ', selectedConfig.value);
                 restoreTextAndTransformer();
                 restoreLastEditedText();
                 editing.value = false; // Exit edit mode
@@ -156,7 +160,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
     const backupLastEditedText = () => {
         console.log('-- 80 -> Backup last edited text')
         if (selectedConfig.value && lastEditedText.value && isMwTextConfig(selectedConfig.value)) {
-            lastEditedText.value.config = selectedConfigName.value ?? '';
+            lastEditedText.value.config = selectedConfig.value.name ?? '';
         }
         console.log('-- 70 -> Last edited text backed up');
     }
@@ -165,7 +169,9 @@ export const useTextEditStore = defineStore('textEdit', () => {
         console.log('-- 80 -> Restoring last backup')
         if (lastEditedText.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
             console.log('--> 89 -> Restoring backup from the same Text is not allowed')
-            selectedConfigName.value = lastEditedText.value.config;
+            if (selectedConfig.value) {
+                selectedConfig.value.name = lastEditedText.value.config;
+            }
             lastEditedText.value = { group: '', config: '' };
         }
     };
@@ -173,7 +179,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
     const restoreTextAndTransformer = () => {
         // Restore text node and transformer
         if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
-            selectedConfig.value.visible = true;
+            canvaStore.setSelectedConfig({ visible: true });
             if (selectedLayerInfo.value) {
                 transformer.value[selectedLayerInfo.value.index].getNode().show();
             }

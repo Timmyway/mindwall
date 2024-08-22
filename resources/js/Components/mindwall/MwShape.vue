@@ -14,8 +14,6 @@ const canvasStore = useCanvasStore();
 const textEditStore = useTextEditStore();
 const canvasEventsStore = useCanvasEventsStore();
 
-const { handleTextClick, handleTextMouseDown, onDragend, handleTransform, handleTransformEnd } = canvasEventsStore;
-
 const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
 </script>
 
@@ -24,18 +22,18 @@ const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
     v-if="isMwTextConfig(config)"
     :config="config"
     @dblclick="textEditStore.enterEditMode"
-    @click="handleTextClick($event, config)"
-    @mousedown="handleTextMouseDown($event, config.name ?? '', layerInfo)"
-    @dragend="onDragend"
-    @transform="handleTransform"
-    @transformend="handleTransformEnd"
+    @click="canvasEventsStore.handleTextClick($event, config)"
+    @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+    @dragend="canvasEventsStore.onDragend"
+    @transform="canvasEventsStore.handleTransform"
+    @transformend="canvasEventsStore.handleTransformEnd"
 ></v-text>
 <template v-if="isMwImageConfig(config)">
     <v-image
         :config="config"
-        @mousedown="canvasStore.selectConfig(config.name ?? '', layerInfo)"
-        @dragend="onDragend"
-        @transformend="handleTransformEnd"
+        @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+        @dragend="canvasEventsStore.onDragend"
+        @transformend="canvasEventsStore.handleTransformEnd"
     />
 </template>
 </template>

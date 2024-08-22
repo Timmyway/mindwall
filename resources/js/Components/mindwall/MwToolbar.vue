@@ -202,7 +202,7 @@ const handleChangeLanguage = () => {
                     <i class="fas fa-robot text-orange-600 text-xl"></i>
                 </button>
                 <button
-                    v-show="isMwTextConfig(selectedConfig) && !audioStore.isReading"
+                    v-show="isMwTextConfig(canvasStore.selectedConfig) && !audioStore.isReading"
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
                     @click.prevent="audioStore.readText()"
                 >

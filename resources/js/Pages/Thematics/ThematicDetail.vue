@@ -110,13 +110,14 @@ const transformV = ref([]);
         <template>
             <v-layer v-for="(layer, layerIndex) in canvaStore.wall.layers" :key="layer.id">
                 <v-transformer ref="transformer" :config="canvasConfigStore.transformerConfig" />
-                <v-text :config="{ fill: '#ff0000', fontSize: 27, x: 0, y: 0, width: 320, height: 240, text: `=============> ${JSON.stringify(layerIndex)}` }"></v-text>
                 <template>
+                    <!--
                     <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
                         <v-group :config="canvasConfigStore.groupConfig">
                             <v-text :config="canvasConfigStore.textConfig"></v-text>
                         </v-group>
                     </div>
+                    -->
                     <div v-for="(layerItemConfig, layerItemIndex) in layer?.items" :key="layerItemConfig.id">
                         <mw-layer-item :config="layerItemConfig" :layer-info="{ id: layer.id ?? '', index: layerIndex }"></mw-layer-item>
                     </div>

@@ -39,7 +39,7 @@ export default function useTextSetting() {
     }
 
     const setFontFamily = (newValue: string) => {
-        console.log('===========> New FF', newValue)
+        // console.log('-- 003 -> New FF', newValue)
         fontFamily.value = newValue ?? defaultSetting.fontFamily;
     }
 

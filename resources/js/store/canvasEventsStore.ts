@@ -14,7 +14,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const commandBarStore = useCommandBarStore();
     const editTextStore = useTextEditStore();
 
-    const { isMwTextConfig, isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
+    const { isMwTextConfig, isMwImageConfig, isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
     // Store refs
     const { stageRef, selectedConfig } = storeToRefs(canvasStore);
     const { editing, lastEditedText } = storeToRefs(editTextStore);
@@ -22,6 +22,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const handleTransform = (e: any) => {
         if (e.target) {
             const textNode = e.target;
+
             textNode.setAttrs({
                 width: Math.max(textNode.width() * textNode.scaleX(), MIN_WIDTH),
                 scaleX: 1,
@@ -32,37 +33,48 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
 
     const handleTransformEnd = (e: any) => {
         // shape is transformed, let us save new attrs back to the node
-        console.log('============> Tranform has ended');
+        // console.log('-- 469 -> Tranform has ended');
+        console.log('---------> Transforme end: ', selectedConfig.value)
         if (selectedConfig.value) {
-            // update the state
-            selectedConfig.value.x = e.target.x();
-            selectedConfig.value.y = e.target.y();
-            selectedConfig.value.rotation = e.target.rotation();
-            selectedConfig.value.scaleX = e.target.scaleX();
-            selectedConfig.value.scaleY = e.target.scaleY();
-            if (isMwTextConfig(selectedConfig.value)) {
-                selectedConfig.value.width = e.target.width();
+            // update the selected config
+            const newConfig: {
+                x: number,
+                y: number,
+                rotation: number,
+                scaleX: number,
+                scaleY: number,
+                width?: number
+            } = {
+                x: e.target.x(),
+                y: e.target.y(),
+                rotation: e.target.rotation(),
+                scaleX: e.target.scaleX(),
+                scaleY: e.target.scaleY(),
             }
+            if (isMwTextConfig(selectedConfig.value)) {
+                newConfig.width = e.target.width();
+            }
+            canvasStore.setSelectedConfig(newConfig);
         }
     }
 
     const handleStageMouseDown = (e: any) => {
         // clicked on stage - clear selection
         if (e.target === e.target.getStage()) {
-            console.log('==> Clicked on stage...');
+            console.log('-- 001 -> Clicked on stage...');
             if (editing.value) {
                 editTextStore.exitEditMode();
             }
             canvasStore.resetConfig({ layerInfo: false });
             canvasStore.updateTransformer();
-            console.log('-- 60 -> Config reseted because staged was clicked');
             return;
         } else {
-            console.log('CLicked element ==> ', e.target.name());
-            console.log('-- 61 -> Editing value: ', editing.value);
-            console.log('-- 62 -> Selected config name: ', selectedConfig.value?.name);
-            console.log('-- 63 -> Last edited config: ', lastEditedText.value.config);
-            console.log(`-- 64 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
+            console.log(`-- 002 -> Clicked other than stage: ${e.target.name()} (${e.target.getType()})`);
+            console.log(`-- 003 -> Selected config name: ${canvasStore.selectedConfigName}`);
+            // console.log('-- 61 -> Editing value: ', editing.value);
+            // console.log('-- 62 -> Selected config name: ', selectedConfig.value?.name);
+            // console.log('-- 63 -> Last edited config: ', lastEditedText.value.config);
+            // console.log(`-- 64 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
             // if (editing.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
             //     console.log('-- 65 -> Should exit...')
             //     exitEditMode();
@@ -85,14 +97,14 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
         e.evt.preventDefault();
         if (stageRef.value) {
             if (e.target === stageRef.value.getStage()) {
-                console.log('===> We are on an empty place of the stage');
+                // console.log('===> We are on an empty place of the stage');
                 return;
             }
         }
         if (canvasStore.menu) {
             canvasStore.menu.show(e.evt);
             const currentShape = e.target;
-            console.log('===> Current shape: ', currentShape);
+            // console.log('===> Current shape: ', currentShape);
         }
     }
 
@@ -118,14 +130,14 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleTextBlur = () => {
-        console.log('-- 850 -> Text shape has losen focus');
+        // console.log('-- 850 -> Text shape has losen focus');
         // if (selectedConfig.value) {
         //     selectedConfig.value.draggable = false;
         // }
     }
 
-    const handleTextMouseDown = (e: any, configName: string, layerInfo: LayerInfo) => {
-        canvasStore.selectConfig(configName, layerInfo);
+    const handleShapeMouseDown = (e: any, config: MwNode, layerInfo: LayerInfo) => {
+        canvasStore.selectConfig(config, layerInfo);
 
         const ctrl = e.evt.ctrlKey || e.evt.metaKey;
 
@@ -139,6 +151,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                     // Otherwise, add it to the selection
                     canvasStore.addSelectedItem(canvasStore.selectedConfig);
                 }
+                // console.log('-- 360 -> Verify selected config: ', canvasStore.selectedConfig)
             } else {
                 canvasStore.ctrlPressed = false;
                 // If Ctrl is not held, clear previous selections and select only the clicked item
@@ -148,13 +161,11 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                 }
             }
         }
-        console.log(JSON.stringify(canvasStore.selectedItems));
         canvasStore.updateTransformer();
         // Because each text have their own properties,
         // we need to synchronise with text toolbar values
-        console.log('-- 11 -> Set fontsize & family');
+        // console.log('-- 11 -> Set fontsize & family');
         if (isMwTextConfig(selectedConfig.value)) {
-            console.log('======================> Selected config: ', selectedConfig.value)
             if (selectedConfig.value?.fontSize) {
                 commandBarStore.setFontSize(selectedConfig.value.fontSize);
             }
@@ -162,26 +173,26 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                 commandBarStore.setFontFamily(selectedConfig.value.fontFamily);
             }
             if (typeof selectedConfig.value.align !== 'undefined') {
-                console.log('-- 12 -> Update alignement: ', selectedConfig.value.align)
+                // console.log('-- 12 -> Update alignement: ', selectedConfig.value.align)
                 const align = selectedConfig.value.align as TextAlign; // Type assertion
                 commandBarStore.setTextAlign(align);
             } else {
                 commandBarStore.setTextAlign('left');
             }
-            console.log('-- 13 -> Set fontsize to : ', selectedConfig.value.fontSize);
-            console.log('-- 14 -> Mouse down on text shape');
+            // console.log('-- 13 -> Set fontsize to : ', selectedConfig.value.fontSize);
+            // console.log('-- 14 -> Mouse down on text shape');
         }
     }
 
     const onGroupDragstart = (e: any) => {
-        console.log('-- 750 ->', selectedConfig.value?.is);
-        console.log('-- 751 ->', e.target.getType());
+        // console.log('-- 750 ->', selectedConfig.value?.is);
+        // console.log('-- 751 ->', e.target.getType());
 
         if (e.target) {
             if (e.target.getType() === 'Group') {
                 e.target.opacity(0.5);
-                console.log('-- 300 -> Group draggable: ', e.target.draggable());
-                console.log('--- 301 --> Selected config when group is dragged: ', selectedConfig.value)
+                // console.log('-- 300 -> Group draggable: ', e.target.draggable());
+                // console.log('--- 301 --> Selected config when group is dragged: ', selectedConfig.value)
             }
         }
     }
@@ -189,7 +200,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const handleMouseRelease = () => {
         if (selectedConfig.value) {
             if (isMwTextConfig(selectedConfig.value)) {
-                console.log('-- 122 -> Mouse release');
+                // console.log('-- 122 -> Mouse release');
                 // selectedConfig.value.draggable = false;
             }
         }
@@ -220,7 +231,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
 
     const onDragend = (e: any) => {
         if (e.target) {
-            console.log('-- 308 -> Target: ', e.target.getType());
+            // console.log('-- 308 -> Target: ', e.target.getType());
 
             const targetName = e.target.name();
             const x = e.target.x();
@@ -234,21 +245,21 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
             }
 
             if (e.target.getType() === 'Group') {
-                console.log('-- 309 -> Group selected: ', targetName);
+                // console.log('-- 309 -> Group selected: ', targetName);
                 e.target.opacity(1);
             } else if (isMwTextConfig(selectedConfig.value)) {
                 handleTextBlur();
-            } else if (e.target.constructor.name === '_Image') {
-                console.log('-- 311 -> Synchronize Image positions');
-                const groupName = e.target.getParent().name();
-                const imageName = e.target.name();
-                canvasStore.selectConfig(groupName, imageName, e.evt.ctrl);
-                canvasStore.syncPosition(targetName, x, y);
+            } else if (isMwImageConfig(selectedConfig.value)) {
+                // console.log('-- 311 -> Synchronize Image positions');
+                // const groupName = e.target.getParent().name();
+                // const imageName = e.target.name();
+                // canvasStore.selectConfig(groupName, imageName, e.evt.ctrl);
+                // canvasStore.syncPosition(targetName, x, y);
             }
         }
     };
 
     return { handleStageMouseDown, handleTransformEnd, handleGroupContextMenu, handleTransform,
-        onGroupDragstart, onDragend, handleTextBlur, handleTextClick, handleTextMouseDown
+        onGroupDragstart, onDragend, handleTextBlur, handleTextClick, handleShapeMouseDown,
     }
 });
