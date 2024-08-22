@@ -22,31 +22,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png'
     ) => {
         // Determine parent ID based on selectedLayerInfo or selectedConfig
-        let parentId = '';
-        let selectedConfigGroup = null;
-        if (canvasStore.selectedConfig) {
-            selectedConfigGroup = canvasStore.findParentGroup(canvasStore.selectedConfig);
-        }
-        console.log('==============> Selected config group: ', selectedConfigGroup)
-        if (!isMwGroupConfig(selectedConfigGroup)) {
-            if (!canvasStore.selectedLayerInfo) {
-                // Add to the first layer if no layer is selected
-                console.log('-- 540 -> Add to the first layer');
-                if (canvasStore.wall.layers[0]?.id) {
-                    parentId = canvasStore.wall.layers[0].id;
-                }
-            } else {
-                // Add to the selected item's layer
-                parentId = canvasStore.selectedLayerInfo.id;
-                console.log('-- 541 -> Add to selected layer');
-            }
-        } else {
-            // Add to the selected group
-            console.log('-- 542 -> Add to selected group', selectedConfigGroup);
-            parentId = selectedConfigGroup.id ?? '';
-        }
-
-        console.log('-- 543 -> PID: ', parentId);
+        const parentId = autodetectParentId();
 
         // Generate unique identifier for the image
         const imageIdentifier = `image-${getNanoid()}`;
@@ -281,15 +257,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     }
 
-    const addTextToWall = (
-        text: string = 'Unleash your thoughts!',
-        options: { defaultTextSize: number } = { defaultTextSize: 320 }
-    ) => {
-        const { defaultTextSize } = options;
-
+    const autodetectParentId = () => {
         // Determine parent ID based on groupId or selectedLayerInfo
         let parentId = '';
-        if (!isMwGroupConfig(canvasStore.selectedConfig)) {
+        let selectedConfigGroup = null;
+        if (canvasStore.selectedConfig) {
+            selectedConfigGroup = canvasStore.findParentGroup(canvasStore.selectedConfig);
+        }
+        if (!isMwGroupConfig(selectedConfigGroup)) {
             if (!canvasStore.selectedLayerInfo) {
                 // We add to the first layer
                 console.log('-- 540 -> add to first layer')
@@ -304,10 +279,20 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         } else {
             // We add to a group
             console.log('-- 542 -> add to selected group', canvasStore.selectedConfig)
-            parentId = canvasStore.selectedConfig.id ?? '';
+            parentId = selectedConfigGroup.id ?? '';
         }
 
         console.log('-- 543 -> PID: ', parentId)
+        return parentId;
+    }
+
+    const addTextToWall = (
+        text: string = 'Unleash your thoughts!',
+        options: { defaultTextSize: number } = { defaultTextSize: 320 }
+    ) => {
+        const { defaultTextSize } = options;
+
+        const parentId = autodetectParentId();
 
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;

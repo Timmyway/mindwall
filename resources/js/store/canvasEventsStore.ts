@@ -137,13 +137,16 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleShapeMouseDown = (e: any, config: MwNode, layerInfo: LayerInfo) => {
+        // if (!isMwShapeConfig(canvasStore.selectedConfig)) {
+        //     return;
+        // }
         canvasStore.selectConfig(config, layerInfo);
 
         const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+        const shift = e.evt.shiftKey;
 
-        if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
-            if (ctrl) {
-                canvasStore.ctrlPressed = true;
+        if (isMwShapeConfig(canvasStore.selectedConfig)) {
+            if (shift) {
                 if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
                     // If item is already selected, remove it
                     canvasStore.removeSelectedItem(canvasStore.selectedConfig);
@@ -151,6 +154,16 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                     // Otherwise, add it to the selection
                     canvasStore.addSelectedItem(canvasStore.selectedConfig);
                 }
+            }
+            if (ctrl) {
+                canvasStore.ctrlPressed = true;
+                // if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
+                //     // If item is already selected, remove it
+                //     canvasStore.removeSelectedItem(canvasStore.selectedConfig);
+                // } else {
+                //     // Otherwise, add it to the selection
+                //     canvasStore.addSelectedItem(canvasStore.selectedConfig);
+                // }
                 // console.log('-- 360 -> Verify selected config: ', canvasStore.selectedConfig)
             } else {
                 canvasStore.ctrlPressed = false;

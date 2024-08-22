@@ -173,7 +173,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                             console.log('============> Element has a group as parent')
                             if (ctrlPressed.value) {
                                 // If Ctrl is pressed, find the item inside the group and select it
-                                const selectedItem = groupConfig.items.find(item => item.id === config.name);
+                                const selectedItem = groupConfig.items.find(item => item.id === config.id);
                                 if (selectedItem) {
                                     console.log('--------> Selected item: ', selectedItem);
                                     clearSelectedItems();
