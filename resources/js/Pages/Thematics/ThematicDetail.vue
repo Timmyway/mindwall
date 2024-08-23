@@ -53,6 +53,14 @@ onMounted(() => {
                 operationStore.deleteShape();
             }
         }
+        // Check for the ctrl + shift + g combination for ungrouping
+        if (event.ctrlKey && event.altKey && event.key === 'g') {
+            event.preventDefault(); // Prevent the default action (if any)
+            console.log('-- Event key -> Pressed ctrl + shift + g');
+
+            // Assume you have a way to get the current group ID to ungroup
+            operationStore.ungroupItems(); // Call your ungroup method with the group ID
+        }
         if (event.altKey) {
             event.preventDefault();
             return;

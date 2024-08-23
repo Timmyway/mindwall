@@ -159,6 +159,39 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const selectedConfig = ref<MwTextConfig | MwImageConfig | MwGroupConfig | null>(null);
 
+    const deleteConfig = (config: MwNode) => {
+        // Ensure config has a name and that wall layers exist
+        if (!config?.id || !wall.value.layers) return;
+
+        // Iterate through each layer to find the parent layer of the config
+        for (const layer of wall.value.layers) {
+            // Use findConfig to locate the configuration by its ID
+            const foundConfig = findConfig(layer, config.id);
+
+            if (foundConfig) {
+                // Remove the found config from its parent layer
+                const parentLayer = wall.value.layers.find(l => l.items?.includes(foundConfig)); // Use optional chaining here
+
+                if (parentLayer && parentLayer.items) {
+                    const configIndex = parentLayer.items.findIndex(item => item.id === foundConfig.id);
+                    if (configIndex !== -1) {
+                        parentLayer.items.splice(configIndex, 1);
+                    }
+                }
+
+                console.error('-- Found config...', foundConfig);
+                console.error('-- Parent layer...', parentLayer);
+
+                // Clear the selection and transformer
+                resetConfig( { layerInfo: false });
+                updateTransformer();
+
+                return; // Exit after deleting the config
+            }
+        }
+    };
+
+
     const findParentGroup = (config: MwNode) => {
         if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
@@ -422,6 +455,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         backupShape, restoreShape, selectConfig, resetConfig, resetWall,
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
         addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
-        ctrlPressed, setSelectedConfig, findParentGroup,
+        ctrlPressed, setSelectedConfig, findParentGroup, deleteConfig,
     }
 });

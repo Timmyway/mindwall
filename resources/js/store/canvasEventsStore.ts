@@ -6,6 +6,7 @@ import { useTextEditStore } from "./textEditStore";
 import { useCommandBarStore } from "./commandBarStore";
 import { LayerInfo, MwGroupConfig, MwNode, MwShapeConfig, MwTextConfig } from "@/types/konva.config";
 import { TextAlign } from "@/types/widgetSetting.types";
+import { useSidebarStore } from "./sidebarStore";
 
 export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     var MIN_WIDTH = 20;
@@ -13,6 +14,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const canvasStore = useCanvasStore();
     const commandBarStore = useCommandBarStore();
     const editTextStore = useTextEditStore();
+    const sidebarStore = useSidebarStore();
 
     const { isMwTextConfig, isMwImageConfig, isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
     // Store refs
@@ -148,8 +150,8 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleShapeMouseDown = (e: any, config: MwNode, layerInfo: LayerInfo) => {
-        canvasStore.ctrlPressed = e.evt.ctrlKey || e.evt.metaKey;
-        const shift = e.evt.shiftKey;
+        canvasStore.ctrlPressed = (e.evt?.ctrlKey || e.evt?.metaKey) ?? false;
+        const shift = e.evt?.shiftKey ?? false;
 
         canvasStore.selectConfig(config, layerInfo);
 
@@ -181,6 +183,9 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                     canvasStore.addSelectedItem(canvasStore.selectedConfig);
                 }
             }
+
+            // sidebarStore.viewDetails();
+            canvasStore.updateTransformer();
         }
         canvasStore.updateTransformer();
         // Because each text have their own properties,

@@ -18,6 +18,7 @@ import TwActionText from '../menubar/TwActionText.vue';
 import TwMenubarPaletteColor from '../menubar/TwMenubarPaletteColor.vue';
 import Dropdown from 'primevue/dropdown';
 import TwContextMenu from '../menu/TwContextMenu.vue';
+import TwSidebar from '../sidebar/TwSidebar.vue';
 
 const galleryStore = useImageGalleryStore();
 const operationStore = useCanvasOperationsStore();
@@ -63,8 +64,9 @@ const handleChangeLanguage = () => {
     @mouseleave.prevent="handleCommandBarMouseLeave"
 >
     <div v-show="debug" class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
-        <div class="bg-black fixed w-[300px] h-[80vh] top-0 right-0 bottom-0 text-lg leading-8 overflow-auto">
-            <textarea :value="JSON.stringify(canvasStore.wall, null, 4)" class="text-black w-full h-full"></textarea>
+        <div>
+            <!-- <textarea :value="JSON.stringify(canvasStore.wall, null, 4)" class="text-black w-full h-full"></textarea>-->
+            <tw-sidebar></tw-sidebar>
         </div>
         <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
             <div class="py-2 flex flex-col gap-2">

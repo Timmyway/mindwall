@@ -82,4 +82,17 @@ function pickRandomElement<T>(elements: T[]): T {
     return elements[randomIndex];
 }
 
-export { safeJsonParse, getUuid, getNanoid, imageToBase64, base64ToImage, loadImageFromURL, pickRandomElement, nanoid }
+function truncateString(str: string, n: number = 50) {
+    if (typeof str !== 'string') {
+        throw new TypeError('Input must be a string');
+    }
+    if (typeof n !== 'number' || n < 0) {
+        throw new TypeError('Parameter n must be a non-negative number');
+    }
+    if (str.length <= n) {
+        return str;
+    }
+    return str.slice(0, n) + '...';
+}
+
+export { safeJsonParse, getUuid, getNanoid, imageToBase64, base64ToImage, loadImageFromURL, pickRandomElement, nanoid, truncateString }
