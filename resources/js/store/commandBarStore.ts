@@ -24,13 +24,14 @@ export const useCommandBarStore = defineStore('commandBar', () => {
             } else if (mode === '-') {
                 decreaseFontSize();
             }
-            canvasStore.selectedConfig.fontSize = fontSize.value;
+            // canvasStore.selectedConfig.fontSize = fontSize.value;
+            canvasStore.setSelectedConfig({ fontSize: fontSize.value });
         }
     }
 
     const updateFontFamily = () => {
         if (isMwTextConfig(canvasStore.selectedConfig)) {
-            canvasStore.selectedConfig.fontFamily = fontFamily.value;
+            canvasStore.setSelectedConfig({ fontFamily: fontFamily.value });
         }
     }
 
@@ -39,7 +40,7 @@ export const useCommandBarStore = defineStore('commandBar', () => {
             const newAlign = textAlign.value as TextAlign;
             console.log('=====> New align set: ', newAlign)
             if (['left', 'right', 'center', 'justify'].includes(newAlign)) {
-                canvasStore.selectedConfig.align = newAlign;
+                canvasStore.setSelectedConfig({ align : newAlign });
             } else {
                 console.error('Invalid text alignment value:', newAlign);
             }

@@ -296,7 +296,9 @@ export const useCanvasStore = defineStore('canvas', () => {
         // console.log('-- 563 -> Select config from layer: ', layerInfo);
         // console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
         // selectedConfigName.value = config?.name;
-        getSelectedConfig(config);
+        if (config) {
+            getSelectedConfig(config);
+        }
         // console.log('-- 9999 -> Current config: ', currentConfig);
         // selectedConfig.value = config;
         selectedLayerInfo.value = layerInfo;

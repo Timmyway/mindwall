@@ -40,8 +40,8 @@ const handleCommandBarMouseLeave = () => {
 const { paletteColor } = usePaletteColor();
 
 const changeColor = (color: string) => {
-    if (canvasStore.selectedConfig && isMwTextConfig(canvasStore.selectedConfig)) {
-        canvasStore.selectedConfig.fill = color;
+    if (isMwTextConfig(canvasStore.selectedConfig)) {
+        canvasStore.setSelectedConfig({ fill: color });
     }
     hidePanel('palette');
 }
