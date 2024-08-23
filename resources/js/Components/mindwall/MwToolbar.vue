@@ -9,7 +9,6 @@ import { useImageGalleryStore } from '@/store/imageGalleryStore';
 import { useTextEditStore } from '@/store/textEditStore';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
 import { useAudioStore } from '@/store/audioStore';
-import { storeToRefs } from 'pinia';
 import { ref } from 'vue';
 import TwImageGallery from '../media/TwImageGallery.vue';
 import TwImageBankGallery from '../media/TwImageBankGallery.vue';
@@ -27,7 +26,7 @@ const widgetStore = useWidgetSettingStore();
 const textEditStore = useTextEditStore();
 const audioStore = useAudioStore();
 
-const { isMwTextConfig } = useCanvasConditions();
+const { isMwTextConfig, isMwShapeConfig } = useCanvasConditions();
 
 const debug = ref<boolean>(true);
 const canvasStore = useCanvasStore();
@@ -186,21 +185,26 @@ const handleChangeLanguage = () => {
                 class="w-full max-[120px]"
                 @change="handleChangeLanguage"
             ></Dropdown>
+
             <div class="flex items-center gap-4 w-[150px]">
-                <button
-                    v-show="!widgetStore.isLoading.aiGenerateText"
-                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                    @click.prevent="operationStore.addAiTextToWall()"
+                <div
+                    v-show="!widgetStore.isLoading.aiGenerateText && isMwShapeConfig(canvasStore.selectedConfig)"
+                    class="flex items-center gap-2"
                 >
-                    <i class="fas fa-robot text-blue-600 text-xl"></i>
-                </button>
-                <button
-                    v-show="!widgetStore.isLoading.aiGenerateText"
-                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
-                    @click.prevent="operationStore.addAiTextToWall('hot')"
-                >
-                    <i class="fas fa-robot text-orange-600 text-xl"></i>
-                </button>
+                    <!-- IA related commands -->
+                    <button
+                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                        @click.prevent="operationStore.addAiTextToWall()"
+                    >
+                        <i class="fas fa-robot text-blue-600 text-xl"></i>
+                    </button>
+                    <button
+                        class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                        @click.prevent="operationStore.addAiTextToWall('hot')"
+                    >
+                        <i class="fas fa-robot text-orange-600 text-xl"></i>
+                    </button>
+                </div>
                 <button
                     v-show="isMwTextConfig(canvasStore.selectedConfig) && !audioStore.isReading"
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"

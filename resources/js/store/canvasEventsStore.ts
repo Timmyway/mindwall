@@ -32,30 +32,41 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleTransformEnd = (e: any) => {
-        // shape is transformed, let us save new attrs back to the node
-        // console.log('-- 469 -> Tranform has ended');
-        console.log('---------> Transforme end: ', selectedConfig.value)
-        if (selectedConfig.value) {
-            // update the selected config
-            const newConfig: {
-                x: number,
-                y: number,
-                rotation: number,
-                scaleX: number,
-                scaleY: number,
-                width?: number
-            } = {
-                x: e.target.x(),
-                y: e.target.y(),
-                rotation: e.target.rotation(),
-                scaleX: e.target.scaleX(),
-                scaleY: e.target.scaleY(),
+        // Retrieve the node that was transformed
+        const node = e.target;
+        let configTarget = node;
+
+        // If the selected config is a group, find the group's node instead of using the individual shape
+        if (isMwGroupConfig(selectedConfig.value)) {
+            const group = node.findAncestors(`#${selectedConfig.value.id}`);
+            if (group.length > 0) {
+                configTarget = group[0]; // Set the config target to the group node
             }
-            if (isMwTextConfig(selectedConfig.value)) {
-                newConfig.width = e.target.width();
-            }
-            canvasStore.setSelectedConfig(newConfig);
         }
+
+        // Construct the new configuration based on the node's current attributes
+        const newConfig: {
+            x: number;
+            y: number;
+            rotation: number;
+            scaleX: number;
+            scaleY: number;
+            width?: number;
+        } = {
+            x: configTarget.x(),
+            y: configTarget.y(),
+            rotation: configTarget.rotation(),
+            scaleX: configTarget.scaleX(),
+            scaleY: configTarget.scaleY(),
+        };
+
+        // If the selected config is a shape, include its width in the configuration
+        if (isMwShapeConfig(selectedConfig.value)) {
+            newConfig.width = configTarget.width();
+        }
+
+        // Log the transformation details for debugging
+        canvasStore.setSelectedConfig(newConfig);
     }
 
     const handleStageMouseDown = (e: any) => {
@@ -137,14 +148,12 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     }
 
     const handleShapeMouseDown = (e: any, config: MwNode, layerInfo: LayerInfo) => {
-        // if (!isMwShapeConfig(canvasStore.selectedConfig)) {
-        //     return;
-        // }
-        canvasStore.selectConfig(config, layerInfo);
-
-        const ctrl = e.evt.ctrlKey || e.evt.metaKey;
+        canvasStore.ctrlPressed = e.evt.ctrlKey || e.evt.metaKey;
         const shift = e.evt.shiftKey;
 
+        canvasStore.selectConfig(config, layerInfo);
+
+        console.log('-- 7778 -> Handle shape mouse down: ', canvasStore.selectedConfig)
         if (isMwShapeConfig(canvasStore.selectedConfig)) {
             if (shift) {
                 if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
@@ -155,8 +164,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
                     canvasStore.addSelectedItem(canvasStore.selectedConfig);
                 }
             }
-            if (ctrl) {
-                canvasStore.ctrlPressed = true;
+            if (canvasStore.ctrlPressed) {
                 // if (canvasStore.selectedItems.find(item => item.id === canvasStore.selectedConfig?.id)) {
                 //     // If item is already selected, remove it
                 //     canvasStore.removeSelectedItem(canvasStore.selectedConfig);

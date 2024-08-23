@@ -32,16 +32,31 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const selectedItems = ref<MwNode[]>([]);
 
+    const selectItem = (item: MwNode | null) => {
+        if (item) {
+            console.log('-- 487 -> Selecting item: ', item);
+
+            // Directly set the selectedItems list to contain only the provided item
+            selectedItems.value = [item];
+        }
+    };
+
     const addSelectedItem = (item: MwNode | null) => {
+        // Check if the item is not null and is not already in the selectedItems list
         if (item && !selectedItems.value.some(i => i.id === item.id)) {
             console.log('-- 487 -> Add selected item: ', item);
+
+            // Add the item to the selectedItems lis
             selectedItems.value.push(item);
         }
     };
 
     const removeSelectedItem = (item: MwNode | null) => {
+        // Check if the item is not null and exists in the selectedItems list
         if (item && selectedItems.value.some(i => i.id === item.id)) {
             console.log('-- 488 -> Remove selected item: ', item);
+
+            // Remove the item from the selectedItems list by filtering out the item with the matching id
             selectedItems.value = selectedItems.value.filter(i => i.id !== item.id);
         }
     };
@@ -161,24 +176,24 @@ export const useCanvasStore = defineStore('canvas', () => {
     const getSelectedConfig = (config: MwNode): MwNode | null => {
         if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
-                const foundConfig = findConfig(layer, config.name);
+                selectedConfig.value = findConfig(layer, config.name);
 
-                if (foundConfig) {
+                if (selectedConfig.value) {
                     // Check if the found config is part of a group
-                    console.log('============> FOUND config: ', foundConfig)
-                    if (foundConfig.parent) {
-                        const groupConfig = findConfig(layer, foundConfig.parent);
+                    console.log('============> FOUND config: ', selectedConfig.value)
+                    if (selectedConfig.value.parent) {
+                        const groupConfig = findConfig(layer, selectedConfig.value.parent);
 
                         if (isMwGroupConfig(groupConfig)) {
-                            console.log('============> Element has a group as parent')
+                            console.log('-- 7776 --> Shape belongs to a group');
+                            console.log('-- 7779 -> CTR key is pressed: ', ctrlPressed.value);
                             if (ctrlPressed.value) {
                                 // If Ctrl is pressed, find the item inside the group and select it
-                                const selectedItem = groupConfig.items.find(item => item.id === config.id);
-                                if (selectedItem) {
-                                    console.log('--------> Selected item: ', selectedItem);
-                                    clearSelectedItems();
-                                    addSelectedItem(selectedItem);
-                                    selectedConfig.value = selectedItem as MwTextConfig | MwImageConfig; // Return the selected item
+                                const selectedGroupItem = groupConfig.items.find(item => item.id === config.id);
+                                if (selectedGroupItem) {
+                                    console.log('--------> Selected item from group: ', selectedGroupItem);
+                                    selectItem(selectedGroupItem);
+                                    selectedConfig.value = selectedGroupItem as MwTextConfig | MwImageConfig; // Return the selected item
                                 }
                             } else {
                                 // If Ctrl is not pressed, select the entire group
@@ -186,13 +201,11 @@ export const useCanvasStore = defineStore('canvas', () => {
                                 console.log('===========> FOUND elements in group: ', groupConfig.items)
                                 groupConfig.items.forEach((item: MwNode) => {
                                     addSelectedItem(item);
-                                    console.log('--------------> Group item: ', item.value)
                                 });
                                 selectedConfig.value = groupConfig as MwGroupConfig; // Return the group configuration
                             }
                         }
                     }
-                    selectedConfig.value = foundConfig as MwTextConfig | MwImageConfig; // Return the item itself
                 }
             }
         }
