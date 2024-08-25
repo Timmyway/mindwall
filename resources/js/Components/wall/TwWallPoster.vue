@@ -21,6 +21,7 @@ const { getRandomColor } = useRandomColor();
 const posterNameInputRefs = ref<HTMLInputElement[]>();
 const isEditMode = ref<boolean>(false);
 const currentThematicId = ref<number>();
+
 const enterEditMode = (thematic: Thematic, thematicIndex: number) => {
     currentThematicId.value = thematic.id;
     Object.assign(thematicStore.form, thematic);
@@ -52,7 +53,7 @@ const handleKeydown = (event: KeyboardEvent) => {
         exitEditMode();
     }
 }
-console.log('===================> Tap');
+
 onMounted(() => {
     window.addEventListener('keydown', handleKeydown);
 });

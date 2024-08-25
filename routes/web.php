@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\MindwallController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ThematicController;
 use Illuminate\Foundation\Application;
@@ -29,6 +30,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ThematicController::class, 'index'])->name('list');
         Route::get('/detail/{thematic}', [ThematicController::class, 'detail'])->name('detail');
         Route::put('/{thematic}', [ThematicController::class, 'update'])->name('update');
+    });
+    Route::prefix('prompts')->name('prompt.')->group(function () {
+        Route::get('', [MindwallController::class, 'promptList'])->name('list');
+        Route::get('/add', [MindwallController::class, 'promptAdd'])->name('add');
+        Route::get('/{prompt?}/{mode?}', [MindwallController::class, 'promptDetail'])->name('detail');
+        Route::post('', [MindwallController::class, 'promptStore'])->name('store');
+        Route::put('', [MindwallController::class, 'promptUpdate'])->name('update');
     });
 });
 
