@@ -17,6 +17,7 @@ import { useTextEditStore } from '@/store/textEditStore';
 import MwTextarea from '@/Components/mindwall/MwTextarea.vue';
 import MwLayerItem from '@/Components/mindwall/MwLayerItem.vue';
 import MwToolbar from '@/Components/mindwall/MwToolbar.vue';
+import { useTextPreviewStore } from '@/store/textPreviewStore';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -30,6 +31,7 @@ const operationStore = useCanvasOperationsStore();
 const canvasEventStore = useCanvasEventsStore();
 const canvasConfigStore = useCanvasConfig();
 const textEditStore = useTextEditStore();
+const textPreviewStore = useTextPreviewStore();
 
 const { stageRef, transformer } = storeToRefs(canvaStore);
 const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
@@ -97,10 +99,18 @@ const handleKeyup = () => {
 const debug = ref<boolean>(true);
 const transformV = ref([]);
 </script>
+
 <template>
-
-
-
+<div
+    v-if="textPreviewStore.isPreviewMode"
+    class="fixed top-0 left-0 right-0 w-full h-[80dvh] bg-black text-white px-4 py-4 text-lg max-w-4xl mx-auto"
+    style="z-index: 9999999999;"
+>
+    <button class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2" @click.prevent="textPreviewStore.isPreviewMode = false">
+        <i class="fas fa-times text-red-600"></i>
+    </button>
+    <div v-html="textPreviewStore.htmlRendered"></div>
+</div>
 <div class="bg-white tw-canva relative" v-if="appStore.isReady">
     {{ canvaStore.selectedItems.map(item => item.name ) }}
     SN: {{  canvaStore.selectedConfigName }}

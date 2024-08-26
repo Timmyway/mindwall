@@ -28,6 +28,7 @@
         "dropzone-vue": "^0.1.11",
         "konva": "^9.3.11",
         "lodash": "^4.17.21",
+        "markdown-it": "^14.1.0",
         "marked": "^13.0.3",
         "nanoid": "^5.0.7",
         "pinia": "^2.1.7",

@@ -19,6 +19,7 @@ import TwMenubarPaletteColor from '../menubar/TwMenubarPaletteColor.vue';
 import Dropdown from 'primevue/dropdown';
 import TwContextMenu from '../menu/TwContextMenu.vue';
 import TwSidebar from '../sidebar/TwSidebar.vue';
+import { useTextPreviewStore } from '@/store/textPreviewStore';
 
 const galleryStore = useImageGalleryStore();
 const operationStore = useCanvasOperationsStore();
@@ -26,6 +27,7 @@ const appStore = useAppStore();
 const widgetStore = useWidgetSettingStore();
 const textEditStore = useTextEditStore();
 const audioStore = useAudioStore();
+const textPreviewStore = useTextPreviewStore();
 
 const { isMwTextConfig, isMwShapeConfig } = useCanvasConditions();
 
@@ -188,7 +190,7 @@ const handleChangeLanguage = () => {
                 @change="handleChangeLanguage"
             ></Dropdown>
 
-            <div class="flex items-center gap-4 w-[150px]">
+            <div class="flex items-center gap-4 w-[200px]">
                 <div
                     v-show="!widgetStore.isLoading.aiGenerateText && isMwShapeConfig(canvasStore.selectedConfig)"
                     class="flex items-center gap-2"
@@ -213,6 +215,13 @@ const handleChangeLanguage = () => {
                     @click.prevent="audioStore.readText()"
                 >
                     <i class="fas fa-volume-up text-black"></i>
+                </button>
+                <button
+                    v-show="isMwTextConfig(canvasStore.selectedConfig)"
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-50 w-8 h-8 p-2"
+                    @click.prevent="textPreviewStore.preview(canvasStore.selectedConfig?.text)"
+                >
+                    <i class="fas fa-eye text-black"></i>
                 </button>
             </div>
         </div>

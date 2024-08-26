@@ -1,6 +1,16 @@
 import { marked } from 'marked';
+import MarkdownIt from 'markdown-it';
+import { ref } from 'vue';
 
 export default function useMarkdownParser(usePrettify = false) {
+    const md = new MarkdownIt({
+        html: true, // Enable HTML tags in source
+        linkify: true, // Autoconvert URL-like text to links
+        typographer: true // Enable smartypants and other typographic replacements
+    });
+    const markdown = ref(md);
+    const htmlRendered = ref();
+
     const parseTextFromMarkDown = async (mdString: string | Promise<string>): Promise<string> => {
         // Resolve the input if it is a Promise
         const resolvedString: string = typeof mdString === 'string' ? mdString : await mdString;
@@ -19,6 +29,10 @@ export default function useMarkdownParser(usePrettify = false) {
         }
 
         return htmlString;
+    }
+
+    const mdToHtml = (mdString: string) => {
+        htmlRendered.value = markdown.value.render(mdString);
     }
 
     const prettify = (htmlString: string) => {
@@ -44,5 +58,5 @@ export default function useMarkdownParser(usePrettify = false) {
         return prettifiedText;
     }
 
-    return { parseTextFromMarkDown }
+    return { htmlRendered, parseTextFromMarkDown, mdToHtml }
 }
