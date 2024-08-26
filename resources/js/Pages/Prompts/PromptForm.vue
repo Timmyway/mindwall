@@ -11,9 +11,6 @@ interface Props {
 
 const props = defineProps<Props>();
 
-console.log('==============>', props.mode);
-console.log('==============>', props.prompt);
-
 // Initialize form data
 const form = useForm({
     id: props?.mode === 'edit' ? props.prompt?.id : null,

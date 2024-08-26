@@ -1,14 +1,29 @@
 <script setup lang="ts">
 import Layout from '@/Layouts/Layout.vue';
+import { InertiaPageProps } from '@/types/inertia';
 import { Engine } from '@/types/thematic.types';
+import { usePage } from '@inertiajs/vue3';
 
-const props = defineProps<{
-    prompts: Engine[]
-}>();
+import { computed } from 'vue';
+
+interface PageProps {
+    prompts: Engine[];
+}
+
+const props = defineProps<PageProps>();
+
+const page = usePage<InertiaPageProps>();
+
+console.log('=============> PAGE: ', page);
+
+const successMessage = computed(() => page.props.flash.success);
 </script>
 <template>
 <Layout>
     <section class="p-4">
+        <div v-if="successMessage" class="alert alert-success">
+            {{ successMessage }}
+        </div>
         <div class="mb-4 flex gap-4 items-center lg:mb-6">
             <div class="flex items-center gap-4">
                 <Link

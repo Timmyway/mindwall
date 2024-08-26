@@ -6,7 +6,7 @@ use App\Models\Prompt;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class MindwallController extends Controller
+class PromptController extends Controller
 {
     protected $validations;
 
@@ -20,7 +20,7 @@ class MindwallController extends Controller
         ];
     }
 
-    public function promptList()
+    public function list()
     {
         $prompts = Prompt::orderBy('id', 'desc')
             ->get();
@@ -30,14 +30,14 @@ class MindwallController extends Controller
         ]);
     }
 
-    public function promptAdd(Prompt $prompt)
+    public function addPage(Prompt $prompt)
     {
-        return Inertia::render('Prompts/PromptDetail', [
+        return Inertia::render('Prompts/PromptForm', [
             'mode' => 'add'
         ]);
     }
 
-    public function PromptStore(Request $request)
+    public function store(Request $request)
     {
         $validatedData = $request->validate($this->validations);
 
@@ -56,21 +56,24 @@ class MindwallController extends Controller
             ->with('success', 'Prompt created successfully.');
     }
 
-    public function PromptUpdate(Request $request, Prompt $prompt)
+    public function update(Request $request, Prompt $prompt)
     {
         // Validate the request
-        $validatedData = $request->validate($this->validations);
+        $updateRules = array_merge([], $this->validations);
+        $updateRules['slug'] = 'required|string|max:255';
+
+        $validatedData = $request->validate($updateRules);
 
         // Update the prompt
         $prompt->update($validatedData);
 
         // Redirect with success message
-        return redirect()->route('prompts.index')->with('success', 'Prompt updated successfully.');
+        return redirect()->route('prompt.list')->with('success', 'Prompt updated successfully.');
     }
 
-    public function promptDetail(Prompt $prompt = null, string $mode = null)
+    public function formPage(Prompt $prompt = null, string $mode = null)
     {
-        return Inertia::render('Prompts/PromptDetail', [
+        return Inertia::render('Prompts/PromptForm', [
             'prompt' => $prompt,
             'mode' => $mode
         ]);

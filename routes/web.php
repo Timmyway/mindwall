@@ -3,6 +3,7 @@
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\MindwallController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromptController;
 use App\Http\Controllers\ThematicController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -32,11 +33,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/{thematic}', [ThematicController::class, 'update'])->name('update');
     });
     Route::prefix('prompts')->name('prompt.')->group(function () {
-        Route::get('', [MindwallController::class, 'promptList'])->name('list');
-        Route::get('/add', [MindwallController::class, 'promptAdd'])->name('add');
-        Route::get('/{prompt?}/{mode?}', [MindwallController::class, 'promptDetail'])->name('detail');
-        Route::post('', [MindwallController::class, 'promptStore'])->name('store');
-        Route::put('', [MindwallController::class, 'promptUpdate'])->name('update');
+        Route::get('', [PromptController::class, 'list'])->name('list');
+        Route::get('/add', [PromptController::class, 'addPage'])->name('add');
+        Route::get('/{prompt?}/{mode?}', [PromptController::class, 'formPage'])->name('detail');
+        Route::post('', [PromptController::class, 'store'])->name('store');
+        Route::put('', [PromptController::class, 'update'])->name('update');
     });
 });
 
