@@ -3,6 +3,7 @@ import Layout from '@/Layouts/Layout.vue';
 import { useForm } from '@inertiajs/vue3';
 import { Engine } from '@/types/thematic.types';
 import TwTextInput from '@/Components/form/TwTextInput.vue';
+import { useNotifStore } from '@/store/notificationStore';
 
 interface Props {
     mode?: 'edit',
@@ -10,6 +11,8 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const notifStore = useNotifStore();
 
 // Initialize form data
 const form = useForm({

@@ -3,27 +3,32 @@ import Layout from '@/Layouts/Layout.vue';
 import { InertiaPageProps } from '@/types/inertia';
 import { Engine } from '@/types/thematic.types';
 import { usePage } from '@inertiajs/vue3';
-
-import { computed } from 'vue';
+import { computed, onMounted, watch } from 'vue';
+import TwNotification from '@/Components/ui/TwNotification.vue';
+import { useNotifStore } from '@/store/notificationStore';
 
 interface PageProps {
     prompts: Engine[];
 }
 
 const props = defineProps<PageProps>();
-
 const page = usePage<InertiaPageProps>();
 
-console.log('=============> PAGE: ', page);
+const notifStore = useNotifStore();
 
-const successMessage = computed(() => page.props.flash.success);
+// Success message comes from Inertia shared mechanism.
+// const successMessage = computed(() => page.props.flash.success);
+onMounted(() => {
+    if (page.props.flash.success) {
+        notifStore.notifUser([
+            { message: page.props.flash.success ?? '' },
+        ])
+    }
+})
 </script>
 <template>
 <Layout>
     <section class="p-4">
-        <div v-if="successMessage" class="alert alert-success">
-            {{ successMessage }}
-        </div>
         <div class="mb-4 flex gap-4 items-center lg:mb-6">
             <div class="flex items-center gap-4">
                 <Link

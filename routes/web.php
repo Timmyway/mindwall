@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/add', [PromptController::class, 'addPage'])->name('add');
         Route::get('/{prompt?}/{mode?}', [PromptController::class, 'formPage'])->name('detail');
         Route::post('', [PromptController::class, 'store'])->name('store');
-        Route::put('', [PromptController::class, 'update'])->name('update');
+        Route::put('/{prompt}', [PromptController::class, 'update'])->name('update');
     });
 });
 

@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import Menubar from 'primevue/menubar';
 import useMwRoutes from '@/composable/manage/useMwRoutes';
+import TwNotification from '@/Components/ui/TwNotification.vue';
 
 defineProps<{
     canLogin?: boolean;
@@ -20,6 +21,7 @@ const { items, isActive } = useMwRoutes();
 
 <template>
     <Head title="Welcome" />
+    <tw-notification pos="tr"></tw-notification>
     <div>
         <div
             class="relative min-h-screen bg-gray-200 flex flex-col selection:bg-[#FF2D20] selection:text-white"
