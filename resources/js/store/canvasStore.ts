@@ -123,7 +123,7 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const wall = ref<WallConfig>({ layers: [] });
     const selectedConfigName = ref<string | null>(null);
-    const selectedLayerInfo = ref<LayerInfo | null>(null);
+    const selectedLayerInfo = ref<LayerInfo | null>(null);        
 
     function findConfig(
         config: MwLayerConfig | MwGroupConfig, // Accept both Layer and Group configs
@@ -191,6 +191,17 @@ export const useCanvasStore = defineStore('canvas', () => {
         }
     };
 
+    const findGroupById = (configId: string): MwGroupConfig | null => {
+        if (configId && wall.value.layers) {
+            for (const layer of wall.value.layers) {
+                const foundConfig = findConfig(layer, configId);
+                if (isMwGroupConfig(foundConfig)) {
+                    return foundConfig;
+                }
+            }
+        }
+        return null;
+    };
 
     const findParentGroup = (config: MwNode) => {
         if (config?.name && wall.value.layers) {
@@ -456,5 +467,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
         addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
         ctrlPressed, setSelectedConfig, findParentGroup, deleteConfig,
+        findGroupById,
     }
 });

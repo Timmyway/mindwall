@@ -548,33 +548,48 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     //     return parentId;
     // };
 
-    const cloneGroup = (groupName: string): string | null => {
-        const originalGroup = canvasStore.wall[groupName];
+    const cloneGroup = (groupId: string): string | null => {
+        const originalGroup = canvasStore.findGroupById(groupId);
         if (!originalGroup) return null;
-
-        const newGroupName = addGroup();
-        const newGroup = canvasStore.wall[newGroupName];
-
-        // Clone properties of the original group
-        newGroup.scaleX = originalGroup.scaleX;
-        newGroup.scaleY = originalGroup.scaleY;
-        newGroup.visible = originalGroup.visible;
-        newGroup.draggable = originalGroup.draggable;
-
-        // Clone items of the original group and generate unique IDs for each
-        Object.keys(originalGroup.items).forEach(itemId => {
-            const originalItem = originalGroup.items[itemId];
-            const itemCopyName = `${newGroupName}-${originalItem.is}-${getNanoid()}`;
-            const newItem = { ...originalItem, id: itemCopyName, name: itemCopyName };
-            newGroup.items[newItem.id] = newItem;
-        });
-
-        return newGroupName;
+    
+        const newGroupId = `group-${getNanoid()}`;
+        const newGroup: MwGroupConfig = { ...originalGroup, id: newGroupId, name: newGroupId, items: [] };
+    
+        // Stack for iterative cloning
+        const stack: { originalGroup: MwGroupConfig; newGroup: MwGroupConfig }[] = [{ originalGroup, newGroup }];
+    
+        while (stack.length > 0) {
+            const { originalGroup, newGroup } = stack.pop()!;
+    
+            for (const originalItem of originalGroup.items) {
+                const newItemId = `${newGroup.id}-${originalItem.is}-${getNanoid()}`;
+                const newItem = { ...originalItem, id: newItemId, name: newItemId };
+    
+                // If the item is a group, clone it and push it to the stack
+                if (newItem.is === 'group') {
+                    const clonedSubGroup: MwGroupConfig = { ...newItem, id: newItemId, items: [] };
+                    newGroup.items.push(clonedSubGroup);
+                    stack.push({ originalGroup: originalItem as MwGroupConfig, newGroup: clonedSubGroup });
+                } else {
+                    newGroup.items.push(newItem);
+                }
+            }
+        }
+    
+        console.log('=================================> NG', newGroup)
+        if (canvasStore.wall.layers[0]?.items) {
+            canvasStore.wall.layers[0].items.push(newGroup);
+        } else {
+            console.error(`Parent with ID ${originalGroup.parent} not found`);
+            return null;
+        }
+    
+        return newGroupId;
     };
 
     const handleCloneGroup = (event: MenuItemCommandEvent) => {
-        if (selectedGroupName.value) {
-            const clonedGroupName = cloneGroup(selectedGroupName.value);
+        if (isMwGroupConfig(canvasStore.selectedConfig) && canvasStore.selectedConfig?.id) {
+            const clonedGroupName = cloneGroup(canvasStore.selectedConfig.id);
             console.log('Cloned group:', clonedGroupName);
         }
     };
