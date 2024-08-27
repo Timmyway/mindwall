@@ -4,6 +4,7 @@ import { reactive, ref } from "vue";
 import { useCanvasStore } from "./canvasStore";
 import { Text } from "konva/lib/shapes/Text";
 import { TextareaStyle } from "@/types/canvas.types";
+import { MwTextConfig } from "@/types/konva.config";
 
 export const useTextEditStore = defineStore('textEdit', () => {
     const canvaStore = useCanvasStore();
@@ -12,7 +13,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
 
     const editing = ref(false);
     const editedQuoteText = ref<string>('');
-    const lastEditedText = ref({group: '', config: ''});
+    const lastEditedText = ref<MwTextConfig | null>(null);
 
     const quoteAreaRef = ref();
     const textareaStyle = reactive<TextareaStyle>({
@@ -55,11 +56,11 @@ export const useTextEditStore = defineStore('textEdit', () => {
         const calculatedWidth = (
             // Get the width of the text node. If it doesn't exist, default to 0.
             // Multiply by 1 (or other ratio) to ensure it's a number
-            // Do the same with padding (take it into account)
+            // Do the same with padding (take into account both left and right)
             (textNode?.width?.() ?? 0) * 1 -
             ((textNode?.padding?.() ?? 0) * 2)
         );
-        const textNodeHeight = (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2 + 5;
+        const textNodeHeight = (textNode?.height() ?? 0) - (textNode?.padding() ?? 0) * 2;
         const constrainedWidth = Math.max(320, Math.min(calculatedWidth, 480));
         const contrainedHeight = Math.min(360, Math.max(textNodeHeight, 72));
         textareaStyle.width = constrainedWidth + 'px';
@@ -73,8 +74,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
             //     y: stage.container().offsetTop + (textPosition?.y),
             // };
             const areaPosition = {
-                x: textPosition?.x + (calculatedWidth / 2) + 10,
-                y: textPosition?.y,
+                x: textPosition?.x + (calculatedWidth / 2),
+                y: textPosition?.y + 70,
             };
             console.log('Offset x: ', stage.container().offsetLeft)
             console.log('Offset y: ', stage.container().offsetTop)
@@ -111,7 +112,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
     }
 
     const editQuote = (e: any) => {
-        if (selectedConfig.value && isMwTextConfig(selectedConfig.value)) {
+        if (isMwTextConfig(selectedConfig.value)) {
             // selectedConfig.value.fontSize = 20;
             // selectedConfig.value.fontFamily = 'Monospace';
             canvaStore.setSelectedConfig({ rotation: 0 });
@@ -159,8 +160,8 @@ export const useTextEditStore = defineStore('textEdit', () => {
 
     const backupLastEditedText = () => {
         console.log('-- 80 -> Backup last edited text')
-        if (selectedConfig.value && lastEditedText.value && isMwTextConfig(selectedConfig.value)) {
-            lastEditedText.value.config = selectedConfig.value.name ?? '';
+        if (lastEditedText.value && isMwTextConfig(selectedConfig.value)) {
+            lastEditedText.value = selectedConfig.value ?? '';
         }
         console.log('-- 70 -> Last edited text backed up');
     }
@@ -170,11 +171,18 @@ export const useTextEditStore = defineStore('textEdit', () => {
         if (lastEditedText.value && (selectedConfig.value?.name !== lastEditedText.value.config)) {
             console.log('--> 89 -> Restoring backup from the same Text is not allowed')
             if (selectedConfig.value) {
-                selectedConfig.value.name = lastEditedText.value.config;
+                canvaStore.setSelectedConfig(lastEditedText.value);
             }
-            lastEditedText.value = { group: '', config: '' };
+            lastEditedText.value = null;
         }
-    };
+    }
+
+    const finalizeEdit = () => {
+        if (editing.value && (selectedConfig.value?.name !== lastEditedText.value?.name)) {
+            console.log('-- 65 -> Should exit...')
+            exitEditMode();
+        }
+    }
 
     const restoreTextAndTransformer = () => {
         // Restore text node and transformer
@@ -197,6 +205,7 @@ export const useTextEditStore = defineStore('textEdit', () => {
 
     return { editedQuoteText, lastEditedText, editing, quoteAreaRef, textareaStyle,
         exitEditMode, enterEditMode, backupLastEditedText, restoreLastEditedText, editQuote,
+        finalizeEdit,
     }
 })
 

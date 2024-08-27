@@ -208,6 +208,8 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         // }
         widgetStore.isLoading.aiGenerateText = true;
         try {
+            const parentId = autodetectParentId();
+            console.log('---------> 5666 ->', parentId)
             let thematicName = null;
             const aiOption: TextGeneratorOption = {
                 engine: widgetStore.usedEngine.slug,
@@ -230,14 +232,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                     return;
                 }
             }
-            if (thematicName) {
+            if (thematicName) {                
                 console.log('-- 570 -> Thematic found: ', thematicName);
                 // Back up the initial group to which the generated text belongs
                 const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
                 // const generatedText = await parseTextFromMarkDown(response.data.generatedText);
                 const generatedText = await response.data.generatedText;
 
-                addTextToWall(generatedText);
+                addTextToWall(generatedText, { parentId });
                 widgetStore.isLoading.aiGenerateText = false;
             } else {
                 console.warn('-- 570 -> No thematic found');
@@ -268,16 +270,22 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         //     selectedConfigGroup = canvasStore.findParentGroup(canvasStore.selectedConfig);
         // }
         if (!isMwGroupConfig(canvasStore.selectedConfig)) {
-            if (!canvasStore.selectedLayerInfo) {
-                // We add to the first layer
+            if (isMwShapeConfig(canvasStore.selectedConfig)) {
+                // If any shapes are selected, their group will be returned as a priority.
+                if (canvasStore.selectedConfig?.parent.startsWith('group')) {
+                    return canvasStore.selectedConfig?.parent;
+                }
+            }
+            if (canvasStore.selectedLayerInfo) {
+                // We add to the selected item's layer
+                parentId = canvasStore.selectedLayerInfo.id;
+                console.log('-- 541 -> add to selected layer')                
+            } else {
+                // We default to adding to the first layer
                 console.log('-- 540 -> add to first layer')
                 if (canvasStore.wall.layers[0]?.id) {
                     parentId = canvasStore.wall.layers[0].id;
                 }
-            } else {
-                // We add to the selected item's layer
-                parentId = canvasStore.selectedLayerInfo.id;
-                console.log('-- 541 -> add to selected layer')
             }
         } else {
             // We add to a group
@@ -291,11 +299,9 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     const addTextToWall = (
         text: string = 'Unleash your thoughts!',
-        options: { defaultTextSize: number } = { defaultTextSize: 320 }
+        { defaultTextSize = 320, parentId = autodetectParentId() }: { defaultTextSize?: number, parentId?: string | null } = {}
     ) => {
-        const { defaultTextSize } = options;
-
-        const parentId = autodetectParentId();
+        const resolvedParentId = parentId ?? autodetectParentId();
 
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;
@@ -311,7 +317,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         const newMwTextConfig: MwTextConfig = {
             id: textIdentifier,
             name: textIdentifier,
-            parent: parentId,
+            parent: resolvedParentId,
             is: 'text',
             rotation: 0,
             x: estimateX,
@@ -331,7 +337,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
         // Find the layer or group where we need to add the text
         const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
-            findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+            findParentIteratively(resolvedParentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
         console.log('-- 547 -> Parent: ', parent)
         if (parent && 'items' in parent) {
@@ -446,8 +452,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
 
         // Store the parent ID for later use
-        const parentId = canvasStore.selectedConfig.parent;
-        console.log('=============fffffffffff', canvasStore.selectedConfig)
+        const parentId = canvasStore.selectedConfig.parent;        
 
         // Check if the parent exists
         const parentLayer = canvasStore.wall.layers.find(layer => layer.id === parentId);
@@ -478,70 +483,70 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         console.log(`Ungrouped items from group ${groupId} back to parent.`);
     };
 
-    const addGroup = (parentId: string = ''): string => {
-        const groupId = `group-${getNanoid()}`;
+    // const addGroup = (parentId: string = ''): string => {
+    //     const groupId = `group-${getNanoid()}`;
 
-        const newGroup: MwGroupConfig = {
-            id: groupId,
-            name: groupId,
-            is: 'group',
-            scaleX: 1,
-            scaleY: 1,
-            visible: true,
-            draggable: true,
-            items: [],
-            parent: parentId || null,
-        };
+    //     const newGroup: MwGroupConfig = {
+    //         id: groupId,
+    //         name: groupId,
+    //         is: 'group',
+    //         scaleX: 1,
+    //         scaleY: 1,
+    //         visible: true,
+    //         draggable: true,
+    //         items: [],
+    //         parent: parentId || null,
+    //     };
 
-        // Find the parent layer or group where the new group should be added
-        const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
-            findParentRecursively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+    //     // Find the parent layer or group where the new group should be added
+    //     const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
+    //         findParentRecursively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
-        if (parent && 'items' in parent) {
-            // Ensure items is defined before pushing
-            if (!parent.items) {
-                parent.items = []; // Initialize items if it's undefined
-            }
-            parent.items.push(newGroup);
-        } else if (!parentId && canvasStore.wall.layers[0]?.id) {
-            // Add to the first layer if no parent is specified
-            if (canvasStore.wall.layers[0]?.items) {
-                canvasStore.wall.layers[0].items.push(newGroup);
-            }
-        } else {
-            console.error(`Parent with ID ${parentId} not found`);
-        }
+    //     if (parent && 'items' in parent) {
+    //         // Ensure items is defined before pushing
+    //         if (!parent.items) {
+    //             parent.items = []; // Initialize items if it's undefined
+    //         }
+    //         parent.items.push(newGroup);
+    //     } else if (!parentId && canvasStore.wall.layers[0]?.id) {
+    //         // Add to the first layer if no parent is specified
+    //         if (canvasStore.wall.layers[0]?.items) {
+    //             canvasStore.wall.layers[0].items.push(newGroup);
+    //         }
+    //     } else {
+    //         console.error(`Parent with ID ${parentId} not found`);
+    //     }
 
-        return groupId;
-    };
+    //     return groupId;
+    // };
 
-    const groupShapesOrGroups = (selectedItems: MwNode[], groupId: string = ''): string => {
-        const parentId = groupId || addGroup();
+    // const groupShapesOrGroups = (selectedItems: MwNode[], groupId: string = ''): string => {
+    //     const parentId = groupId || addGroup();
 
-        // Move selected items into the new or existing group
-        const parent = findParentRecursively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+    //     // Move selected items into the new or existing group
+    //     const parent = findParentRecursively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
-        if (parent && 'items' in parent) {
-            selectedItems.forEach(item => {
-                // Remove item from its original location
-                const originalParent = findParentRecursively(item.parent, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
-                originalParent?.items?.splice(originalParent.items?.findIndex(i => i.id === item.id), 1);
+    //     if (parent && 'items' in parent) {
+    //         selectedItems.forEach(item => {
+    //             // Remove item from its original location
+    //             const originalParent = findParentRecursively(item.parent, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+    //             originalParent?.items?.splice(originalParent.items?.findIndex(i => i.id === item.id), 1);
 
-                // Update item's parent reference
-                item.parent = parentId;
+    //             // Update item's parent reference
+    //             item.parent = parentId;
 
-                // Add item to the new group's items
-                if (!parent.items) {
-                    parent.items = []; // Initialize items if it's undefined
-                }
-                parent.items.push(item);
-            });
-        } else {
-            console.error(`Parent group with ID ${parentId} not found`);
-        }
+    //             // Add item to the new group's items
+    //             if (!parent.items) {
+    //                 parent.items = []; // Initialize items if it's undefined
+    //             }
+    //             parent.items.push(item);
+    //         });
+    //     } else {
+    //         console.error(`Parent group with ID ${parentId} not found`);
+    //     }
 
-        return parentId;
-    };
+    //     return parentId;
+    // };
 
     const cloneGroup = (groupName: string): string | null => {
         const originalGroup = canvasStore.wall[groupName];
@@ -645,7 +650,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     };
 
-    return { addLayer, addGroup, addTextToWall, aiImageExplain, addImageToWall,
+    return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
         bringToTop, bringToBack, groupSelectedItems, ungroupItems,
     }

@@ -6,8 +6,7 @@ export const useTextPreviewStore = defineStore('textPreview', () => {
     const { htmlRendered, mdToHtml, resetHtml } = useMarkdownParser();
     const isPreviewMode = ref<boolean>(false)
 
-    const preview = (mdString: string) => {
-        console.log('------------>')
+    const preview = (mdString: string) => {        
         isPreviewMode.value = true;
         mdToHtml(mdString);        
     }

@@ -31,7 +31,7 @@ const textPreviewStore = useTextPreviewStore();
     </div>
 </transition>
 </template>
-<style>
+<style lang="scss">
 .markdown-preview-overlay {    
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -41,13 +41,60 @@ const textPreviewStore = useTextPreviewStore();
 }
 .markdown-preview-overlay__content {    
     background-color: white;
-    padding: 15px 15px;
+    padding: 15px 40px;
     max-width: 960px;
     height: 100%;
     max-height: 95vh;
+    overflow: auto;
     margin: auto;
     font-family: 'Nunito';
-    line-height: 2;
+    line-height: 1.7;
     border-radius: 4px;
+    h1, h2 {
+        font-weight: black;
+        font-size: 2.4rem;
+    }
+    h3, h4, h5, h6 {
+        font-weight: bold;
+        font-size: 2rem;
+    }
+    p {
+        padding: 10px 0;        
+    }
+    strong {
+        font-weight: bold;
+    }
+    ul {
+        display: flex; flex-direction: column;
+        li {
+            padding: 10px 0;
+            list-style-type: disc;
+        }
+    }
+    blockquote {
+        background: #f9f9f9;
+        border-left: 10px solid #F6AE2D;
+        margin: 10px 0;
+        padding: 0.5em 10px;
+        quotes: "\201C""\201D""\2018""\2019";
+        p {
+            display: inline;
+        }
+    }
+    blockquote:before {
+        color: #ccc;
+        content: open-quote;
+        font-size: 1rem;
+        line-height: 2;
+        font-style: italic;
+    }
+    hr {
+        border: none;
+        height: 5px;
+        background: linear-gradient(to right, #ff7e5f, #F6AE2D);
+        max-width: 70%;
+        border-radius: 0 15px 0 15px;
+        margin: 20px 0;
+    }
 }
 </style>
