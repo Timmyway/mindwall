@@ -35,6 +35,10 @@ export default function useMarkdownParser(usePrettify = false) {
         htmlRendered.value = markdown.value.render(mdString);
     }
 
+    const resetHtml = () => {
+        htmlRendered.value = '';
+    }
+
     const prettify = (htmlString: string) => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlString, 'text/html');
@@ -58,5 +62,5 @@ export default function useMarkdownParser(usePrettify = false) {
         return prettifiedText;
     }
 
-    return { htmlRendered, parseTextFromMarkDown, mdToHtml }
+    return { htmlRendered, parseTextFromMarkDown, mdToHtml, resetHtml }
 }

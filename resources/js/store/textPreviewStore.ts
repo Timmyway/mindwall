@@ -3,14 +3,19 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 export const useTextPreviewStore = defineStore('textPreview', () => {
-    const { htmlRendered, mdToHtml } = useMarkdownParser();
+    const { htmlRendered, mdToHtml, resetHtml } = useMarkdownParser();
     const isPreviewMode = ref<boolean>(false)
 
     const preview = (mdString: string) => {
+        console.log('------------>')
         isPreviewMode.value = true;
-        mdToHtml(mdString);
-        console.log('============> PReview : ', htmlRendered);
+        mdToHtml(mdString);        
     }
 
-    return { htmlRendered, preview, isPreviewMode }
+    const closePreview = () => {
+        isPreviewMode.value = false;
+        resetHtml();
+    }
+
+    return { htmlRendered, preview, isPreviewMode, closePreview }
 });

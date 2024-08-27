@@ -48,7 +48,7 @@ const notifStore = useNotifStore();
     width: fit-content;
     max-width: 640px;
     color: white;
-    z-index: 999999;
+    z-index: 91;
     display: flex; flex-direction: column; gap: 5px;
     height: auto;
     max-height: 95vh;

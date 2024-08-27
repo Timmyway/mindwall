@@ -281,7 +281,7 @@ onMounted(() => {
     .command-panel {
         position: absolute;
         right: 5%; top: 3%;
-        z-index: 99;
+        z-index: 90;
         display: flex;
         justify-content: center; align-items: center;
         background: rgba(0, 0, 0, 0.7);

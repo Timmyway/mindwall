@@ -62,34 +62,9 @@ const handleChangeLanguage = () => {
 
 <template>
 <div
-    class="tw-mindwall-toolbar relative px-3 flex flex-wrap items-center gap-4 h-16 border-2"
+    class="tw-mindwall-toolbar relative px-3 gap-4 border-2"
     @mouseleave.prevent="handleCommandBarMouseLeave"
->
-    <div v-show="debug" class="mindwall-debug flex items-center fixed top-0 right-0 max-w-2xl h-12 w-full bg-red-600 z-50">
-        <div>
-            <!-- <textarea :value="JSON.stringify(canvasStore.wall, null, 4)" class="text-black w-full h-full"></textarea>-->
-            <tw-sidebar></tw-sidebar>
-        </div>
-        <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
-            <div class="py-2 flex flex-col gap-2">
-                <span>Name: {{ canvasStore.selectedConfig?.name }} | x: {{ canvasStore.selectedConfig?.x }} | y: {{ canvasStore.selectedConfig?.y }}</span>
-                <span>StageX{{ canvasStore.stageRef?.getStage()?.x() }} | StageY: {{ canvasStore.stageRef?.getStage()?.y() }}</span>
-            </div>
-            <div v-for="confValue,confName in canvasStore.selectedConfig" class="p-1 border border-gray-200 py-1">
-                <div class="h-12">
-                    {{ confName }} => {{ confValue }}
-                </div>
-            </div>
-        </div>
-        <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
-            <div v-for="g in canvasStore.wall">
-                <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
-                    {{ sName }} => {{ sValue }}
-                </div>
-            </div>
-        </div>
-        <button class="w-6 h-6" @click="debug = false"><i class="fas fa-times"></i></button>
-    </div>
+>    
     <Link
         :href="route('thematic.list')"
         class="btn btn-icon--xs btn-icon--flat btn-icon py-1"
@@ -271,6 +246,49 @@ const handleChangeLanguage = () => {
         <div class="text-xs whitespace-nowrap bg-yellow-300 shadow text-black rounded-lg px-2">Draggable: ({{ canvasStore.selectedConfig?.draggable }})</div>
     </div>
     <i :class="['fas', canvasStore.selectedConfig?.draggable ? 'fa-unlock text-green-600' : 'fa-lock text-red-600']"></i>
-    <h2 class="text-3xl capitalize font-black ml-auto mr-5">{{ widgetStore.usedEngine?.name }}</h2>
+    <h2 class="text-xl capitalize font-black ml-auto mr-5 whitespace-nowrap">{{ widgetStore.usedEngine?.name }}</h2>
+    <tw-sidebar></tw-sidebar>
+    <div v-show="debug" class="mindwall-debug flex items-center max-w-2xl w-full bg-red-600 z-50">
+        <!--
+        <div>
+            <textarea :value="JSON.stringify(canvasStore.wall, null, 4)" class="text-black w-full h-full"></textarea>
+        </div>
+        -->
+        <div class="bg-black text-white text-xs p-1 w-full h-12 overflow-auto scroll-smooth">
+            <div class="py-2 flex flex-col gap-2">
+                <span>Name: {{ canvasStore.selectedConfig?.name }} | x: {{ canvasStore.selectedConfig?.x }} | y: {{ canvasStore.selectedConfig?.y }}</span>
+                <span>StageX{{ canvasStore.stageRef?.getStage()?.x() }} | StageY: {{ canvasStore.stageRef?.getStage()?.y() }}</span>
+            </div>
+            <div v-for="confValue,confName in canvasStore.selectedConfig" class="p-1 border border-gray-200 py-1">
+                <div class="h-12">
+                    {{ confName }} => {{ confValue }}
+                </div>
+            </div>
+        </div>
+        <div class="bg-indigo-600 text-white text-xs h-12 overflow-auto w-full">
+            <div v-for="g in canvasStore.wall">
+                <div v-for="sValue,sName in g" class="p-1 border border-gray-200 py-1">
+                    {{ sName }} => {{ sValue }}
+                </div>
+            </div>
+        </div>
+        <button class="w-6 h-6" @click="debug = false"><i class="fas fa-times"></i></button>
+    </div>
 </div>
 </template>
+
+<style>
+.tw-mindwall-toolbar {
+    background:
+        linear-gradient(#062FD9 0%, #FD000D 90%),
+        linear-gradient(to right, #A7F200 0%, #560CBE 60%),
+        url('images/pages/thematics/wall.WebP') 30px,
+        url('images/pages/thematics/wall.WebP') 20px;
+        background-blend-mode: multiply, difference, lighten;
+    color: white;
+    height: 64px;
+    display: flex; align-items: center;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+</style>

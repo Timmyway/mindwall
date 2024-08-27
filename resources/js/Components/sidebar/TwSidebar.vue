@@ -5,7 +5,7 @@ import TwSidebarShape from './TwSidebarShape.vue';
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
 
 interface Props {
-    height: string;
+    height?: string;
 }
 const props = withDefaults(defineProps<Props>(), {
     height: '90vh'
@@ -34,11 +34,12 @@ const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
 
 <style>
 .mw-sidebar {
-    background-color: #f5f1f1;
-    color: black;
-    position: fixed;
-    width: 300px;
+    position: fixed;    
     top: 85px; right: 0; bottom: 0;
+    z-index: 30;
+    background-color: #f5f1f1;
+    color: black;    
+    width: 300px;
     font-size: 1rem;
     overflow-y: auto;
     box-shadow: rgba(14, 30, 37, 0.12) 0px 2px 4px 0px, rgba(14, 30, 37, 0.32) 0px 2px 16px 0px;

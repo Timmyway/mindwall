@@ -35,7 +35,7 @@ const { fontSize, fontFamily, textAlign } = storeToRefs(commandBarStore);
             @change="commandBarStore.updateFontFamily()"
         />
     </div>
-    <div class="flex items-center">
+    <div class="flex items-center whitespace-nowrap">
         <!-- SETTING: text family. Note: fontFamilies is not reactive -->
         <SelectButton
             v-model="textAlign"
