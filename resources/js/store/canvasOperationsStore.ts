@@ -562,11 +562,11 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             const { originalGroup, newGroup } = stack.pop()!;
     
             for (const originalItem of originalGroup.items) {
-                const newItemId = `${newGroup.id}-${originalItem.is}-${getNanoid()}`;
-                const newItem = { ...originalItem, id: newItemId, name: newItemId };
+                const newItemId = `${originalItem.is}-${getNanoid()}`;
+                const newItem: MwNode = { ...originalItem, id: newItemId, name: newItemId, parent: newGroup.id ?? '' };
     
                 // If the item is a group, clone it and push it to the stack
-                if (newItem.is === 'group') {
+                if (isMwGroupConfig(newItem)) {
                     const clonedSubGroup: MwGroupConfig = { ...newItem, id: newItemId, items: [] };
                     newGroup.items.push(clonedSubGroup);
                     stack.push({ originalGroup: originalItem as MwGroupConfig, newGroup: clonedSubGroup });
