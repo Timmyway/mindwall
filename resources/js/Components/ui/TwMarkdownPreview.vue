@@ -50,13 +50,14 @@ const textPreviewStore = useTextPreviewStore();
     font-family: 'Nunito';
     line-height: 1.7;
     border-radius: 4px;
-    h1, h2 {
-        font-weight: black;
+    h1 {
+        font-weight: bold;        
         font-size: 2.4rem;
-    }
+    }    
+    h2 { font-weight: bold; font-size: 2rem; }
     h3, h4, h5, h6 {
         font-weight: bold;
-        font-size: 2rem;
+        font-size: 1rem;
     }
     p {
         padding: 10px 0;        
