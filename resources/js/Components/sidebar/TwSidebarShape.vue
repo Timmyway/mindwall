@@ -20,7 +20,7 @@ const sidebarStore = useSidebarStore();
     }"
 >
     <div class="flex gap-4">
-        <button class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-6 h-6 p-2" @click="sidebarStore.toogleDetails">
+        <button class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-6 h-6 p-2" @click="sidebarStore.toggleDetails(node?.id ?? '')">
             <i :class="['fas', sidebarStore.areDetailsShown? 'fa-caret-down': 'fa-caret-right']"></i>
         </button>
         <button class="btn btn-icon btn-xs btn-icon--flat bg-emerald-200 w-6 h-6 p-2" @click="sidebarStore.findOnCanva($event, node, layerInfo)">
@@ -28,7 +28,7 @@ const sidebarStore = useSidebarStore();
         </button>
         <div>{{ truncateString(node?.name ?? '', 20) }}</div>
     </div>
-    <ul v-show="sidebarStore.areDetailsShown" class="mw-sidebar-shape__items">
+    <ul v-show="sidebarStore.areDetailsShown[node?.id ?? '']" class="mw-sidebar-shape__items">
         <li
             v-for="(shapeValue, shapeKey) in node"
             :key="`shape-detail-${shapeKey}`"
