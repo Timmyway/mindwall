@@ -27,16 +27,16 @@ const props = defineProps<{
 
 const canvaStore = useCanvasStore();
 const appStore = useAppStore();
+appStore.setThematic(props.thematic);
 const operationStore = useCanvasOperationsStore();
 const canvasEventStore = useCanvasEventsStore();
-const canvasConfigStore = useCanvasConfig();
 const textEditStore = useTextEditStore();
+const canvasConfigStore = useCanvasConfig();
 
 const { stageRef, transformer } = storeToRefs(canvaStore);
 const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
 
 appStore.setEngines(props.engines);
-appStore.setThematic(props.thematic);
 appStore.setLanguages(props.languages);
 
 const page = usePage();
@@ -101,9 +101,7 @@ const transformV = ref([]);
 
 <template>
 <tw-markdown-preview></tw-markdown-preview>
-<div class="bg-white tw-canva relative" v-if="appStore.isReady">
-    {{ canvaStore.selectedItems.map(item => item.name ) }}
-    SN: {{  canvaStore.selectedConfigName }}
+<div class="bg-white tw-canva relative" v-if="appStore.isReady">    
     <mw-textarea></mw-textarea>
     <mw-toolbar></mw-toolbar>
     <v-stage
@@ -115,20 +113,14 @@ const transformV = ref([]);
         @keyup="handleKeyup"
         :draggable="true"
     >
+        <v-layer>            
+            <v-circle :config="canvasConfigStore.kernelConfig"></v-circle>
+        </v-layer>        
         <template>
             <v-layer v-for="(layer, layerIndex) in canvaStore.wall.layers" :key="layer.id">
                 <v-transformer ref="transformer" :config="canvasConfigStore.transformerConfig" />
-                <template>
-                    <!--
-                    <div class="px-4 py-2 shadow-lg bg-green-400 text-black font-bold rounded-full">
-                        <v-group :config="canvasConfigStore.groupConfig">
-                            <v-text :config="canvasConfigStore.textConfig"></v-text>
-                        </v-group>
-                    </div>
-                    -->
-                    <div v-for="(layerItemConfig, layerItemIndex) in layer?.items" :key="layerItemConfig.id">
-                        <mw-layer-item :config="layerItemConfig" :layer-info="{ id: layer.id ?? '', index: layerIndex }"></mw-layer-item>
-                    </div>
+                <template v-for="(layerItemConfig, layerItemIndex) in layer?.items" :key="layerItemConfig.id">
+                    <mw-layer-item :config="layerItemConfig" :layer-info="{ id: layer.id ?? '', index: layerIndex }"></mw-layer-item>
                 </template>
             </v-layer>
         </template>

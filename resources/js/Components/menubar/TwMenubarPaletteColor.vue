@@ -4,6 +4,7 @@ import { ActionPanelView } from '@/types/panel.types';
 interface Props {
     isVisible?: boolean;
     paletteColor: string[];
+    handleShowPanel: (panel: keyof ActionPanelView) => void;
     handleHidePanel: (panel: keyof ActionPanelView) => void;
     handleChangeColor: (color: string) => void;
     maxWidth?: string;
@@ -24,9 +25,11 @@ const { handleHidePanel, handleChangeColor } = props
 <template>
 <div
     v-show="isVisible"
-    class="tw-menubar-palette-color absolute top-full w-full bg-white z-10 p-2 flex flex-wrap gap-[5px]"
+    class="tw-menubar-palette-color absolute top-full w-full bg-white z-40 p-2 flex flex-wrap gap-[5px]"
     :style="{ maxWidth }"
-    @mouseleave="() => handleHidePanel('palette')">
+    @mouseenter="() => handleShowPanel('palette')"
+    @mouseleave="() => handleHidePanel('palette')"    
+>
     <template v-for="color in paletteColor">
         <button
             class="btn btn-icon p-0 w-6 h-6 rounded-full"

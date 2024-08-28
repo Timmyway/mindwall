@@ -29,6 +29,9 @@ const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
             </div>
         </div>
     </div>
+    <div class="flex overflow-x-auto h-12 scrollbar-thin">
+        <span v-show="canvasStore.selectedItems?.length > 0" class="whitespace-nowrap">{{ canvasStore.selectedItems.map(item => item.name ) }}</span>
+    </div>
 </aside>
 </template>
 

@@ -42,19 +42,22 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
         shadowBlur: 1,
     };
 
-    const textConfig = ref({
-        x: canvasStore.center.x + 20,
-        y: canvasStore.center.y + 5,
-        text: appStore.thematic?.name,
+    const kernelConfig = ref({
+        x: canvasStore.center.x + 2.5,
+        y: canvasStore.center.y + 2.5,
+        text: appStore.thematic?.name?.slice(0, 26),
+        width: 5,
+        height: 5,
+        fill: '#880205',
         ellipsis: true,
         align: 'center',
         verticalAlign: 'middle',
-        fontSize: 16,
+        fontSize: 10,
         fontFamily: 'Impact',
         color: 'black',
-    });
+    });    
 
-    return { transformerConfig, textConfig, thematicRectConfig,
-        groupConfig, stageConfig,
+    return { transformerConfig, kernelConfig, thematicRectConfig,
+        groupConfig, stageConfig
     }
 });
