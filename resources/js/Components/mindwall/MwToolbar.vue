@@ -4,10 +4,8 @@ import { useAppStore } from '@/store/appStore';
 import { useCanvasOperationsStore } from '@/store/canvasOperationsStore';
 import { useCanvasStore } from '@/store/canvasStore';
 import { useImageGalleryStore } from '@/store/imageGalleryStore';
-import { useTextEditStore } from '@/store/textEditStore';
 import { useWidgetSettingStore } from '@/store/widgetSettingStore';
 import { useAudioStore } from '@/store/audioStore';
-import { ref } from 'vue';
 import TwImageGallery from '../media/TwImageGallery.vue';
 import TwImageBankGallery from '../media/TwImageBankGallery.vue';
 import TwZoomLevel from '../menubar/TwZoomLevel.vue';
@@ -19,6 +17,7 @@ import TwSidebar from '../sidebar/TwSidebar.vue';
 import TwActionWall from '../menubar/TwActionWall.vue';
 import TwActionAi from '../menubar/TwActionAi.vue';
 import TwActionDebug from '../menubar/TwActionDebug.vue';
+import TwActionShape from '../menubar/TwActionShape.vue';
 
 const galleryStore = useImageGalleryStore();
 const operationStore = useCanvasOperationsStore();
@@ -146,8 +145,8 @@ const handleChangeLanguage = () => {
             <div v-show="isMwTextConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
                 <tw-action-text></tw-action-text>
             </div>
-            <div v-show="isMwRectConfig(canvasStore.selectedConfig) | isMwCircleConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
-                <tw-action-text></tw-action-text>
+            <div v-show="isMwRectConfig(canvasStore.selectedConfig) || isMwCircleConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                <tw-action-shape></tw-action-shape>
             </div>
         </div>        
         <tw-sidebar></tw-sidebar>

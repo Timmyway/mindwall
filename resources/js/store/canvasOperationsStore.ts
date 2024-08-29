@@ -388,7 +388,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             width: defaultTextSize,
             align: 'left',
             lineHeight: 1.7,
-            draggable: true,
+            draggable: true,            
         };
     
         if (parent && parent.items) {

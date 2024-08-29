@@ -298,8 +298,11 @@ export const useCanvasStore = defineStore('canvas', () => {
     const prettify = () => {
         if (isMwTextConfig(selectedConfig.value)) {
             const text = selectedConfig.value.text;
-            // Replace multiple consecutive newline characters with a single newline
-            setSelectedConfig({ text: text.replace(/\n\s*\n/g, '\n').trim() });
+
+            if (text) {
+                // Replace multiple consecutive newline characters with a single newline
+                setSelectedConfig({ text: text.replace(/\n\s*\n/g, '\n').trim() });
+            }            
         }
     }
 

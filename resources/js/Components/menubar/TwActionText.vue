@@ -16,12 +16,12 @@ const canvasStore = useCanvasStore();
 const audioStore = useAudioStore();
 const textPreviewStore = useTextPreviewStore();
 
-const { isMwTextConfig } = useCanvasConditions();
+const { isFillable } = useCanvasConditions();
 const { fontSize, fontFamily, textAlign } = storeToRefs(commandBarStore);
 const { paletteColor } = usePaletteColor();
 
 const changeColor = (color: string) => {
-    if (isMwTextConfig(canvasStore.selectedConfig)) {
+    if (isFillable(canvasStore.selectedConfig)) {
         canvasStore.setSelectedConfig({ fill: color });
     }
     hidePanel('palette');
