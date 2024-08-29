@@ -326,11 +326,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             visible: true,
             ...(shapeType === 'circle' ? { radius } : { width, height })
         };
+
+        console.log('---------> New shape config: ', newMwShapeConfig);
     
         // Find the layer or group where we need to add the shape
         const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
-        if (parent && parent.items) {
+        if (parent && parent.items) {            
             parent.items.push(newMwShapeConfig);
+            console.log('================> PPPPPP', parent)
         }
     };
     
@@ -340,21 +343,33 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         { defaultTextSize = 320, parentId = autodetectParentId() }: { defaultTextSize?: number, parentId?: string | null } = {}
     ) => {
         const resolvedParentId = parentId ?? autodetectParentId();
-
+    
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;
-
-        // Estimate position for the new text
-        const { x: estimateX, y: estimateY } = generatePosition();
-
+    
+        // Find the layer or group where we need to add the text
+        const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
+    
+        // Ensure items array is defined
+        if (parent && !parent.items) {
+            parent.items = [];
+        }
+    
+        let estimatePosition = generatePosition();
+    
+        // If the parent is a group, use the last item's position in the group
+        if (parent && parent.items && parent.items.length > 0) {
+            estimatePosition = estimateLastItemGroupPosition(parent);
+        }
+    
         const newMwTextConfig: MwTextConfig = {
             id: textIdentifier,
             name: textIdentifier,
             parent: resolvedParentId,
             is: 'text',
             rotation: 0,
-            x: estimateX,
-            y: estimateY,
+            x: estimatePosition.x,
+            y: estimatePosition.y,
             scaleX: 1,
             scaleY: 1,
             fontFamily: 'Montserrat',
@@ -367,13 +382,12 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             lineHeight: 1.7,
             draggable: true,
         };
-
-        // Find the layer or group where we need to add the text
-        const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
+    
         if (parent && parent.items) {
             parent.items.push(newMwTextConfig);
         }
     };
+    
 
     const findOrCreateParent = (parentId: string, resolvedParentId: string): (MwLayerConfig | MwGroupConfig | null) => {
         const parentCandidate = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
@@ -403,6 +417,33 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             x = canvasStore.selectedConfig.x ?? canvasStore.center.x + defaultXOffset;
             y = canvasStore.selectedConfig.y ?? canvasStore.center.y + defaultYOffset;
         }
+    
+        return { x, y };
+    };
+
+    const estimateLastItemGroupPosition = (
+        group: MwLayerConfig | MwGroupConfig,
+        yOffset: number = 50
+    ): { x: number; y: number } => {
+        if (!group.items || group.items.length === 0) {
+            // Default position if the group has no items
+            return { x: 0, y: 0 };
+        }
+    
+        // Find the item with the largest y coordinate
+        const bottomElement = group.items.reduce((prev, current) => {
+            const prevY = prev.y ?? 0;
+            const currentY = current.y ?? 0;
+            return currentY > prevY ? current : prev;
+        });
+    
+        // If bottomElement has no defined x or y, provide defaults
+        const x = bottomElement.x ?? 0;
+        const y = (bottomElement.y ?? 0) + yOffset;
+    
+        console.log(`-- 6324 -> Group: ${group.items.map(item => item.id)}`);
+        console.log(`-- 6324 -> Bottom element pos: ${bottomElement.x}|${bottomElement.y}`);
+        console.log(`-- 6325 -> Estimated pos: ${x}|${y}`);
     
         return { x, y };
     };

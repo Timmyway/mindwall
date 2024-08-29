@@ -26,7 +26,7 @@ const appStore = useAppStore();
 const widgetStore = useWidgetSettingStore();
 const audioStore = useAudioStore();
 
-const { isMwTextConfig } = useCanvasConditions();
+const { isMwTextConfig, isMwRectConfig, isMwCircleConfig } = useCanvasConditions();
 
 const canvasStore = useCanvasStore();
 
@@ -145,7 +145,10 @@ const handleChangeLanguage = () => {
             <!-- SETTING: text size -->
             <div v-show="isMwTextConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
                 <tw-action-text></tw-action-text>
-            </div>            
+            </div>
+            <div v-show="isMwRectConfig(canvasStore.selectedConfig) | isMwCircleConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
+                <tw-action-text></tw-action-text>
+            </div>
         </div>        
         <tw-sidebar></tw-sidebar>
         <tw-action-debug class="mx-2"></tw-action-debug>

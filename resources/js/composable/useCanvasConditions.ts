@@ -1,4 +1,4 @@
-import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwRectConfig, MwTextConfig } from "@/types/konva.config";
+import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwRectConfig, MwCircleConfig, MwTextConfig } from "@/types/konva.config";
 
 export function useCanvasConditions() {
     const isMwTextConfig = (config: any): config is MwTextConfig => {
@@ -22,6 +22,13 @@ export function useCanvasConditions() {
         return (config as MwRectConfig).is === 'rectangle';
     };
 
+    const isMwCircleConfig = (config: any): config is MwCircleConfig => {
+        if (!config) {
+            return false;
+        }
+        return (config as MwCircleConfig).is === 'circle';
+    };
+
     const isMwLayerConfig = (config: any): config is MwLayerConfig => {
         if (!config) {
             return false;
@@ -41,6 +48,6 @@ export function useCanvasConditions() {
     };
 
     return { isMwGroupConfig, isMwLayerConfig, isMwShapeConfig, 
-        isMwRectConfig, isMwTextConfig, isMwImageConfig,
+        isMwRectConfig, isMwTextConfig, isMwImageConfig, isMwCircleConfig,
     }
 }

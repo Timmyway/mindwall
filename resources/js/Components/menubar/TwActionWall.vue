@@ -38,7 +38,7 @@ const operationStore = useCanvasOperationsStore();
                 </button>
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
-                    @click.prevent="operationStore.addTextToWall()"
+                    @click.prevent="operationStore.addShapeToWall('circle')"
                 >
                     <i class="fas fa-vector-circle text-xl text-black"></i>
                 </button>
@@ -49,7 +49,7 @@ const operationStore = useCanvasOperationsStore();
         <tw-button-group trigger-icon-class="fas fa-tools">
             <template #buttons>
                 <button
-                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
                     @click.prevent="operationStore.bringToBack(canvasStore.selectedConfig?.id ?? '')"
                 >
                     <i class="fas fa-arrow-up text-xl text-black"></i>
