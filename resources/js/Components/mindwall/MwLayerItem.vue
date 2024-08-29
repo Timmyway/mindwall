@@ -17,6 +17,6 @@ const { isMwGroupConfig, isMwShapeConfig } = useCanvasConditions();
         <mw-group :config="config" :layer-info="layerInfo"></mw-group>
     </template>
     <template v-if="isMwShapeConfig(config)">
-        <mw-shape :config="config" :layer-info="layerInfo"></mw-shape>
+        <mw-shape :config="config as MwShapeConfig" :layer-info="layerInfo"></mw-shape>
     </template>
 </template>

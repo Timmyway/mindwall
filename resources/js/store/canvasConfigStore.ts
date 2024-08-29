@@ -7,7 +7,7 @@ import { useAppStore } from "./appStore";
 export const useCanvasConfig = defineStore('canvasConfig', () => {
     const canvasStore = useCanvasStore();
     const appStore = useAppStore();
-    const { isMwTextConfig, isMwImageConfig, isMwGroupConfig } = useCanvasConditions();
+    const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwRectConfig } = useCanvasConditions();
 
     const transformerConfig = computed(() => {
         const tempConfig = { enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'] };
@@ -18,6 +18,8 @@ export const useCanvasConfig = defineStore('canvasConfig', () => {
             } else if (isMwGroupConfig(canvasStore.selectedConfig)) {
                 tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];
             } else if (isMwImageConfig(canvasStore.selectedConfig)) {
+                tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];            
+            } else if (isMwRectConfig(canvasStore.selectedConfig)) {
                 tempConfig.enabledAnchors = ['top-left', 'top-center', 'top-right', 'middle-right', 'middle-left', 'bottom-left', 'bottom-center', 'bottom-right'];
             }
         }

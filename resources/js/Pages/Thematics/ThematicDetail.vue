@@ -7,7 +7,6 @@ import { storeToRefs } from 'pinia';
 import { Thematic, Engine, Language } from '../../types/thematic.types';
 import { User } from '@/types';
 import { onUnmounted } from 'vue';
-import useMarkdownParser from '@/composable/useMarkdownParser';
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useAppStore } from '@/store/appStore';
 import { useCanvasOperationsStore } from '@/store/canvasOperationsStore';
@@ -43,8 +42,6 @@ const page = usePage();
 const user = computed<User | null>((): User | null => page.props.user as User | null);
 
 appStore.cook();
-
-const { parseTextFromMarkDown } = useMarkdownParser();
 
 onMounted(() => {
     const handleKeydown = (event: KeyboardEvent) => {

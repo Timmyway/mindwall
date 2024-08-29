@@ -2,6 +2,7 @@
 import { useAppStore } from '@/store/appStore';
 import { useCanvasOperationsStore } from '@/store/canvasOperationsStore';
 import { useCanvasStore } from '@/store/canvasStore';
+import TwButtonGroup from './TwButtonGroup.vue';
 
 const appStore = useAppStore();
 const canvasStore = useCanvasStore();
@@ -11,19 +12,57 @@ const operationStore = useCanvasOperationsStore();
 
 <template>
 <div class="flex justify-center items-center gap-3">
-    <button
-        v-show="!appStore.isSaving"
-        class="btn btn-icon btn-xs btn-icon--flat bg-green-400 w-8 h-8 p-2"
-        @click.prevent="appStore.saveWallToServer()"
-    >
-        <i class="fas fa-save text-xl text-black"></i>
-    </button>
-    <button
-        class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
-        @click.prevent="operationStore.addTextToWall()"
-    >
-        <i class="fas fa-plus-circle text-xl text-black"></i>
-    </button>
+    <div class="w-8 h-8">
+        <button
+            v-show="!appStore.isSaving"
+            class="btn btn-icon btn-xs btn-icon--flat bg-green-400 w-8 h-8 p-2"
+            @click.prevent="appStore.saveWallToServer()"
+        >
+            <i class="fas fa-save text-xl text-black"></i>
+        </button>
+    </div>
+    <div>
+        <tw-button-group>
+            <template #buttons>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
+                    @click.prevent="operationStore.addTextToWall()"
+                >
+                    <i class="fas fa-font text-xl text-black"></i>
+                </button>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
+                    @click.prevent="operationStore.addShapeToWall('rectangle')"
+                >
+                    <i class="fas fa-vector-square text-xl text-black"></i>
+                </button>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
+                    @click.prevent="operationStore.addTextToWall()"
+                >
+                    <i class="fas fa-vector-circle text-xl text-black"></i>
+                </button>
+            </template>
+        </tw-button-group>        
+    </div>
+    <div>
+        <tw-button-group trigger-icon-class="fas fa-tools">
+            <template #buttons>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2"
+                    @click.prevent="operationStore.bringToBack(canvasStore.selectedConfig?.id ?? '')"
+                >
+                    <i class="fas fa-arrow-up text-xl text-black"></i>
+                </button>
+                <button
+                    class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
+                    @click.prevent="operationStore.bringToTop(canvasStore.selectedConfig?.id ?? '')"
+                >
+                    <i class="fas fa-arrow-down text-xl text-black"></i>
+                </button>                
+            </template>
+        </tw-button-group>        
+    </div>
     <button
         class="btn btn-icon btn-xs btn-icon--flat bg-red-400 w-8 h-8 p-2"
         @click.prevent="canvasStore.resetWall()"

@@ -12,7 +12,7 @@ const { isMwShapeConfig } = useCanvasConditions();
 </script>
 
 <template>
-<div class="flex items-center gap-4 w-[200px]">
+<div class="flex items-center gap-4 w-16">
     <div
         v-show="!widgetStore.isLoading.aiGenerateText && isMwShapeConfig(canvasStore.selectedConfig)"
         class="flex items-center gap-2"

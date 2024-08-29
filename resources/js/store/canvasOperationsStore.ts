@@ -2,7 +2,7 @@ import { defineStore, storeToRefs } from "pinia";
 import { useCanvasStore } from "./canvasStore";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { getNanoid, imageToBase64 } from "@/helpers/utils";
-import { MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwTextConfig } from "@/types/konva.config";
+import { MwCircleConfig, MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwRectConfig, MwTextConfig } from "@/types/konva.config";
 import useImageUtility from "@/composable/useImageUtility";
 import { useImageGalleryStore } from "./imageGalleryStore";
 import { useWidgetSettingStore } from "./widgetSettingStore";
@@ -297,6 +297,44 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         return parentId;
     }
 
+    const addShapeToWall = (
+        shapeType: 'circle' | 'rectangle',
+        { width = 100, height = 100, radius = 50, fill = 'black', parentId = autodetectParentId() }: 
+        { width?: number, height?: number, radius?: number, fill?: string, parentId?: string | null } = {}
+    ) => {
+        const resolvedParentId = parentId ?? autodetectParentId();
+    
+        // Generate unique identifier for the shape
+        const shapeIdentifier = `${shapeType}-${getNanoid()}`;
+    
+        // Estimate position for the new shape
+        const { x: estimateX, y: estimateY } = generatePosition();
+    
+        // Create the shape configuration
+        const newMwShapeConfig: MwRectConfig | MwCircleConfig = {
+            id: shapeIdentifier,
+            name: shapeIdentifier,
+            parent: resolvedParentId,
+            is: shapeType,
+            x: estimateX,
+            y: estimateY,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            draggable: true,
+            fill: fill,
+            visible: true,
+            ...(shapeType === 'circle' ? { radius } : { width, height })
+        };
+    
+        // Find the layer or group where we need to add the shape
+        const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
+        if (parent && parent.items) {
+            parent.items.push(newMwShapeConfig);
+        }
+    };
+    
+
     const addTextToWall = (
         text: string = 'Unleash your thoughts!',
         { defaultTextSize = 320, parentId = autodetectParentId() }: { defaultTextSize?: number, parentId?: string | null } = {}
@@ -307,12 +345,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         const textIdentifier = `text-${getNanoid()}`;
 
         // Estimate position for the new text
-        let estimateX = canvasStore.center.x - 10;
-        let estimateY = canvasStore.center.y - 50;
-        if (canvasStore.selectedConfig) {
-            estimateX = canvasStore.selectedConfig.x ?? canvasStore.center.x - 10;
-            estimateY = canvasStore.selectedConfig.y ?? canvasStore.center.y - 50;
-        }
+        const { x: estimateX, y: estimateY } = generatePosition();
 
         const newMwTextConfig: MwTextConfig = {
             id: textIdentifier,
@@ -336,20 +369,42 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         };
 
         // Find the layer or group where we need to add the text
-        const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
-            findParentIteratively(resolvedParentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+        const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
+        if (parent && parent.items) {
+            parent.items.push(newMwTextConfig);
+        }
+    };
+
+    const findOrCreateParent = (parentId: string, resolvedParentId: string): (MwLayerConfig | MwGroupConfig | null) => {
+        const parentCandidate = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
+        findParentIteratively(resolvedParentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
 
         console.log('-- 547 -> Parent: ', parent)
-        if (parent && 'items' in parent) {
+        if (parentCandidate && 'items' in parentCandidate) {
             // Ensure items is defined before pushing
+            const parent = parentCandidate as MwLayerConfig | MwGroupConfig;
             if (!parent.items) {
                 parent.items = []; // Initialize items if it's undefined
             }
-            parent.items.push(newMwTextConfig);
+            
+            return parent;
         } else {
             // Handle case where parent wasn't found
             console.error(`Parent with ID ${parentId} not found`);
+            return null;
         }
+    };
+
+    const generatePosition = (defaultXOffset: number = -10, defaultYOffset: number = -50): { x: number, y: number } => {
+        let x = canvasStore.center.x + defaultXOffset;
+        let y = canvasStore.center.y + defaultYOffset;
+    
+        if (canvasStore.selectedConfig) {
+            x = canvasStore.selectedConfig.x ?? canvasStore.center.x + defaultXOffset;
+            y = canvasStore.selectedConfig.y ?? canvasStore.center.y + defaultYOffset;
+        }
+    
+        return { x, y };
     };
 
     const findParentIteratively = (parentId: string, items: MwNode[]): MwGroupConfig | undefined => {
@@ -595,78 +650,38 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     /* SET ZINDEX */
-    const bringToTop = () => {
-        if (canvasStore.selectedConfig && selectedGroupName.value) {
-            const groupName = selectedGroupName.value;
-            const configName = canvasStore.selectedConfig.name;
-
-            const group = canvasStore.wall[groupName];
-            if (group && group.items) {
-                const items = Object.values(group.items);
-
-                // Find the maximum zIndex among siblings
-                const maxZIndex = items.reduce((maxIndex, item) => {
-                    return item.zIndex !== undefined && item.zIndex > maxIndex ? item.zIndex : maxIndex;
-                }, -1);
-
-                // Calculate the new zIndex
-                const newZIndex = maxZIndex + 1;
-
-                // Check if the new zIndex exceeds the expected range
-                if (newZIndex >= items.length) {
-                    // Adjust zIndex to stay within valid range
-                    canvasStore.selectedConfig.zIndex = items.length - 1;
-                    transformer.value.zIndex = items.length - 1;
-                    console.warn(`Adjusted zIndex to ${items.length - 1} to stay within valid range.`);
-                } else {
-                    canvasStore.selectedConfig.zIndex = newZIndex;
-                    transformer.value.zIndex = newZIndex;
-                    // console.log('-- 400 -> Transformer value: ', transformer.value.getNode());
-                }
-
-                console.log(`Set zIndex of ${configName} to ${canvasStore.selectedConfig.zIndex}`);
-            }
+    const bringToTop = (id: string) => {
+        // Find the shape by its ID
+        const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
+        if (!shape) return;
+    
+        // Find the parent of the shape
+        const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
+        if (parentLayer && parentLayer.items) {
+            // Remove the shape from its current position
+            parentLayer.items = parentLayer.items.filter(item => item.id !== id);
+            // Add it back to the end of the items array to bring it to front
+            parentLayer.items.push(shape);
         }
     };
-
-    const bringToBack = () => {
-        if (canvasStore.selectedConfig && selectedGroupName.value) {
-            const groupName = selectedGroupName.value;
-            const configName = canvasStore.selectedConfig.name;
-
-            const group = canvasStore.wall[groupName];
-            if (group && group.items) {
-                const items = Object.values(group.items);
-
-                // Find the minimum zIndex among siblings, ensuring undefined zIndexes are ignored
-                const minZIndex = items.reduce((minIndex, item) => {
-                    if (item.zIndex !== undefined) {
-                        return item.zIndex < minIndex ? item.zIndex : minIndex;
-                    }
-                    return minIndex;
-                }, Number.MAX_SAFE_INTEGER);
-
-                // Calculate the new zIndex
-                let newZIndex = minZIndex - 1;
-
-                // Ensure newZIndex is non-negative and within the range of siblings
-                newZIndex = Math.max(0, newZIndex);
-
-                // If the newZIndex is still higher than the zIndex of all items, set it to 0
-                if (newZIndex < minZIndex) {
-                    newZIndex = 0;
-                }
-
-                // Set the zIndex
-                canvasStore.selectedConfig.zIndex = newZIndex;
-
-                console.log(`Set zIndex of ${configName} to ${canvasStore.selectedConfig.zIndex} of ${minZIndex}`);
-            }
+    
+    const bringToBack = (id: string) => {
+        // Find the shape by its ID
+        const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
+        if (!shape) return;
+    
+        // Find the parent of the shape
+        const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
+        if (parentLayer && parentLayer.items) {
+            // Remove the shape from its current position
+            parentLayer.items = parentLayer.items.filter(item => item.id !== id);
+            // Add it back to the start of the items array to bring it to back
+            parentLayer.items.unshift(shape);
         }
     };
 
     return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
-        bringToTop, bringToBack, groupSelectedItems, ungroupItems,
+        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,
     }
 });

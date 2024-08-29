@@ -14,7 +14,7 @@ const canvasStore = useCanvasStore();
 const textEditStore = useTextEditStore();
 const canvasEventsStore = useCanvasEventsStore();
 
-const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
+const { isMwTextConfig, isMwImageConfig, isMwRectConfig } = useCanvasConditions();
 </script>
 
 <template>
@@ -28,6 +28,14 @@ const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
     @transform="canvasEventsStore.handleTransform"
     @transformend="canvasEventsStore.handleTransformEnd"
 ></v-text>
+<template v-if="isMwRectConfig(config)">
+    <v-rect
+        :config="config"
+        @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+        @dragend="canvasEventsStore.onDragend"
+        @transformend="canvasEventsStore.handleTransformEnd"
+    ></v-rect>
+</template>
 <template v-if="isMwImageConfig(config)">
     <v-image
         :config="config"

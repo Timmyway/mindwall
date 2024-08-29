@@ -17,7 +17,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const { scaleBy, minScale, maxScale, zoomLevel } = useZoom();
     const menu: Ref<ContextMenu | null> = ref(null);
     const transformer = ref<Transformer[]>([]);
-    const { isMwGroupConfig } = useCanvasConditions();
+    const { isMwGroupConfig, isMwShapeConfig } = useCanvasConditions();
     const canvasOperations = useCanvasOperationsStore();
     const ctrlPressed = ref<boolean>(false);
 
@@ -128,7 +128,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     function findConfig(
         config: MwLayerConfig | MwGroupConfig, // Accept both Layer and Group configs
         configName: string
-    ): MwTextConfig | MwImageConfig | MwGroupConfig | null {
+    ): MwShapeConfig | MwGroupConfig | null {
         const stack: (MwLayerConfig | MwGroupConfig)[] = [config]; // Initialize stack with the top-level config
 
         while (stack.length > 0) {
@@ -141,7 +141,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                     // Check if the item matches the configuration name
                     if (item.id === configName) {
                         // Type guard to ensure we return the correct type
-                        if (isMwTextConfig(item) || isMwImageConfig(item) || isMwGroupConfig(item)) {
+                        if (isMwShapeConfig(item) || isMwGroupConfig(item)) {
                             return item; // Return the found item
                         }
                     }
@@ -352,7 +352,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         // console.log('-- 562 -> Select config name: ', configName);
         // console.log('-- 563 -> Select config from layer: ', layerInfo);
         // console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
-        // selectedConfigName.value = config?.name;
+        // selectedConfigName.value = config?.name;        
         if (config) {
             getSelectedConfig(config);
         }
