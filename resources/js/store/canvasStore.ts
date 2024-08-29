@@ -160,35 +160,34 @@ export const useCanvasStore = defineStore('canvas', () => {
     const selectedConfig = ref<MwTextConfig | MwImageConfig | MwGroupConfig | null>(null);
 
     const deleteConfig = (config: MwNode) => {
-        // Ensure config has a name and that wall layers exist
         if (!config?.id || !wall.value.layers) return;
-
-        // Iterate through each layer to find the parent layer of the config
-        for (const layer of wall.value.layers) {
-            // Use findConfig to locate the configuration by its ID
-            const foundConfig = findConfig(layer, config.id);
-
-            if (foundConfig) {
-                // Remove the found config from its parent layer
-                const parentLayer = wall.value.layers.find(l => l.items?.includes(foundConfig)); // Use optional chaining here
-
-                if (parentLayer && parentLayer.items) {
-                    const configIndex = parentLayer.items.findIndex(item => item.id === foundConfig.id);
-                    if (configIndex !== -1) {
-                        parentLayer.items.splice(configIndex, 1);
-                    }
+    
+        const stack: (MwLayerConfig | MwGroupConfig)[] = [...wall.value.layers];
+    
+        while (stack.length > 0) {
+            const parent = stack.pop();
+    
+            if (parent?.items) {
+                const configIndex = parent.items.findIndex(item => item.id === config.id);
+    
+                if (configIndex !== -1) {
+                    parent.items.splice(configIndex, 1);
+    
+                    console.log('-- Found and deleted config:', config);
+                    console.log('-- Parent after deletion:', parent);
+    
+                    resetConfig({ layerInfo: false });
+                    updateTransformer();
+    
+                    return; // Exit after deleting the config
                 }
-
-                console.error('-- Found config...', foundConfig);
-                console.error('-- Parent layer...', parentLayer);
-
-                // Clear the selection and transformer
-                resetConfig( { layerInfo: false });
-                updateTransformer();
-
-                return; // Exit after deleting the config
+    
+                // Add nested groups to the stack for further checking
+                stack.push(...parent.items.filter(isMwGroupConfig));
             }
         }
+    
+        console.error('Config not found in any layer or group');
     };
 
     const findGroupById = (configId: string): MwGroupConfig | null => {

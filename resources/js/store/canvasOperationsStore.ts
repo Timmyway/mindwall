@@ -13,9 +13,8 @@ import { MenuItemCommandEvent } from "primevue/menuitem";
 export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const canvasStore = useCanvasStore();
     const galleryStore = useImageGalleryStore();
-    const widgetStore = useWidgetSettingStore();
-    const { selectedConfigName, transformer, wall, selectedLayerInfo } = storeToRefs(canvasStore);
-    const { calcOptimizedImageDimension, resizeImage } = useImageUtility();
+    const widgetStore = useWidgetSettingStore();    
+    const { calcOptimizedImageDimension } = useImageUtility();
     const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwShapeConfig} = useCanvasConditions();
 
     const addImageToWall = (
@@ -23,18 +22,27 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     ) => {
         // Determine parent ID based on selectedLayerInfo or selectedConfig
         const parentId = autodetectParentId();
-
+    
         // Generate unique identifier for the image
         const imageIdentifier = `image-${getNanoid()}`;
-
+    
         // Estimate position for the new image
         let estimateX = canvasStore.center.x - 50;
         let estimateY = canvasStore.center.y - 50;
+        
         if (canvasStore.selectedConfig) {
-            estimateX = canvasStore.selectedConfig.x ?? canvasStore.center.x - 50;
-            estimateY = canvasStore.selectedConfig.y ?? canvasStore.center.y - 50;
+            if (canvasStore.selectedConfig.is === 'group') {
+                // If the selected config is a group, estimate the position based on the last item in the group
+                const { x, y } = estimateLastItemGroupPosition(canvasStore.selectedConfig);
+                estimateX = x;
+                estimateY = y + 25; // Add offset for the new item
+            } else {
+                // Otherwise, position relative to the selected config
+                estimateX = canvasStore.selectedConfig.x ?? canvasStore.center.x - 50;
+                estimateY = canvasStore.selectedConfig.y ?? canvasStore.center.y - 50;
+            }
         }
-
+    
         const newMwImageConfig: MwImageConfig = {
             id: imageIdentifier,
             name: imageIdentifier,
@@ -46,30 +54,34 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             height: 100,
             draggable: true,
         };
-
+    
         // Find the layer or group where we need to add the image
         const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
             findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
-
-        console.log('-- 547 -> Parent: ', parent);
+    
         if (parent && 'items' in parent) {
             // Ensure items is defined before pushing
             if (!parent.items) {
                 parent.items = []; // Initialize items if it's undefined
             }
-
+    
             // Handle image loading
+            const handleImageLoad = (im: HTMLImageElement) => {
+                const { w, h } = calcOptimizedImageDimension(im);
+                newMwImageConfig.width = w;
+                newMwImageConfig.height = h;
+                newMwImageConfig.image = im;
+    
+                // Add the new image to the parent group/layer
+                if (parent.items) {
+                    parent.items.push(newMwImageConfig);
+                }                
+            };
+    
             if (typeof src === 'string') {
                 const im = new window.Image();
                 im.src = src;
-                im.onload = () => {
-                    const { w, h } = calcOptimizedImageDimension(im);
-                    newMwImageConfig.width = w;
-                    newMwImageConfig.height = h;
-                    newMwImageConfig.image = im;
-
-                    parent.items.push(newMwImageConfig);
-                };
+                im.onload = () => handleImageLoad(im);
                 im.onerror = () => {
                     console.error(`Failed to load image from URL: ${src}`);
                 };
@@ -78,14 +90,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 reader.onload = (event) => {
                     const im = new window.Image();
                     im.src = event.target?.result as string;
-                    im.onload = () => {
-                        const { w, h } = calcOptimizedImageDimension(im);
-                        newMwImageConfig.width = w;
-                        newMwImageConfig.height = h;
-                        newMwImageConfig.image = im;
-
-                        parent.items.push(newMwImageConfig);
-                    };
+                    im.onload = () => handleImageLoad(im);
                     im.onerror = () => {
                         console.error('Failed to load image from file.');
                     };
@@ -95,7 +100,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         } else {
             console.error(`Parent with ID ${parentId} not found`);
         }
-
+    
         galleryStore.hideBankImageGallery();
     };
 
@@ -118,8 +123,11 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const deleteShape = () => {
         // Check if the selected config is available
         if (!canvasStore.selectedConfig) return;
+
         if (isMwGroupConfig(canvasStore.selectedConfig) || isMwShapeConfig(canvasStore.selectedConfig)) {
             canvasStore.deleteConfig(canvasStore.selectedConfig);
+        } else {
+            console.error('Selected config is neither a group nor a shape.');
         }
         //     const configName = canvasStore.selectedConfigName;
 
