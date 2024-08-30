@@ -700,32 +700,35 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     /* SET ZINDEX */
     const bringToTop = (id: string) => {
-        // Find the shape by its ID
         const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
         if (!shape) return;
     
-        // Find the parent of the shape
         const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
         if (parentLayer && parentLayer.items) {
             // Remove the shape from its current position
-            parentLayer.items = parentLayer.items.filter(item => item.id !== id);
-            // Add it back to the end of the items array to bring it to front
+            const index = parentLayer.items.findIndex(item => item.id === id);
+            parentLayer.items.splice(index, 1); // Remove the item at the found index
+            // Add it back to the end of the items array
             parentLayer.items.push(shape);
+    
+            // Force a reactivity update
+            parentLayer.items = [...parentLayer.items];
         }
     };
     
     const bringToBack = (id: string) => {
-        // Find the shape by its ID
         const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
         if (!shape) return;
     
-        // Find the parent of the shape
         const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
         if (parentLayer && parentLayer.items) {
-            // Remove the shape from its current position
-            parentLayer.items = parentLayer.items.filter(item => item.id !== id);
-            // Add it back to the start of the items array to bring it to back
+            const index = parentLayer.items.findIndex(item => item.id === id);
+            parentLayer.items.splice(index, 1); // Remove the item at the found index
+            // Add it back to the start of the items array
             parentLayer.items.unshift(shape);
+    
+            // Force a reactivity update
+            parentLayer.items = [...parentLayer.items];
         }
     };
 

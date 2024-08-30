@@ -27,6 +27,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
     @dragend="canvasEventsStore.onDragend"
     @transform="canvasEventsStore.handleTransform"
     @transformend="canvasEventsStore.handleTransformEnd"
+    @contextmenu="canvasEventsStore.handleGroupContextMenu"
 ></v-text>
 <template v-if="isMwRectConfig(config)">
     <v-rect
@@ -34,6 +35,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
+        @contextmenu="canvasEventsStore.handleGroupContextMenu"
     ></v-rect>
 </template>
 <template v-if="isMwCircleConfig(config)">
@@ -42,6 +44,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
+        @contextmenu="canvasEventsStore.handleGroupContextMenu"
     ></v-circle>
 </template>
 <template v-if="isMwImageConfig(config)">
@@ -50,6 +53,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
+        @contextmenu="canvasEventsStore.handleGroupContextMenu"
     />
 </template>
 </template>

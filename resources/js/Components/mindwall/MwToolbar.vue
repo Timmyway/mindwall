@@ -157,8 +157,8 @@ const handleChangeLanguage = () => {
         :handle-remove-shape="operationStore.deleteShape"
         :handle-add-text="(e) => operationStore.addTextToWall()"
         :handle-clone="operationStore.handleCloneGroup"
-        :handle-bring-to-top="operationStore.bringToTop"
-        :handle-bring-to-back="operationStore.bringToBack"
+        :handle-bring-to-top="(e) => operationStore.bringToTop(canvasStore.selectedConfig)"
+        :handle-bring-to-back="(e) => operationStore.bringToBack(canvasStore.selectedConfig)"
         :handle-text-ai-generate="(e) => operationStore.addAiTextToWall()"
         :handle-center-on-element="(e) => canvasStore.centerOnElement()"
     ></tw-context-menu>
