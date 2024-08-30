@@ -2,7 +2,7 @@ import { defineStore, storeToRefs } from "pinia";
 import { useCanvasStore } from "./canvasStore";
 import { useCanvasConditions } from "@/composable/useCanvasConditions";
 import { getNanoid, imageToBase64 } from "@/helpers/utils";
-import { MwCircleConfig, MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwRectConfig, MwTextConfig } from "@/types/konva.config";
+import { MwCircleConfig, MwGroupConfig, MwImageConfig, MwLayerConfig, MwNode, MwRectConfig, MwShapeConfig, MwTextConfig } from "@/types/konva.config";
 import useImageUtility from "@/composable/useImageUtility";
 import { useImageGalleryStore } from "./imageGalleryStore";
 import { useWidgetSettingStore } from "./widgetSettingStore";
@@ -699,36 +699,37 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     /* SET ZINDEX */
-    const bringToTop = (id: string) => {
-        const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
-        if (!shape) return;
-    
-        const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
-        if (parentLayer && parentLayer.items) {
-            // Remove the shape from its current position
-            const index = parentLayer.items.findIndex(item => item.id === id);
-            parentLayer.items.splice(index, 1); // Remove the item at the found index
-            // Add it back to the end of the items array
-            parentLayer.items.push(shape);
-    
-            // Force a reactivity update
-            parentLayer.items = [...parentLayer.items];
+    const bringToTop = (config: MwShapeConfig | MwGroupConfig | null) => {
+        if (config === null) return;
+        const parent = canvasStore.findParent(config);
+        if (isMwGroupConfig(parent) || parent?.is === 'layer') {
+            if (parent.items) {
+                // Remove the shape from its current position
+                const index = parent.items.findIndex(item => item.id === config?.id);
+                parent.items.splice(index, 1); // Remove the item at the found index
+                // Add it back to the end of the items array
+                parent.items.push(config);
+        
+                // Force a reactivity update
+                parent.items = [...parent.items];
+            }
         }
     };
     
-    const bringToBack = (id: string) => {
-        const shape = canvasStore.wall.layers.flatMap(layer => layer.items).find(item => item?.id === id);
-        if (!shape) return;
-    
-        const parentLayer = canvasStore.wall.layers.find(layer => layer.items?.includes(shape));
-        if (parentLayer && parentLayer.items) {
-            const index = parentLayer.items.findIndex(item => item.id === id);
-            parentLayer.items.splice(index, 1); // Remove the item at the found index
-            // Add it back to the start of the items array
-            parentLayer.items.unshift(shape);
-    
-            // Force a reactivity update
-            parentLayer.items = [...parentLayer.items];
+    const bringToBack = (config: MwShapeConfig | MwGroupConfig | null) => {        
+        if (config === null) return;
+        const parent = canvasStore.findParent(config);
+        if (isMwGroupConfig(parent) || parent?.is === 'layer') {
+            console.log('----------> Parent: ', parent)
+            if (parent.items) {
+                const index = parent.items.findIndex(item => item.id === config?.id);
+                parent.items.splice(index, 1); // Remove the item at the found index
+                // Add it back to the start of the items array
+                parent.items.unshift(config);
+        
+                // Force a reactivity update
+                parent.items = [...parent.items];
+            }            
         }
     };
 

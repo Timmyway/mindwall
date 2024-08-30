@@ -18,7 +18,7 @@ const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
 <template>
 <aside class="mw-sidebar" :style="{ height }">
     <div v-for="layer, layerIndex in canvasStore.wall.layers" :key="`mwa-${layer.id}`">
-        <div v-for="node in layer.items" :key="`mwa-${node.id}`">
+        <div v-for="node in layer.items" :key="`mwa-${node.id}`">            
             <div
                 v-if="isMwShapeConfig(node)"
             >
@@ -31,7 +31,7 @@ const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
     </div>
     <div class="flex overflow-x-auto h-12 scrollbar-thin">
         <span v-show="canvasStore.selectedItems?.length > 0" class="whitespace-nowrap">{{ canvasStore.selectedItems.map(item => item.name ) }}</span>
-    </div>
+    </div>    
 </aside>
 </template>
 

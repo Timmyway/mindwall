@@ -50,13 +50,13 @@ const operationStore = useCanvasOperationsStore();
             <template #buttons>
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
-                    @click.prevent="operationStore.bringToBack(canvasStore.selectedConfig?.id ?? '')"
+                    @click.prevent="operationStore.bringToBack(canvasStore.selectedConfig)"
                 >
                     <i class="fas fa-arrow-up text-xl text-black"></i>
                 </button>
                 <button
                     class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-8 h-8 p-2"
-                    @click.prevent="operationStore.bringToTop(canvasStore.selectedConfig?.id ?? '')"
+                    @click.prevent="operationStore.bringToTop(canvasStore.selectedConfig)"
                 >
                     <i class="fas fa-arrow-down text-xl text-black"></i>
                 </button>                

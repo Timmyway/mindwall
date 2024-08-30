@@ -44,7 +44,7 @@ export function useCanvasConditions() {
     };
 
     const isMwShapeConfig = (config: any): boolean => {
-        return isMwTextConfig(config) || isMwImageConfig(config) || isMwRectConfig(config);
+        return isMwTextConfig(config) || isMwImageConfig(config) || isMwRectConfig(config) || isMwCircleConfig(config);
     };
 
     const isFillable = (config: any): boolean => {
