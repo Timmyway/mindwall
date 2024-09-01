@@ -10,7 +10,6 @@ import VueKonva from 'vue-konva';
 import 'primevue/resources/themes/aura-light-green/theme.css'
 import Paginator from 'primevue/paginator';
 import { createPinia } from 'pinia';
-import DropZone from 'dropzone-vue';
 import Tooltip from 'primevue/tooltip';
 import Ripple from 'primevue/ripple';
 
@@ -46,7 +45,6 @@ createInertiaApp({
         app.use(ZiggyVue);
         app.use(VueKonva);
         app.use(PrimeVue);
-        app.use(DropZone);
 
         app.component('Link', Link);
         app.component('Paginator', Paginator);

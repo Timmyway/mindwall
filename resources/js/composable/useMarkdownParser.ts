@@ -21,7 +21,6 @@ export default function useMarkdownParser(usePrettify = false) {
         }
 
         const htmlString = await marked(resolvedString);
-        console.log('=========> HTML before marked js: ', resolvedString);
 
         if (usePrettify) {
             const prettifiedText = prettify(htmlString);

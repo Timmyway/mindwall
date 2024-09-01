@@ -14,7 +14,6 @@ const notifStore = useNotifStore();
 </script>
 
 <template>
-    <span class="text-black">test: {{ notifStore.notifs }}</span>
 <transition
     name="fade"
     appear

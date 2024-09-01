@@ -123,24 +123,24 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const wall = ref<WallConfig>({ layers: [] });
     const selectedConfigName = ref<string | null>(null);
-    const selectedLayerInfo = ref<LayerInfo | null>(null);        
+    const selectedLayerInfo = ref<LayerInfo | null>(null);
 
     function findConfig(
         config: MwLayerConfig | MwGroupConfig, // Accept both Layer and Group configs
         configName: string
     ): MwLayerConfig | MwGroupConfig | MwShapeConfig | null {
         const stack: (MwLayerConfig | MwGroupConfig)[] = [config]; // Initialize stack with the top-level config
-    
+
         while (stack.length > 0) {
             const currentConfig = stack.pop(); // Get the current configuration from the stack
-    
+
             // Check if the currentConfig is defined
             if (currentConfig) {
                 // Check if the currentConfig matches the configuration name
                 if (currentConfig.id === configName) {
                     return currentConfig; // Return the matching Layer or Group configuration
                 }
-    
+
                 // Iterate through items to find the configuration
                 for (const item of currentConfig.items ?? []) {
                     // Check if the item matches the configuration name
@@ -150,7 +150,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                             return item; // Return the found item
                         }
                     }
-    
+
                     // If the item is a group, add it to the stack for further exploration
                     if (isMwGroupConfig(item)) {
                         stack.push(item); // Push the group onto the stack
@@ -158,7 +158,7 @@ export const useCanvasStore = defineStore('canvas', () => {
                 }
             }
         }
-    
+
         return null; // Return null if not found at any level
     }
 
@@ -166,32 +166,32 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     const deleteConfig = (config: MwNode) => {
         if (!config?.id || !wall.value.layers) return;
-    
+
         const stack: (MwLayerConfig | MwGroupConfig)[] = [...wall.value.layers];
-    
+
         while (stack.length > 0) {
             const parent = stack.pop();
-    
+
             if (parent?.items) {
                 const configIndex = parent.items.findIndex(item => item.id === config.id);
-    
+
                 if (configIndex !== -1) {
                     parent.items.splice(configIndex, 1);
-    
+
                     console.log('-- Found and deleted config:', config);
                     console.log('-- Parent after deletion:', parent);
-    
+
                     resetConfig({ layerInfo: false });
                     updateTransformer();
-    
+
                     return; // Exit after deleting the config
                 }
-    
+
                 // Add nested groups to the stack for further checking
                 stack.push(...parent.items.filter(isMwGroupConfig));
             }
         }
-    
+
         console.error('Config not found in any layer or group');
     };
 
@@ -206,13 +206,13 @@ export const useCanvasStore = defineStore('canvas', () => {
             }
         }
         return null;
-    };    
+    };
 
     const findParentGroup = (config: MwNode): MwGroupConfig | null => {
         if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
                 if (config.parent) {
-                    const parentConfig = findConfig(layer, config.parent);                    
+                    const parentConfig = findConfig(layer, config.parent);
                     if (parentConfig?.is === 'group') {
                         return parentConfig;
                     }
@@ -226,7 +226,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
                 if (config.parent) {
-                    const parentConfig = findConfig(layer, config.parent);                    
+                    const parentConfig = findConfig(layer, config.parent);
                     if (isMwGroupConfig(parentConfig) || parentConfig?.is === 'layer') {
                         return parentConfig;
                     }
@@ -239,7 +239,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const getSelectedConfig = (config: MwNode): MwNode | null => {
         if (config?.name && wall.value.layers) {
             for (const layer of wall.value.layers) {
-                selectedConfig.value = findConfig(layer, config.name);
+                selectedConfig.value = findConfig(layer, config.name) as MwShapeConfig;
 
                 if (selectedConfig.value) {
                     // Check if the found config is part of a group
@@ -322,7 +322,7 @@ export const useCanvasStore = defineStore('canvas', () => {
             if (text) {
                 // Replace multiple consecutive newline characters with a single newline
                 setSelectedConfig({ text: text.replace(/\n\s*\n/g, '\n').trim() });
-            }            
+            }
         }
     }
 
@@ -374,7 +374,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         // console.log('-- 562 -> Select config name: ', configName);
         // console.log('-- 563 -> Select config from layer: ', layerInfo);
         // console.log('-- 564 -> CTRL pressed: ', ctrlPressed.value);
-        // selectedConfigName.value = config?.name;        
+        // selectedConfigName.value = config?.name;
         if (config) {
             getSelectedConfig(config);
         }

@@ -36,7 +36,7 @@ export const useAppStore = defineStore('application', () => {
 
             // form.post('/api/wall/update', { preserveScroll: true });
             const payload = {
-                thematicId: thematic.value?.id,
+                thematicId: thematic.value?.id as number,
                 wall: JSON.stringify(serializedWall)
             }
             console.log('Save to the server...')

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useCanvasConditions } from '@/composable/useCanvasConditions';
-import { MwNode } from '@/types/konva.config';
+import { MwNode, LayerInfo } from '@/types/konva.config';
 import TwSidebarGroup from './TwSidebarGroup.vue';
 import TwSidebarShape from './TwSidebarShape.vue';
 
 const props = defineProps<{
     node: MwNode,
+    layerInfo: LayerInfo,
 }>();
 
 const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
@@ -16,10 +17,10 @@ const { isMwShapeConfig, isMwGroupConfig } = useCanvasConditions();
     <div
         v-if="isMwShapeConfig(node)"
     >
-        <tw-sidebar-shape :node="node"></tw-sidebar-shape>
+        <tw-sidebar-shape :node="node" :layer-info="layerInfo"></tw-sidebar-shape>
     </div>
     <div v-if="isMwGroupConfig(node)">
-        <tw-sidebar-group :node="node"></tw-sidebar-group>
+        <tw-sidebar-group :node="node" :layer-info="layerInfo"></tw-sidebar-group>
     </div>
 </div>
 </template>

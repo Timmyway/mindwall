@@ -62,9 +62,15 @@ const $apiUrl = inject<string>('$apiUrl');
 
 const onSending = async (e: FileUploadUploaderEvent) => {
     const formData = new FormData();
-    e.files.forEach((file) => {
-        formData.append('images[]', file);
-    });
+    // Check if 'e.files' is an array and handle it accordingly
+    if (Array.isArray(e.files)) {
+        e.files.forEach((file: File) => {
+            formData.append('images[]', file);
+        });
+    } else {
+        // If 'e.files' is a single file, handle it as well
+        formData.append('images[]', e.files);
+    }
     try {
         await ImageApi.saveImage(formData);
         console.log(`Images have been uploaded`);

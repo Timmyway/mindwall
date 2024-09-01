@@ -13,7 +13,7 @@ import { MenuItemCommandEvent } from "primevue/menuitem";
 export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const canvasStore = useCanvasStore();
     const galleryStore = useImageGalleryStore();
-    const widgetStore = useWidgetSettingStore();    
+    const widgetStore = useWidgetSettingStore();
     const { calcOptimizedImageDimension } = useImageUtility();
     const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwShapeConfig} = useCanvasConditions();
 
@@ -22,14 +22,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     ) => {
         // Determine parent ID based on selectedLayerInfo or selectedConfig
         const parentId = autodetectParentId();
-    
+
         // Generate unique identifier for the image
         const imageIdentifier = `image-${getNanoid()}`;
-    
+
         // Estimate position for the new image
         let estimateX = canvasStore.center.x - 50;
         let estimateY = canvasStore.center.y - 50;
-        
+
         if (canvasStore.selectedConfig) {
             if (canvasStore.selectedConfig.is === 'group') {
                 // If the selected config is a group, estimate the position based on the last item in the group
@@ -42,7 +42,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 estimateY = canvasStore.selectedConfig.y ?? canvasStore.center.y - 50;
             }
         }
-    
+
         const newMwImageConfig: MwImageConfig = {
             id: imageIdentifier,
             name: imageIdentifier,
@@ -53,31 +53,32 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             width: 100,
             height: 100,
             draggable: true,
+            image: undefined,
         };
-    
+
         // Find the layer or group where we need to add the image
         const parent = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
             findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
-    
+
         if (parent && 'items' in parent) {
             // Ensure items is defined before pushing
             if (!parent.items) {
                 parent.items = []; // Initialize items if it's undefined
             }
-    
+
             // Handle image loading
             const handleImageLoad = (im: HTMLImageElement) => {
                 const { w, h } = calcOptimizedImageDimension(im);
                 newMwImageConfig.width = w;
                 newMwImageConfig.height = h;
                 newMwImageConfig.image = im;
-    
+
                 // Add the new image to the parent group/layer
                 if (parent.items) {
                     parent.items.push(newMwImageConfig);
-                }                
+                }
             };
-    
+
             if (typeof src === 'string') {
                 const im = new window.Image();
                 im.src = src;
@@ -100,7 +101,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         } else {
             console.error(`Parent with ID ${parentId} not found`);
         }
-    
+
         galleryStore.hideBankImageGallery();
     };
 
@@ -240,7 +241,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                     return;
                 }
             }
-            if (thematicName) {                
+            if (thematicName) {
                 console.log('-- 570 -> Thematic found: ', thematicName);
                 // Back up the initial group to which the generated text belongs
                 const response = await AiApi.aiGenerateText(thematicName, iaFeeling, aiOption);
@@ -287,7 +288,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             if (canvasStore.selectedLayerInfo) {
                 // We add to the selected item's layer
                 parentId = canvasStore.selectedLayerInfo.id;
-                console.log('-- 541 -> add to selected layer')                
+                console.log('-- 541 -> add to selected layer')
             } else {
                 // We default to adding to the first layer
                 console.log('-- 540 -> add to first layer')
@@ -307,17 +308,17 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     const addShapeToWall = (
         shapeType: 'circle' | 'rectangle',
-        { width = 100, height = 100, radius = 50, fill = 'black', parentId = autodetectParentId() }: 
+        { width = 100, height = 100, radius = 50, fill = 'black', parentId = autodetectParentId() }:
         { width?: number, height?: number, radius?: number, fill?: string, parentId?: string | null } = {}
     ) => {
         const resolvedParentId = parentId ?? autodetectParentId();
-    
+
         // Generate unique identifier for the shape
         const shapeIdentifier = `${shapeType}-${getNanoid()}`;
-    
+
         // Estimate position for the new shape
         const { x: estimateX, y: estimateY } = generatePosition();
-    
+
         // Create the shape configuration
         const newMwShapeConfig: MwRectConfig | MwCircleConfig = {
             id: shapeIdentifier,
@@ -336,40 +337,40 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         };
 
         console.log('---------> New shape config: ', newMwShapeConfig);
-    
+
         // Find the layer or group where we need to add the shape
         const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
-        if (parent && parent.items) {            
+        if (parent && parent.items) {
             parent.items.push(newMwShapeConfig);
             console.log('================> PPPPPP', parent)
         }
     };
-    
+
 
     const addTextToWall = (
         text: string = 'Unleash your thoughts!',
         { defaultTextSize = 320, parentId = autodetectParentId() }: { defaultTextSize?: number, parentId?: string | null } = {}
     ) => {
         const resolvedParentId = parentId ?? autodetectParentId();
-    
+
         // Generate unique identifier for the text
         const textIdentifier = `text-${getNanoid()}`;
-    
+
         // Find the layer or group where we need to add the text
         const parent = parentId ? findOrCreateParent(parentId, resolvedParentId) : null;
-    
+
         // Ensure items array is defined
         if (parent && !parent.items) {
             parent.items = [];
         }
-    
+
         let estimatePosition = generatePosition();
-    
+
         // If the parent is a group, use the last item's position in the group
         if (parent && parent.items && parent.items.length > 0) {
             estimatePosition = estimateLastItemGroupPosition(parent);
         }
-    
+
         const newMwTextConfig: MwTextConfig = {
             id: textIdentifier,
             name: textIdentifier,
@@ -388,14 +389,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             width: defaultTextSize,
             align: 'left',
             lineHeight: 1.7,
-            draggable: true,            
+            draggable: true,
         };
-    
+
         if (parent && parent.items) {
             parent.items.push(newMwTextConfig);
         }
     };
-    
+
 
     const findOrCreateParent = (parentId: string, resolvedParentId: string): (MwLayerConfig | MwGroupConfig | null) => {
         const parentCandidate = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
@@ -408,7 +409,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             if (!parent.items) {
                 parent.items = []; // Initialize items if it's undefined
             }
-            
+
             return parent;
         } else {
             // Handle case where parent wasn't found
@@ -420,12 +421,12 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const generatePosition = (defaultXOffset: number = -10, defaultYOffset: number = -50): { x: number, y: number } => {
         let x = canvasStore.center.x + defaultXOffset;
         let y = canvasStore.center.y + defaultYOffset;
-    
+
         if (canvasStore.selectedConfig) {
             x = canvasStore.selectedConfig.x ?? canvasStore.center.x + defaultXOffset;
             y = canvasStore.selectedConfig.y ?? canvasStore.center.y + defaultYOffset;
         }
-    
+
         return { x, y };
     };
 
@@ -437,22 +438,22 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             // Default position if the group has no items
             return { x: 0, y: 0 };
         }
-    
+
         // Find the item with the largest y coordinate
         const bottomElement = group.items.reduce((prev, current) => {
             const prevY = prev.y ?? 0;
             const currentY = current.y ?? 0;
             return currentY > prevY ? current : prev;
         });
-    
+
         // If bottomElement has no defined x or y, provide defaults
         const x = bottomElement.x ?? 0;
         const y = (bottomElement.y ?? 0) + yOffset;
-    
+
         console.log(`-- 6324 -> Group: ${group.items.map(item => item.id)}`);
         console.log(`-- 6324 -> Bottom element pos: ${bottomElement.x}|${bottomElement.y}`);
         console.log(`-- 6325 -> Estimated pos: ${x}|${y}`);
-    
+
         return { x, y };
     };
 
@@ -556,7 +557,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
 
         // Store the parent ID for later use
-        const parentId = canvasStore.selectedConfig.parent;        
+        const parentId = canvasStore.selectedConfig.parent;
 
         // Check if the parent exists
         const parentLayer = canvasStore.wall.layers.find(layer => layer.id === parentId);
@@ -655,20 +656,20 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const cloneGroup = (groupId: string): string | null => {
         const originalGroup = canvasStore.findGroupById(groupId);
         if (!originalGroup) return null;
-    
+
         const newGroupId = `group-${getNanoid()}`;
         const newGroup: MwGroupConfig = { ...originalGroup, id: newGroupId, name: newGroupId, items: [] };
-    
+
         // Stack for iterative cloning
         const stack: { originalGroup: MwGroupConfig; newGroup: MwGroupConfig }[] = [{ originalGroup, newGroup }];
-    
+
         while (stack.length > 0) {
             const { originalGroup, newGroup } = stack.pop()!;
-    
+
             for (const originalItem of originalGroup.items) {
                 const newItemId = `${originalItem.is}-${getNanoid()}`;
                 const newItem: MwNode = { ...originalItem, id: newItemId, name: newItemId, parent: newGroup.id ?? '' };
-    
+
                 // If the item is a group, clone it and push it to the stack
                 if (isMwGroupConfig(newItem)) {
                     const clonedSubGroup: MwGroupConfig = { ...newItem, id: newItemId, items: [] };
@@ -679,7 +680,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 }
             }
         }
-    
+
         console.log('=================================> NG', newGroup)
         if (canvasStore.wall.layers[0]?.items) {
             canvasStore.wall.layers[0].items.push(newGroup);
@@ -687,7 +688,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             console.error(`Parent with ID ${originalGroup.parent} not found`);
             return null;
         }
-    
+
         return newGroupId;
     };
 
@@ -709,14 +710,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 parent.items.splice(index, 1); // Remove the item at the found index
                 // Add it back to the end of the items array
                 parent.items.push(config);
-        
+
                 // Force a reactivity update
                 parent.items = [...parent.items];
             }
         }
     };
-    
-    const bringToBack = (config: MwShapeConfig | MwGroupConfig | null) => {        
+
+    const bringToBack = (config: MwShapeConfig | MwGroupConfig | null) => {
         if (config === null) return;
         const parent = canvasStore.findParent(config);
         if (isMwGroupConfig(parent) || parent?.is === 'layer') {
@@ -726,10 +727,10 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
                 parent.items.splice(index, 1); // Remove the item at the found index
                 // Add it back to the start of the items array
                 parent.items.unshift(config);
-        
+
                 // Force a reactivity update
                 parent.items = [...parent.items];
-            }            
+            }
         }
     };
 
