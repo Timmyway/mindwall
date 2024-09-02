@@ -65,7 +65,7 @@ const handleSubmit = () => {
                     <tw-text-input
                         label="Name"
                         class="tw-form-control"
-                        placeholder="Partner's name"
+                        placeholder="Prompt name"
                         v-model="form.name"
                         required
                         tabindex="1"
