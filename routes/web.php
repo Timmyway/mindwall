@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\MindwallController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromptController;
@@ -39,6 +40,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/{prompt?}/{mode?}', [PromptController::class, 'formPage'])->name('detail');
         Route::post('', [PromptController::class, 'store'])->name('store');
         Route::put('/{prompt}', [PromptController::class, 'update'])->name('update');
+    });
+    Route::prefix('help')->name('help.')->group(function () {
+        Route::get('prompts', [HelpController::class, 'index'])->name('prompts');
+        Route::get('prompts/{doc}', [HelpController::class, 'detail'])->name('prompts.detail');
     });
 });
 

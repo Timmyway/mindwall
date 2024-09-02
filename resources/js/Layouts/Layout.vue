@@ -7,6 +7,7 @@ import TwNotification from '@/Components/ui/TwNotification.vue';
 defineProps<{
     canLogin?: boolean;
     canRegister?: boolean;
+    noStyle?: boolean;
 }>();
 
 function handleImageError() {
@@ -24,7 +25,7 @@ const { items, isActive } = useMwRoutes();
     <tw-notification pos="tr"></tw-notification>
     <div>
         <div
-            class="relative min-h-screen bg-gray-200 flex flex-col selection:bg-[#FF2D20] selection:text-white"
+            :class="[noStyle ? '' : 'relative min-h-screen bg-gray-200 flex flex-col selection:bg-[#FF2D20] selection:text-white']"
         >
             <header class="w-full">
                 <Menubar :model="items" class="w-full px-2 lg:px-4">

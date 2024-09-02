@@ -28,6 +28,12 @@ export default function useMwRoutes() {
             urls: [route('dashboard'), route('prompt.list')],
             private: true
         },
+        {
+            label: 'Help',
+            icon: 'fa fa-question-circle',
+            urls: [route('help.prompts')],
+            private: true
+        },
     ]);
 
     const page = usePage();

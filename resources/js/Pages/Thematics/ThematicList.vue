@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Layout from '../../Layouts/Layout.vue'
+import Layout from '@/Layouts/Layout.vue';
 import TwWallPoster from '@/Components/wall/TwWallPoster.vue';
 import TwPagination from '@/Components/ui/TwPagination.vue'
 import { useForm } from '@inertiajs/vue3';
