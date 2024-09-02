@@ -36,6 +36,7 @@ const enterEditMode = (thematic: Thematic, thematicIndex: number) => {
     }, 200)
     isEditMode.value = true;
 }
+
 const exitEditMode = () => {
     thematicStore.form.reset();
     currentThematicId.value = 0;

@@ -9,6 +9,7 @@ import { useWidgetSettingStore } from "./widgetSettingStore";
 import { TextGeneratorOption } from "@/types/infinidea.types";
 import AiApi from "@/api/AiApi";
 import { MenuItemCommandEvent } from "primevue/menuitem";
+import useBasicOperations from "@/composable/canvas/useBasicOperations";
 
 export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const canvasStore = useCanvasStore();
@@ -16,6 +17,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     const widgetStore = useWidgetSettingStore();
     const { calcOptimizedImageDimension } = useImageUtility();
     const { isMwTextConfig, isMwImageConfig, isMwGroupConfig, isMwShapeConfig} = useCanvasConditions();
+    const { setupNewLayer } = useBasicOperations();
 
     const addImageToWall = (
         src: string | File = 'https://www.pngall.com/wp-content/uploads/5/Yellow-Jersey.png'
@@ -187,7 +189,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         //         }
         //     }
         // }
-    };
+    };    
 
     /* Add options */
     const addLayer = (): string => {
@@ -196,14 +198,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             canvasStore.wall.layers = [];
         }
 
-        const layerId = `layer-${getNanoid()}`;
-
-        const newLayer: MwLayerConfig = {
-            id: layerId,
-            name: layerId,
-            is: 'layer',
-            items: [], // Initialize with an empty items object
-        };
+        const { newLayer, layerId } = setupNewLayer();
 
         canvasStore.wall.layers.push(newLayer);
 
@@ -736,6 +731,6 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
-        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,
+        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,        
     }
 });

@@ -13,13 +13,38 @@ class ThematicController extends Controller
 {
     public function index()
     {
+        $itemsPerPage = 10;
+
         $thematics = Thematic::with(['user'])
+            ->select(['id', 'name', 'slug'])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($itemsPerPage);
 
         return Inertia::render('Thematics/ThematicList', [
             'thematics' => $thematics
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        $rules = [
+            'name' => 'required|string|min:2|max:50|unique:thematics,name',
+            'wall' => 'required|array',
+            'wall.layers' => 'required|array',            
+        ];
+        $validatedData = $request->validate($rules);
+        $newThematic = new Thematic();
+        $name = $validatedData['name'];
+        $newThematic->name = $name;
+        $newThematic->slug = Str::slug($name);        
+        $newThematic->wall = json_encode($validatedData['wall']) ?? json_encode(['layers' => []]);
+
+        // Associate the thematic with the currently authenticated user
+        $newThematic->user()->associate(auth()->user());
+
+        $newThematic->save();        
+        
+        return redirect()->route('thematic.list');
     }
 
     public function update(Request $request, Thematic $thematic)

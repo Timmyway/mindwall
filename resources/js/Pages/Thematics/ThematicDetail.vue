@@ -24,6 +24,8 @@ const props = defineProps<{
     languages: Language[]
 }>();
 
+console.log('-------> TT', props.thematic)
+
 const canvaStore = useCanvasStore();
 const appStore = useAppStore();
 appStore.setThematic(props.thematic);

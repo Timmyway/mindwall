@@ -33,3 +33,8 @@ export interface Language {
     code?: string;
     flag?: string;
 }
+
+export interface ThematicForm {
+    name: string;
+    wall: WallConfig
+}

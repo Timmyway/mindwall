@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ThematicController::class, 'index'])->name('list');
         Route::get('/detail/{thematic}', [ThematicController::class, 'detail'])->name('detail');
         Route::put('/{thematic}', [ThematicController::class, 'update'])->name('update');
+        Route::post('/', [ThematicController::class, 'store'])->name('new');
     });
     Route::prefix('prompts')->name('prompt.')->group(function () {
         Route::get('', [PromptController::class, 'list'])->name('list');
