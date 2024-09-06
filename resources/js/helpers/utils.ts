@@ -95,4 +95,12 @@ function truncateString(str: string, n: number = 50) {
     return str.slice(0, n) + '...';
 }
 
-export { safeJsonParse, getUuid, getNanoid, imageToBase64, base64ToImage, loadImageFromURL, pickRandomElement, nanoid, truncateString }
+const cleanMarkdownText = (text: string): string => {
+    return text
+        .replace(/[*_~`>#+=\-|]/g, '') // Removes most Markdown symbols
+        .replace(/\[.*?\]\(.*?\)/g, '') // Removes Markdown links
+        .replace(/!\[.*?\]\(.*?\)/g, '') // Removes Markdown images
+        .replace(/<\/?[^>]+(>|$)/g, ''); // Removes any HTML tags
+};
+
+export { safeJsonParse, getUuid, getNanoid, imageToBase64, base64ToImage, loadImageFromURL, pickRandomElement, nanoid, truncateString, cleanMarkdownText }
