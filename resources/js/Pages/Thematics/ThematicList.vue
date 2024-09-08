@@ -34,7 +34,7 @@ interface PaginatedThematics {
 interface PaginationLink {
     url: string | null;
     label: string;
-    active: boolean;    
+    active: boolean;
 }
 
 const props = defineProps<{
@@ -59,16 +59,16 @@ const newWall = () => {
     form.post('thematics');
 }
 
-const closeError = (key: string) => {    
+const closeError = (key: string) => {
     console.log('---------> Close key: ', key);
-    if (form.errors && key in form.errors) {        
+    if (form.errors && key in form.errors) {
         form.errors[key as keyof ThematicForm] = '';
     }
 }
 </script>
 <template>
 <Layout>
-    <div class="px-4 tw-thematic-list">                
+    <div class="px-4 tw-thematic-list">
         <div
             v-for="(errorMessage, errorKey)  in form.errors"
             class="absolute top-0 right-0  z-50 flex flex-col gap-2 mt-1 px-2 max-w-sm max-h-[90vh] overflow-y-auto scrollbar-thin"
@@ -80,8 +80,8 @@ const closeError = (key: string) => {
             >
                 <span>{{ errorMessage }}</span>
             </tw-alert>
-        </div>        
-        <div class="tw-thematic-list__action-bar mt-2 mb-2">            
+        </div>
+        <div class="tw-thematic-list__action-bar mt-2 mb-2">
             <div class="py-1 px-4 bg-white shadow rounded-sm max-w-xs mx-auto flex gap-4 items-center">
                 <button class="btn btn-icon btn-xs btn-icon--flat bg-yellow-400 w-8 h-8 p-2" @click="newWall">
                     <i class="fas fa-plus-circle fa-2x"></i>
@@ -90,7 +90,7 @@ const closeError = (key: string) => {
             </div>
         </div>
         <div class="tw-thematic-list__posters px-4 py-2">
-            <tw-wall-poster :posters="thematics.data"></tw-wall-poster>        
+            <tw-wall-poster :posters="thematics.data"></tw-wall-poster>
         </div>
     </div>
 </Layout>
@@ -104,16 +104,16 @@ const closeError = (key: string) => {
     display: flex;
     flex-direction: column;
     scrollbar-width: thin;
-    &__action-bar {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }    
     background:
         linear-gradient(#062FD9 0%, #FD000D 90%),
         linear-gradient(to right, #A7F200 0%, #560CBE 60%),
         url('images/pages/thematics/wall.WebP') 30px,
         url('images/pages/thematics/wall.WebP') 20px;
-        background-blend-mode: multiply, difference, lighten;    
+        background-blend-mode: multiply, difference, lighten;
+    &__action-bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
 }
 </style>
