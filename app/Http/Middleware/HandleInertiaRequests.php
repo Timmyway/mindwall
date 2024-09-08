@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Thematic;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -33,6 +34,12 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'permissions' => [
+                    'thematic' => [
+                        'view' => $request->user()
+                            ?->can('view', $request->user(), Thematic::class),
+                    ]
+                ]
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

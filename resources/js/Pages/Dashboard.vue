@@ -7,7 +7,7 @@ import Layout from '@/Layouts/Layout.vue';
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 text-gray-900">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">Welcome to mindwall dashboard</div>
+                    <div class="p-6">Welcome</div>
 
                     <div class="px-8 py-4">
                         <h2 class="font-bold text-2xl text-indigo-600">Manage prompt</h2>

@@ -5,20 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\Language;
 use App\Models\Prompt;
 use App\Models\Thematic;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 
 class ThematicController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $itemsPerPage = 10;
 
-        $thematics = Thematic::with(['user'])
+        $thematics = $request->user()->thematics()
             ->select(['id', 'name', 'slug'])
             ->orderBy('id', 'desc')
             ->paginate($itemsPerPage);
+        // $thematics = Thematic::with(['user'])
+        //     ->select(['id', 'name', 'slug'])
+        //     ->orderBy('id', 'desc')
+        //     ->paginate($itemsPerPage);
 
         return Inertia::render('Thematics/ThematicList', [
             'thematics' => $thematics
@@ -30,25 +35,28 @@ class ThematicController extends Controller
         $rules = [
             'name' => 'required|string|min:2|max:50|unique:thematics,name',
             'wall' => 'required|array',
-            'wall.layers' => 'required|array',            
+            'wall.layers' => 'required|array',
         ];
         $validatedData = $request->validate($rules);
         $newThematic = new Thematic();
         $name = $validatedData['name'];
         $newThematic->name = $name;
-        $newThematic->slug = Str::slug($name);        
+        $newThematic->slug = Str::slug($name);
         $newThematic->wall = json_encode($validatedData['wall']) ?? json_encode(['layers' => []]);
 
         // Associate the thematic with the currently authenticated user
         $newThematic->user()->associate(auth()->user());
 
-        $newThematic->save();        
-        
+        $newThematic->save();
+
         return redirect()->route('thematic.list');
     }
 
     public function update(Request $request, Thematic $thematic)
     {
+        if ($request->user()->cannot('update', $thematic)) {
+            abort(403);
+        }
         // Validate the request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
@@ -70,8 +78,11 @@ class ThematicController extends Controller
     }
 
 
-    public function detail(Thematic $thematic)
+    public function detail(Request $request, Thematic $thematic)
     {
+        if ($request->user()->cannot('update', $thematic)) {
+            abort(403);
+        }
         $thematic = Thematic::with(['user'])
             ->findOrFail($thematic->id);
         $engines = Prompt::orderBy('name', 'asc')->get();

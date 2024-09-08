@@ -65,15 +65,17 @@ const { socialMedias } = useMwFooter();
                                 Register
                             </Link>
 
-                            <Link
-                                v-if="$page.props.auth.user"
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
-                                class="btn bg-red-700 p-1 rounded-full text-white"
-                            >
-                                <i class="fas fa-power-off"></i>
-                            </Link>
+                            <template v-if="$page.props.auth.user">
+                                <span class="whitespace-nowrap max-w-16 overflow-hidden text-ellipsis">{{ $page.props.auth.user.name }}</span>
+                                <Link
+                                    :href="route('logout')"
+                                    method="post"
+                                    as="button"
+                                    class="btn bg-red-700 p-1 rounded-full text-white"
+                                >
+                                    <i class="fas fa-power-off"></i>
+                                </Link>
+                            </template>
                         </div>
                     </template>
                 </Menubar>

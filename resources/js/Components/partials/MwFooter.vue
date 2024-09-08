@@ -2,7 +2,7 @@
 import { SocialMedia } from '@/types/website.types';
 
 interface Props {
-    brandName: string;
+    brandName?: string;
     socialMedias: SocialMedia[];
     sMHeading?: string;
 }
