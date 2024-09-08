@@ -6,8 +6,8 @@ export interface User {
 }
 
 interface Permission {
-    thematic: {
-        view: oolean;
+    prompt: {
+        view: boolean;
     }
 }
 

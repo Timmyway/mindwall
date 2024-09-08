@@ -5,16 +5,21 @@ interface Props {
     brandName?: string;
     socialMedias: SocialMedia[];
     sMHeading?: string;
+    height?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     brandName: 'Devambition',
     sMHeading: 'Follow me',
+    height: '145px',
 });
 </script>
 
 <template>
-<footer class="bg-white px-4 py-2 text-sm text-black w-full mb-0 mt-auto flex flex-wrap gap-4">
+<footer
+    class="bg-white px-4 py-4 text-sm text-black w-full mb-0 mt-auto flex flex-wrap gap-4"
+    :style="{ height }"
+>
     <div class="space-y-2 max-w-xs">
         <div class="mb-4">
             <span class="text-md text-gray-400">&copy; {{ brandName }} {{ new Date().getFullYear() }}</span>

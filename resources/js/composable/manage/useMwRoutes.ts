@@ -1,7 +1,7 @@
 import { usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 
-interface MwRoute {
+export interface MwRoute {
     label: string;
     icon: string;
     urls: string[];
@@ -44,7 +44,7 @@ export default function useMwRoutes() {
 
     const getPath = (url: string) => new URL(url, window.location.origin).pathname;
 
-    const isActive = (urls: string[]) => {
+    const isActive = (urls: string[]): boolean => {
         const currentPath = getPath(currentUrl.value);
         return urls.some(url => getPath(url) === currentPath);
     };

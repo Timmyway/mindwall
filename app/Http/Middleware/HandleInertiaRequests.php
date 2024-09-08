@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Prompt;
 use App\Models\Thematic;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -35,9 +36,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => [
-                    'thematic' => [
+                    'prompt' => [
                         'view' => $request->user()
-                            ?->can('view', $request->user(), Thematic::class),
+                            ?->can('view', Prompt::find(1)),
                     ]
                 ]
             ],

@@ -100,7 +100,7 @@ const transformV = ref([]);
 
 <template>
 <tw-markdown-preview></tw-markdown-preview>
-<div class="bg-white tw-canva relative" v-if="appStore.isReady">    
+<div class="bg-white tw-canva relative" v-if="appStore.isReady">
     <mw-textarea></mw-textarea>
     <mw-toolbar></mw-toolbar>
     <v-stage
@@ -112,9 +112,9 @@ const transformV = ref([]);
         @keyup="handleKeyup"
         :draggable="true"
     >
-        <v-layer>            
+        <v-layer>
             <v-circle :config="canvasConfigStore.kernelConfig"></v-circle>
-        </v-layer>        
+        </v-layer>
         <template>
             <v-layer v-for="(layer, layerIndex) in canvaStore.wall.layers" :key="layer.id">
                 <v-transformer ref="transformer" :config="canvasConfigStore.transformerConfig" />
@@ -128,6 +128,11 @@ const transformV = ref([]);
 </template>
 
 <style>
+body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
 .tw-canva {
     width: 100%;
     height: calc(100vh - 48px);

@@ -3,8 +3,7 @@ import Layout from '@/Layouts/Layout.vue';
 import { InertiaPageProps } from '@/types/inertia';
 import { Engine } from '@/types/thematic.types';
 import { usePage } from '@inertiajs/vue3';
-import { computed, onMounted, watch } from 'vue';
-import TwNotification from '@/Components/ui/TwNotification.vue';
+import { onMounted } from 'vue';
 import { useNotifStore } from '@/store/notificationStore';
 
 interface PageProps {
@@ -47,7 +46,7 @@ onMounted(() => {
                 </Link>
             </div>
         </div>
-        <div class="max-w-7xl min-w-xs mx-auto overflow-y-auto h-[80dvh] px-4 py-8 bg-white shadow-lg rounded-md">
+        <div class="max-w-7xl min-w-xs mx-auto px-4 py-8 bg-white shadow-lg rounded-md">
             <div
                 v-for="(prompt, i) in prompts" :key="`poster-${prompt.id}` ?? `poster-${i}`"
                 class="py-2 my-2 border-b border-b-slate-200"

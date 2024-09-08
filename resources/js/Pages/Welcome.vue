@@ -4,7 +4,7 @@ import Layout from '../Layouts/Layout.vue';
 </script>
 
 <template>
-<Layout no-style>
+<Layout>
     <section class="mw-welcome bg-indigo-600 bg-no-repeat bg-cover" style="background-image: url('images/pages/login/human-x-machine.WebP');">
         <div class="pt-10 relative lg:pt-20">
 
@@ -15,14 +15,14 @@ import Layout from '../Layouts/Layout.vue';
             <div>
                 <div class="max-w-4xl mx-auto px-12 py-2 text-center">
                     <h1 class="text-3xl text-white font-black uppercase lg:text-6xl">MINDWALL: Unleash Your Thoughts</h1>
-                    <p class="py-6 text-lg max-w-xl mx-auto text-gray-100 xl:text-2xl leading-8">
+                    <p class="py-6 text max-w-xl mx-auto text-gray-100 md:text-lg xl:text-2xl leading-8">
                         Hey there! Welcome to Mindwall, a cool place for boundless inspiration and idea generation,
                         powered by Google Gemini.<br>
                         Dive into a world of endless possibilities and make your ideas come to life with a little dose of fun!
                         <br><br>
                     </p>
                     <Link :href="route('thematic.list')"
-                        class="call-to-action-button mt-32 py-4 px-3 flex items-center justify-center text-xl font-black border-primary border-4 text-black rounded-full bg-yellow-400 hover:bg-yellow-300 lg:text-3xl lg-py-8 lg:px-6 transition-all duration-100 hover:text-black"
+                        class="call-to-action-button py-4 px-3 flex items-center justify-center text-xl font-black border-primary border-4 text-black rounded-full bg-yellow-400 hover:bg-yellow-300 lg:text-3xl lg-py-8 lg:px-6 transition-all duration-100 hover:text-black"
                         style="text-decoration: none;"
                     >
                         Get Started with Mindwall
@@ -36,7 +36,7 @@ import Layout from '../Layouts/Layout.vue';
 
 <style>
 .mw-welcome {
-    height: calc(100vh - 160px);
+    min-height: calc(100vh - 200px);
 }
 @keyframes futuristic-glow {
   0% {
