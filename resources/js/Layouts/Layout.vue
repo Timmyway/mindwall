@@ -2,7 +2,9 @@
 import { Head, Link } from '@inertiajs/vue3';
 import Menubar from 'primevue/menubar';
 import useMwRoutes from '@/composable/manage/useMwRoutes';
+import useMwFooter from '@/composable/manage/useMwFooter';
 import TwNotification from '@/Components/ui/TwNotification.vue';
+import MwFooter from '@/Components/partials/MwFooter.vue';
 
 defineProps<{
     canLogin?: boolean;
@@ -18,6 +20,7 @@ function handleImageError() {
 }
 
 const { items, isActive } = useMwRoutes();
+const { socialMedias } = useMwFooter();
 </script>
 
 <template>
@@ -80,25 +83,7 @@ const { items, isActive } = useMwRoutes();
                 <slot></slot>
             </main>
 
-            <footer class="bg-white px-4 py-2 text-sm text-black w-full mb-0 mt-auto flex flex-wrap gap-4">
-                <div class="space-y-2 max-w-xs">
-                    <div class="mb-4">
-                        <span class="text-md text-gray-400">&copy; TimmywayCreative {{ new Date().getFullYear() }}</span>
-                    </div>
-                    <h6 class="mb-2 text-lg text-dark font-bold">Follow me</h6>
-                    <ul class="mx-auto flex gap-4 items-center max-w-xs">
-                        <li>
-                            <a href="" target="_blank"><i class="fab fa-facebook"></i></a>
-                        </li>
-                        <li>
-                            <a href="https://www.linkedin.com/in/timmyway" target="_blank"><i class="fab fa-linkedin"></i></a>
-                        </li>
-                        <li>
-                            <a href="" target="_blank"><i class="fab fa-youtube"></i></a>
-                        </li>
-                    </ul>
-                </div>
-            </footer>
+            <mw-footer :social-medias="socialMedias"></mw-footer>
         </div>
     </div>
 </template>

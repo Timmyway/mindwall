@@ -4,14 +4,9 @@ import Layout from '../Layouts/Layout.vue';
 </script>
 
 <template>
-<Layout>
-    <section>
-        <div class="bg-indigo-600 bg-no-repeat bg-cover pt-20 pb-72 relative"
-            style="background-image: url('images/pages/login/human-x-machine.WebP');"
-            x-data="{
-                form: { email: '', password: '' }
-            }"
-        >
+<Layout no-style>
+    <section class="mw-welcome bg-indigo-600 bg-no-repeat bg-cover" style="background-image: url('images/pages/login/human-x-machine.WebP');">
+        <div class="pt-10 relative lg:pt-20">
 
                 <tw-author-credit>
                     <!-- Image by natanaelginting on Freepik -->
@@ -40,6 +35,9 @@ import Layout from '../Layouts/Layout.vue';
 </template>
 
 <style>
+.mw-welcome {
+    height: calc(100vh - 160px);
+}
 @keyframes futuristic-glow {
   0% {
     box-shadow: 0 0 5px rgb(255, 209, 102), 0 0 10px rgb(255, 209, 102), 0 0 15px rgb(255, 209, 102), 0 0 20px #29335C, 0 0 30px #29335C;
