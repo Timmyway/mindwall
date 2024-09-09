@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\MwController;
 use App\Http\Controllers\ProfileController;
@@ -53,5 +54,8 @@ Route::middleware('auth')->group(function () {
         Route::get('prompts/{doc}', [HelpController::class, 'detail'])->name('prompts.detail');
     });
 });
+
+Route::get('auth/google/redirect', [GoogleAuthController::class, 'redirect'])->name('google.auth');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callbackGoogle']);
 
 require __DIR__.'/auth.php';

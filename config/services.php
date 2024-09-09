@@ -39,7 +39,7 @@ return [
         'gemini_api_url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:',
         'client_id' => env('GOOGLE_CLIENT_CLIENT'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('APP_URL'),
+        'redirect' => env('GOOGLE_REDIRECT_URL'),
     ],
     'freepik' => [
         'api_key' => env('FREEPIK_API_KEY'),

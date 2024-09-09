@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import TwGoogleButton from '@/Components/form/TwGoogleButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps<{
@@ -58,7 +59,6 @@ const submit = () => {
             </div>
 
             <div class="mt-5">
-
                 <div class="flex items-center gap-2">
                     <div class="px-2">
                         <i class="fas fa-lock text-lg"></i>
@@ -95,6 +95,16 @@ const submit = () => {
                 <PrimaryButton class="w-full px-4 py-3 rounded-lg text-theme mt-2 text-2xl justify-center" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                     Let's go!
                 </PrimaryButton>
+            </div>
+
+            <div class="mx-auto" style="max-width: 80%;">
+                <div class="text-center mt-6 mb-4">
+                    <p class="py-2 text-sm text-gray-700">OR</p>
+                    <hr>
+                </div>
+                <div class="flex justify-center items-center gap-2">
+                    <tw-google-button :auth-url="$route('google.auth')"></tw-google-button>
+                </div>
             </div>
         </form>
     </GuestLayout>
