@@ -47,12 +47,3 @@ function handleImageError() {
         </div>
     </div>
 </template>
-
-<style>
-.item--active {
-    color: #ffd166;
-    background: -webkit-linear-gradient(#ffd166, #af7f10);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-</style>

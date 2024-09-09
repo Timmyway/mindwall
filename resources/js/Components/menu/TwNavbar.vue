@@ -23,7 +23,7 @@ const user = computed(() => {
 <template>
 <Menubar :model="items" class="w-full px-2 lg:px-4">
     <template #start>
-        <img src="@/../images/logo.png" alt="Mindwall" class="w-8 lg:w-24">
+        <img src="@/../images/logo.svg" alt="Mindwall" class="w-8 lg:w-24">
     </template>
     <template #item="{ item }">
         <Link
@@ -70,3 +70,12 @@ const user = computed(() => {
     </template>
 </Menubar>
 </template>
+
+<style>
+.item--active {
+    color: #cf9409;
+    background: -webkit-linear-gradient(#e6ac27, #cf9409);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+</style>

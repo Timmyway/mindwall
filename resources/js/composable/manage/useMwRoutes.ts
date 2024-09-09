@@ -17,7 +17,7 @@ export default function useMwRoutes() {
             private: false
         },
         {
-            label: 'Thematics',
+            label: 'Walls',
             icon: 'fa fa-bolt',
             urls: [route('thematic.list')],
             private: true

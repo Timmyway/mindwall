@@ -2,14 +2,11 @@
 
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HelpController;
-use App\Http\Controllers\MindwallController;
+use App\Http\Controllers\MwController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromptController;
 use App\Http\Controllers\ThematicController;
 use App\Http\Middleware\EnsureOnlyAdminManagePrompt;
-use App\Models\Prompt;
-use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,6 +20,10 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Legal mentions
+Route::get('/privacy-policy', [MwController::class, 'privacyPolicy'])->name('legal.privacy-policy');
+Route::get('/term-of-service', [MwController::class, 'termOfService'])->name('legal.term-of-service');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
