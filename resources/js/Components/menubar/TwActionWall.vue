@@ -15,7 +15,8 @@ const operationStore = useCanvasOperationsStore();
     <div class="w-8 h-8">
         <button
             v-show="!appStore.isSaving"
-            class="btn btn-icon btn-xs btn-icon--flat bg-green-400 w-8 h-8 p-2"
+            class="btn btn-icon btn-xs btn-icon--flat w-8 h-8 p-2"
+            :class="[appStore.isSaving ? 'bg-green-200' : 'bg-green-400']"
             @click.prevent="appStore.saveWallToServer()"
         >
             <i class="fas fa-save text-xl text-black"></i>
@@ -43,7 +44,7 @@ const operationStore = useCanvasOperationsStore();
                     <i class="fas fa-vector-circle text-xl text-black"></i>
                 </button>
             </template>
-        </tw-button-group>        
+        </tw-button-group>
     </div>
     <div>
         <tw-button-group trigger-icon-class="fas fa-tools">
@@ -59,9 +60,9 @@ const operationStore = useCanvasOperationsStore();
                     @click.prevent="operationStore.bringToTop(canvasStore.selectedConfig)"
                 >
                     <i class="fas fa-arrow-down text-xl text-black"></i>
-                </button>                
+                </button>
             </template>
-        </tw-button-group>        
+        </tw-button-group>
     </div>
     <button
         class="btn btn-icon btn-xs btn-icon--flat bg-red-400 w-8 h-8 p-2"

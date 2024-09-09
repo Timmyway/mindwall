@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { useCanvasStore } from '../../store/canvasStore';
@@ -7,7 +7,6 @@ import { storeToRefs } from 'pinia';
 import { Thematic, Engine, Language } from '../../types/thematic.types';
 import { User } from '@/types';
 import { onUnmounted } from 'vue';
-import { useCanvasConditions } from '@/composable/useCanvasConditions';
 import { useAppStore } from '@/store/appStore';
 import { useCanvasOperationsStore } from '@/store/canvasOperationsStore';
 import { useCanvasEventsStore } from '@/store/canvasEventsStore';
@@ -17,6 +16,7 @@ import MwTextarea from '@/Components/mindwall/MwTextarea.vue';
 import MwLayerItem from '@/Components/mindwall/MwLayerItem.vue';
 import MwToolbar from '@/Components/mindwall/MwToolbar.vue';
 import TwMarkdownPreview from '@/Components/ui/TwMarkdownPreview.vue';
+import useAutoSave from '@/composable/useAutoSave';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -35,7 +35,6 @@ const textEditStore = useTextEditStore();
 const canvasConfigStore = useCanvasConfig();
 
 const { stageRef, transformer } = storeToRefs(canvaStore);
-const { isMwTextConfig, isMwImageConfig } = useCanvasConditions();
 
 appStore.setEngines(props.engines);
 appStore.setLanguages(props.languages);
@@ -45,7 +44,12 @@ const user = computed<User | null>((): User | null => page.props.user as User | 
 
 appStore.cook();
 
+const { runAutoSave, clearAutoSave } = useAutoSave();
+
 onMounted(() => {
+    // Auto save each 5 minutes
+    runAutoSave(5);
+
     const handleKeydown = (event: KeyboardEvent) => {
         if (event.key === 'Delete') {
             // Handle delete key press
@@ -83,13 +87,19 @@ onMounted(() => {
     window.addEventListener('wheel', preventZoom, { passive: false });
 
     onUnmounted(() => {
+        clearAutoSave();
         window.removeEventListener('keydown', handleKeydown);
         window.removeEventListener('wheel', preventZoom);
         console.log('-- 999 -> Unmount now... Clean up & destory the wall');
+        appStore.saveWallToServer();
         canvaStore.resetWall();
         stageRef.value?.getStage().destroy();
     });
 });
+
+onBeforeUnmount(() => {
+    clearAutoSave();
+})
 const handleKeyup = () => {
 
 }
