@@ -1,19 +1,22 @@
 <script setup lang="ts">
-interface LogoDimension {
+interface LogoDimensions {
     width: number;
     height: number;
 }
+
 interface Props {
     authUrl: string;
     text?: string;
-    logo?: LogoDimension; // Make sure this is correct
+    logo?: LogoDimensions;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     text: 'Sign in with Google',
-    logo: {
-        width: 32,
-        height: 32,
+    logo: () => {
+        return {
+            width: 32,
+            height: 32,
+        }
     },
 });
 

@@ -107,8 +107,8 @@ const closeError = (key: string) => {
     background:
         linear-gradient(#062FD9 0%, #FD000D 90%),
         linear-gradient(to right, #A7F200 0%, #560CBE 60%),
-        url('images/pages/thematics/wall.WebP') 30px,
-        url('images/pages/thematics/wall.WebP') 20px;
+        url('@/../images/pages/thematics/wall.WebP') 30px,
+        url('@/../images/pages/thematics/wall.WebP') 20px;
         background-blend-mode: multiply, difference, lighten;
     &__action-bar {
         position: sticky;

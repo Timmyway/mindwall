@@ -95,7 +95,7 @@ const handleChangeLanguage = () => {
     </div>
     <div class="flex items-center overflow-x-auto scrollbar-thin">
         <div class="flex items-center gap-3 text-xs rounded px-2 py-1 h-full">
-            <tw-action-wall></tw-action-wall>            
+            <tw-action-wall></tw-action-wall>
             <div class="flex items-center gap-2">
                 <tw-loading :is-visible="widgetStore.isLoading.aiGenerateText"></tw-loading>
                 <Dropdown
@@ -148,7 +148,7 @@ const handleChangeLanguage = () => {
             <div v-show="isMwRectConfig(canvasStore.selectedConfig) || isMwCircleConfig(canvasStore.selectedConfig)" class="flex items-center gap-3 text-xs border border-gray-300 rounded px-2 py-1">
                 <tw-action-shape></tw-action-shape>
             </div>
-        </div>        
+        </div>
         <tw-sidebar></tw-sidebar>
         <tw-action-debug class="mx-2"></tw-action-debug>
     </div>
@@ -162,7 +162,7 @@ const handleChangeLanguage = () => {
         :handle-text-ai-generate="(e) => operationStore.addAiTextToWall()"
         :handle-center-on-element="(e) => canvasStore.centerOnElement()"
     ></tw-context-menu>
-    
+
 </div>
 </template>
 
@@ -171,8 +171,8 @@ const handleChangeLanguage = () => {
     background:
         linear-gradient(#062FD9 0%, #FD000D 90%),
         linear-gradient(to right, #A7F200 0%, #560CBE 60%),
-        url('images/pages/thematics/wall.WebP') 30px,
-        url('images/pages/thematics/wall.WebP') 20px;
+        url('@/../images/pages/thematics/wall.WebP') 30px,
+        url('@/../images/pages/thematics/wall.WebP') 20px;
         background-blend-mode: multiply, difference, lighten;
     color: white;
     height: 64px;

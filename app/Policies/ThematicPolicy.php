@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Helpers\General\LogHelper;
 use App\Models\Thematic;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -37,6 +38,8 @@ class ThematicPolicy
      */
     public function update(User $user, Thematic $thematic): bool
     {
+        LogHelper::debug($user->id);
+        LogHelper::debug($thematic->user_id);
         return $user->id === $thematic->user_id;
     }
 
