@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class LogHelper
 {
-    public static function debug(string $message, $data = null, $channel = 'kmailing')
+    public static function debug(string $message, $data = null, $channel = 'mindwall')
     {
         if (is_array($data)) {
             Log::channel($channel)->debug($message, $data);
@@ -18,7 +18,7 @@ class LogHelper
         }
     }
 
-    public static function info(string $message, $data = null, $channel = 'kmailing')
+    public static function info(string $message, $data = null, $channel = 'mindwall')
     {
         if (is_array($data)) {
             Log::channel($channel)->info($message, $data);
@@ -29,7 +29,7 @@ class LogHelper
         }
     }
 
-    public static function error(string $message, $data = null, $channel = 'kmailing')
+    public static function error(string $message, $data = null, $channel = 'mindwall')
     {
         if (is_array($data)) {
             Log::channel($channel)->error($message, $data);

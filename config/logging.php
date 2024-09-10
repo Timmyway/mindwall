@@ -127,6 +127,12 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'mindwall' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/mindwall.log'),
+            'level' => 'debug'
+        ],
+
     ],
 
 ];
