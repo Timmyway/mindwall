@@ -38,9 +38,8 @@ class ThematicPolicy
      */
     public function update(User $user, Thematic $thematic): bool
     {
-        LogHelper::debug($user->id);
-        LogHelper::debug($thematic->user_id);
-        return $user->id === $thematic->user_id;
+        LogHelper::debug('Can update: '.json_encode($user->id == $thematic->user_id));
+        return $user->id == $thematic->user_id;
     }
 
     /**
