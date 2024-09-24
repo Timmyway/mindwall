@@ -154,7 +154,7 @@ class ApiAiController extends Controller
         try {
             // Validate incoming request data
             $rules = [
-                'thematic' => 'max:1000',
+                'thematic' => 'max:1500',
                 'count' => 'nullable|numeric|between:1,100',
                 'tones' => 'nullable|array',
                 'segments' => 'nullable|array',
