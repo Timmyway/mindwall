@@ -41,6 +41,14 @@ const handleChangeLanguage = () => {
         audioStore.setVoiceLanguage(language.code);
     }
 }
+
+const { isMwGroupConfig } = useCanvasConditions();
+
+const ungroup = () => {
+    if (isMwGroupConfig(canvasStore.selectedConfig)) {
+        operationStore.ungroupSelectedItems(canvasStore.selectedConfig.id ?? '');
+    }
+}
 </script>
 
 <template>
@@ -161,6 +169,8 @@ const handleChangeLanguage = () => {
         :handle-bring-to-back="(e) => operationStore.bringToBack(canvasStore.selectedConfig)"
         :handle-text-ai-generate="(e) => operationStore.addAiTextToWall()"
         :handle-center-on-element="(e) => canvasStore.centerOnElement()"
+        :handle-group="(e) => operationStore.groupSelectedItems()"
+        :handle-ungroup="(e) =>  ungroup()"
     ></tw-context-menu>
 
 </div>

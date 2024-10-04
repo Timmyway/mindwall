@@ -14,6 +14,8 @@ const props = defineProps<{
     handleClone: (event: MenuItemCommandEvent) => void,
     handleTextAiGenerate: (event: MenuItemCommandEvent) => void
     handleCenterOnElement: (event: MenuItemCommandEvent) => void
+    handleGroup: (event: MenuItemCommandEvent) => void
+    handleUngroup: (event: MenuItemCommandEvent) => void
 }>();
 
 const canvaStore = useCanvasStore();
@@ -57,6 +59,14 @@ const items = ref<MenuItem[]>([
         label: 'Clone',
         icon: 'fas fa-clone',
         command: props.handleClone
+    },
+    {
+        label: 'Grouping',
+        icon: 'fas fa-object-group',
+        items: [
+            {label: 'Group', icon: 'fas fa-object-group', command: props.handleGroup},
+            {label: 'Ungroup', icon: 'fas fa-object-ungroup', command: props.handleUngroup},
+        ]
     }
 
 ]);
