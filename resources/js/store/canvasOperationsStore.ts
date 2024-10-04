@@ -543,6 +543,46 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         return groupId; // Return the ID of the new group
     };
 
+    const ungroupSelectedItems = (groupId: string): void => {
+        // Find the group by its ID
+        const group = canvasStore.findGroupById(groupId);
+        if (!group) {
+            console.error(`Group with ID ${groupId} not found`);
+            return;
+        }
+
+        // Find the parent of the group (which could be a layer or another group)
+        const parentLayer = canvasStore.wall.layers.find(layer =>
+            layer.items?.some(item => item.id === groupId)
+        ) || findParentIteratively(group.parent ?? '', canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+
+        if (!parentLayer || !parentLayer.items) {
+            console.error(`Parent of the group with ID ${group.parent} not found`);
+            return;
+        }
+
+        // Iterate over the items in the group
+        for (const item of group.items) {
+            // Set the parent of each item to the group's parent (move them out of the group)
+            item.parent = group.parent ?? ''; // Set to the original parent (layer or group)
+
+            // Add the item to the parent layer or group
+            parentLayer.items.push(item);
+        }
+
+        // Remove the group itself from the parent layer or group
+        const groupIndex = parentLayer.items.findIndex(item => item.id === groupId);
+        if (groupIndex !== -1) {
+            parentLayer.items.splice(groupIndex, 1); // Remove the group from the parent
+        } else {
+            console.error(`Group with ID ${groupId} not found in its parent`);
+        }
+
+        // Clear selected items and update the transformer to hide it when no items are selected.
+        canvasStore.clearSelectedItems();
+        canvasStore.updateTransformer();
+    };
+
     const ungroupItems = (): void => {
         const groupId = canvasStore.selectedConfig?.id;
 
@@ -732,6 +772,6 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
-        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,
+        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall, ungroupSelectedItems,
     }
 });

@@ -456,6 +456,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         if (selectedNodes.length === 0) {
             // console.log('No nodes selected or nodes not found.');
             transformerNode.nodes([]);
+            stage.batchDraw();
             return;
         }
 
@@ -472,6 +473,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         // Attach the transformer to the selected nodes
         transformerNode.nodes(selectedNodes);
         // console.log('Transformer attached to nodes:', selectedNodes.map(node => node.name()));
+        stage.batchDraw(); // Update the canvas with the new transformer
     };
 
     const syncPosition = (itemId: string, x: number, y: number) => {

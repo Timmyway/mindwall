@@ -17,6 +17,7 @@ import MwLayerItem from '@/Components/mindwall/MwLayerItem.vue';
 import MwToolbar from '@/Components/mindwall/MwToolbar.vue';
 import TwMarkdownPreview from '@/Components/ui/TwMarkdownPreview.vue';
 import useAutoSave from '@/composable/useAutoSave';
+import { useCanvasConditions } from '@/composable/useCanvasConditions';
 
 const props = defineProps<{
     thematic: Thematic,
@@ -33,6 +34,7 @@ const textEditStore = useTextEditStore();
 const canvasConfigStore = useCanvasConfig();
 
 const { stageRef, transformer } = storeToRefs(canvaStore);
+const { isMwGroupConfig } = useCanvasConditions();
 
 appStore.setEngines(props.engines);
 appStore.setLanguages(props.languages);
@@ -61,7 +63,9 @@ onMounted(() => {
             console.log('-- Event key -> Pressed ctrl + shift + g');
 
             // Assume you have a way to get the current group ID to ungroup
-            operationStore.ungroupItems(); // Call your ungroup method with the group ID
+            if (isMwGroupConfig(canvaStore.selectedConfig)) {
+                operationStore.ungroupSelectedItems(canvaStore.selectedConfig.id ?? ''); // Call your ungroup method with the group ID
+            }
         }
         if (event.altKey) {
             event.preventDefault();
