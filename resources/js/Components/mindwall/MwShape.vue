@@ -24,6 +24,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
     @dblclick="textEditStore.enterEditMode"
     @click="canvasEventsStore.handleTextClick($event, config)"
     @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+    @touchstart="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
     @dragend="canvasEventsStore.onDragend"
     @transform="canvasEventsStore.handleTransform"
     @transformend="canvasEventsStore.handleTransformEnd"
@@ -33,6 +34,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
     <v-rect
         :config="config"
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+        @touchstart="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
         @contextmenu="canvasEventsStore.handleGroupContextMenu"
@@ -42,6 +44,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
     <v-circle
         :config="config"
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+        @touchstart="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
         @contextmenu="canvasEventsStore.handleGroupContextMenu"
@@ -51,6 +54,7 @@ const { isMwTextConfig, isMwImageConfig, isMwRectConfig, isMwCircleConfig } = us
     <v-image
         :config="config"
         @mousedown="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
+        @touchstart="canvasEventsStore.handleShapeMouseDown($event, config, layerInfo)"
         @dragend="canvasEventsStore.onDragend"
         @transformend="canvasEventsStore.handleTransformEnd"
         @contextmenu="canvasEventsStore.handleGroupContextMenu"

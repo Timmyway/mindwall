@@ -189,7 +189,7 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         //         }
         //     }
         // }
-    };    
+    };
 
     /* Add options */
     const addLayer = (): string => {
@@ -676,7 +676,6 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
             }
         }
 
-        console.log('=================================> NG', newGroup)
         if (canvasStore.wall.layers[0]?.items) {
             canvasStore.wall.layers[0].items.push(newGroup);
         } else {
@@ -688,6 +687,8 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
     };
 
     const handleCloneGroup = (event: MenuItemCommandEvent) => {
+        // Check if the currently selected configuration in the canvas store
+        // is a group (MwGroupConfig) and if the group has a valid ID.
         if (isMwGroupConfig(canvasStore.selectedConfig) && canvasStore.selectedConfig?.id) {
             const clonedGroupName = cloneGroup(canvasStore.selectedConfig.id);
             console.log('Cloned group:', clonedGroupName);
@@ -731,6 +732,6 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
 
     return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
         removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
-        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,        
+        bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall,
     }
 });

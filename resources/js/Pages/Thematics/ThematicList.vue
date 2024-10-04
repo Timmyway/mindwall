@@ -5,7 +5,6 @@ import TwPagination from '@/Components/ui/TwPagination.vue'
 import { useForm } from '@inertiajs/vue3';
 import { ThematicForm } from '@/types/thematic.types';
 import TwAlert from '@/Components/ui/TwAlert.vue';
-import { MwLayerConfig } from '@/types/konva.config';
 import useBasicOperations from '@/composable/canvas/useBasicOperations';
 
 interface User {
