@@ -87,7 +87,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
             // console.log('-- 61 -> Editing value: ', editing.value);
             // console.log('-- 62 -> Selected config name: ', selectedConfig.value?.name);
             // console.log('-- 63 -> Last edited config: ', lastEditedText.value.config);
-            // console.log(`-- 64 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);            
+            // console.log(`-- 64 -> Assert equal: ${editing.value} && ${selectedConfig.value?.name} !== ${lastEditedText.value.config}: `, selectedConfig.value?.name !== lastEditedText.value.config);
             // if (editing.value) {
             //     editTextStore.exitEditMode();
             // }
@@ -148,6 +148,7 @@ export const useCanvasEventsStore = defineStore('canvasEvents', () => {
     const handleShapeMouseDown = (e: any, config: MwNode, layerInfo: LayerInfo) => {
         editTextStore.finalizeEdit();
         canvasStore.ctrlPressed = (e.evt?.ctrlKey || e.evt?.metaKey) ?? false;
+        canvasStore.altPressed = (e.evt?.altKey || e.evt?.metaKey) ?? false;
         const shift = e.evt?.shiftKey ?? false;
 
         canvasStore.selectConfig(config, layerInfo);

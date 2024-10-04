@@ -20,6 +20,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const { isMwGroupConfig, isMwShapeConfig } = useCanvasConditions();
     const canvasOperations = useCanvasOperationsStore();
     const ctrlPressed = ref<boolean>(false);
+    const altPressed = ref(false);
 
     // Konva configs
     const stageWidth = ref<number>(window.innerWidth);
@@ -491,6 +492,6 @@ export const useCanvasStore = defineStore('canvas', () => {
         updateTransformer, syncPosition, center, stageWidth, stageHeight,
         addSelectedItem, removeSelectedItem, clearSelectedItems, selectedItems,
         ctrlPressed, setSelectedConfig, findParentGroup, deleteConfig,
-        findGroupById, findParent,
+        findGroupById, findParent, altPressed,
     }
 });
