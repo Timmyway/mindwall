@@ -8,7 +8,6 @@ import { useImageGalleryStore } from "./imageGalleryStore";
 import { useWidgetSettingStore } from "./widgetSettingStore";
 import { TextGeneratorOption } from "@/types/infinidea.types";
 import AiApi from "@/api/AiApi";
-import { MenuItemCommandEvent } from "primevue/menuitem";
 import useBasicOperations from "@/composable/canvas/useBasicOperations";
 
 export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
@@ -726,12 +725,14 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         return newGroupId;
     };
 
-    const handleCloneGroup = (event: MenuItemCommandEvent) => {
+    const handleClone = () => {
         // Check if the currently selected configuration in the canvas store
         // is a group (MwGroupConfig) and if the group has a valid ID.
         if (isMwGroupConfig(canvasStore.selectedConfig) && canvasStore.selectedConfig?.id) {
             const clonedGroupName = cloneGroup(canvasStore.selectedConfig.id);
             console.log('Cloned group:', clonedGroupName);
+        } else {
+            cloneShape(canvasStore.selectedConfig);
         }
     };
 
@@ -770,8 +771,37 @@ export const useCanvasOperationsStore = defineStore('canvasOperations', () => {
         }
     };
 
+    const cloneShape = (config: MwNode | null): string | null => {
+        if (!config) return null; // Return null if the provided config is null
+
+        const newShapeId = `${config.is}-${getNanoid()}`; // Generate a new unique ID for the cloned shape
+
+        // Clone the selected shape properties while ensuring the ID is unique
+        const newShape: MwNode = {
+            ...config,
+            id: newShapeId,
+            name: newShapeId,
+            parent: config.parent || '', // Ensure parent is a string (default to empty string if null)
+        };
+
+        // Find the parent layer where the new shape will be added
+        const parentId = canvasStore.selectedLayerInfo?.id ?? '';
+        const parentLayer = canvasStore.wall.layers.find(layer => layer.id === parentId) ||
+            findParentIteratively(parentId, canvasStore.wall.layers.flatMap(layer => layer.items ?? []));
+
+        if (parentLayer && parentLayer.items) {
+            parentLayer.items.push(newShape); // Add the cloned shape to the parent's items
+        } else {
+            console.error(`Parent layer with ID ${config.parent} not found`);
+            return null; // Return null if the parent layer isn't found
+        }
+
+        return newShapeId; // Return the ID of the cloned shape
+    };
+
+
     return { addLayer, addTextToWall, aiImageExplain, addImageToWall,
-        removeConfig, removeText, addAiTextToWall, deleteShape, handleCloneGroup,
+        removeConfig, removeText, addAiTextToWall, deleteShape, handleClone,
         bringToTop, bringToBack, groupSelectedItems, ungroupItems, addShapeToWall, ungroupSelectedItems,
     }
 });

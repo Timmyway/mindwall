@@ -26,7 +26,7 @@ const sidebarStore = useSidebarStore();
         'mw-sidebar--active': (canvaStore.selectedConfig?.id === node?.id) || canvaStore.selectedConfig?.id === node?.parent,
     }"
 >
-    <div class="flex gap-4">
+    <div class="flex gap-2">
         <button class="btn btn-icon btn-xs btn-icon--flat bg-gray-200 w-6 h-6 p-2" @click="sidebarStore.toggleDetails(node?.id ?? '')">
             <i :class="['fas', sidebarStore.areDetailsShown[node?.id ?? ''] ? 'fa-caret-down': 'fa-caret-right']"></i>
         </button>

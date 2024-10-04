@@ -164,13 +164,13 @@ const ungroup = () => {
         :handle-add-image="galleryStore.pickImage"
         :handle-remove-shape="operationStore.deleteShape"
         :handle-add-text="(e) => operationStore.addTextToWall()"
-        :handle-clone="operationStore.handleCloneGroup"
+        :handle-clone="(e) => operationStore.handleClone()"
         :handle-bring-to-top="(e) => operationStore.bringToTop(canvasStore.selectedConfig)"
         :handle-bring-to-back="(e) => operationStore.bringToBack(canvasStore.selectedConfig)"
         :handle-text-ai-generate="(e) => operationStore.addAiTextToWall()"
         :handle-center-on-element="(e) => canvasStore.centerOnElement()"
         :handle-group="(e) => operationStore.groupSelectedItems()"
-        :handle-ungroup="(e) =>  ungroup()"
+        :handle-ungroup="(e) => ungroup()"
     ></tw-context-menu>
 
 </div>
