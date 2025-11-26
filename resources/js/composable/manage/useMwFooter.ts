@@ -25,7 +25,7 @@ export default function useMwFooter() {
             name: 'youtube',
             icon: 'fab fa-youtube',
             platform: 'youtube',
-            url: '',
+            url: 'https://www.youtube.com/@timway6964',
             newTab: true
         },
     ]);
